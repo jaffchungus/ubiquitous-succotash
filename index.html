@@ -5,11 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Color Changer</title>
     <style>
-        * {
-            box-sizing: border-box;
-            margin: 0;
-            padding: 0;
-        }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
 
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
@@ -24,30 +20,57 @@
             overflow: hidden;
         }
 
-        /* Full‑page lock overlay – ALWAYS shows the image during lock */
-        #lockOverlay {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100vw;
-            height: 100vh;
-            background: black url('image.png') center/cover no-repeat;
-            z-index: 99999;
-            display: none;
-            pointer-events: all;   /* captures all clicks, keys, etc. */
-            cursor: none;          /* hide cursor */
+        /* Username screen */
+        #usernameScreen {
+            text-align: center;
+            background: rgba(255,255,255,0.9);
+            padding: 2rem;
+            border-radius: 20px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
         }
+        #usernameScreen input {
+            padding: 12px 20px;
+            font-size: 1rem;
+            border: 2px solid #ccc;
+            border-radius: 50px;
+            margin-right: 10px;
+            outline: none;
+        }
+        #usernameScreen button {
+            padding: 12px 24px;
+            background: #2ecc71;
+            color: white;
+            border: none;
+            border-radius: 50px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+
+        /* Main app */
+        #mainApp { display: none; text-align: center; }
+
+        .amongus-link {
+            margin: 1rem 0;
+            display: inline-block;
+            background: #9b59b6;
+            color: white;
+            padding: 12px 24px;
+            border-radius: 50px;
+            text-decoration: none;
+            font-weight: bold;
+            transition: transform 0.2s;
+        }
+        .amongus-link:hover { transform: scale(1.05); }
 
         .container {
             background: rgba(255, 255, 255, 0.85);
             padding: 2.5rem;
             border-radius: 20px;
             box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
-            text-align: center;
             backdrop-filter: blur(10px);
             max-width: 90%;
             width: 400px;
-            z-index: 1;
+            margin: 1rem auto;
         }
 
         h3 {
@@ -76,10 +99,7 @@
             cursor: pointer;
             transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
             box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-            position: relative;
-            overflow: hidden;
             min-width: 100px;
-            user-select: none;
         }
 
         .btn-red { background: linear-gradient(135deg, #ff6b6b, #ee5253); }
@@ -93,150 +113,385 @@
             box-shadow: 0 7px 14px rgba(0, 0, 0, 0.2);
             filter: brightness(1.1);
         }
+        .btn:active { transform: translateY(1px); box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+        .btn:focus { outline: 3px solid rgba(0,0,0,0.2); outline-offset: 2px; }
 
-        .btn:active {
-            transform: translateY(1px);
-            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        /* Admin panel */
+        #adminPanel {
+            display: none;
+            margin-top: 1rem;
+            background: white;
+            padding: 1.5rem;
+            border-radius: 20px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            max-width: 400px;
+            width: 100%;
+        }
+        #adminPanel h4 { margin-bottom: 1rem; }
+        #adminPanel ul { list-style: none; padding: 0; }
+        #adminPanel li {
+            padding: 0.5rem;
+            margin: 0.3rem 0;
+            background: #f9f9f9;
+            border-radius: 8px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .sabotage-btn, .release-btn {
+            border: none;
+            padding: 5px 12px;
+            border-radius: 20px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+        .sabotage-btn { background: #e74c3c; color: white; }
+        .release-btn { background: #2ecc71; color: white; }
+
+        /* Lock overlay (sabotage) */
+        #lockOverlay {
+            position: fixed;
+            top: 0; left: 0;
+            width: 100vw; height: 100vh;
+            background: black url('image.png') center/cover no-repeat;
+            z-index: 99999;
+            display: none;
+            pointer-events: all;
+            cursor: none;
+        }
+        #lockOverlay .timer {
+            position: absolute;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0,0,0,0.6);
+            color: white;
+            padding: 10px 20px;
+            border-radius: 30px;
+            font-size: 1.2rem;
+            font-weight: bold;
         }
 
-        .btn:focus {
-            outline: 3px solid rgba(0, 0, 0, 0.2);
-            outline-offset: 2px;
+        /* Explosion canvas */
+        #explosionCanvas {
+            position: fixed;
+            top: 0; left: 0;
+            pointer-events: none;
+            z-index: 9998;
         }
     </style>
 </head>
 <body>
 
-    <!-- Lock overlay – displays the image throughout the lock -->
-    <div id="lockOverlay"></div>
+    <!-- Username screen -->
+    <div id="usernameScreen">
+        <h2>Enter your username</h2>
+        <input type="text" id="usernameInput" placeholder="Username" autofocus>
+        <button id="startBtn">Enter</button>
+    </div>
 
-    <div class="container" id="colorPicker">
-        <h3>Choose Background</h3>
-        <div class="button-group">
-            <button class="btn btn-red" data-color="Red">Red</button>
-            <button class="btn btn-orange" data-color="Orange">Orange</button>
-            <button class="btn btn-yellow" data-color="Yellow">Yellow</button>
-            <button class="btn btn-green" data-color="Green">Green</button>
-            <button class="btn btn-blue" data-color="Blue">Blue</button>
+    <!-- Main app (hidden until username entered) -->
+    <div id="mainApp">
+        <a href="amongus.html" class="amongus-link">🕹 Play Among Us</a>
+
+        <div class="container">
+            <h3>Choose Background</h3>
+            <div class="button-group">
+                <button class="btn btn-red" data-color="Red">Red</button>
+                <button class="btn btn-orange" data-color="Orange">Orange</button>
+                <button class="btn btn-yellow" data-color="Yellow">Yellow</button>
+                <button class="btn btn-green" data-color="Green">Green</button>
+                <button class="btn btn-blue" data-color="Blue">Blue</button>
+            </div>
+        </div>
+
+        <!-- Admin panel (hidden) -->
+        <div id="adminPanel">
+            <h4>🔧 Admin Panel</h4>
+            <ul id="userList"></ul>
+            <button id="closeAdmin" style="margin-top:10px; background:#7f8c8d; color:white; border:none; padding:8px 20px; border-radius:20px; cursor:pointer;">Close</button>
         </div>
     </div>
 
+    <!-- Lock overlay (sabotage image) -->
+    <div id="lockOverlay">
+        <div class="timer" id="lockTimer">02:00</div>
+    </div>
+
+    <!-- Explosion canvas (used by animations) -->
+    <canvas id="explosionCanvas"></canvas>
+
     <script>
+        // ---------- USER MANAGEMENT ----------
         (function() {
+            const usernameScreen = document.getElementById('usernameScreen');
+            const mainApp = document.getElementById('mainApp');
+            const usernameInput = document.getElementById('usernameInput');
+            const startBtn = document.getElementById('startBtn');
+
+            let currentUser = sessionStorage.getItem('currentUser');
+
+            if (!currentUser) {
+                // Show username screen
+                usernameScreen.style.display = 'block';
+                mainApp.style.display = 'none';
+                startBtn.addEventListener('click', () => {
+                    const name = usernameInput.value.trim();
+                    if (!name) return alert('Please enter a username.');
+                    sessionStorage.setItem('currentUser', name);
+                    // Add to global user list
+                    let users = JSON.parse(localStorage.getItem('users') || '[]');
+                    if (!users.includes(name)) {
+                        users.push(name);
+                        localStorage.setItem('users', JSON.stringify(users));
+                    }
+                    currentUser = name;
+                    usernameScreen.style.display = 'none';
+                    mainApp.style.display = 'block';
+                    initMainApp();
+                });
+            } else {
+                // Already logged in
+                usernameScreen.style.display = 'none';
+                mainApp.style.display = 'block';
+                initMainApp();
+            }
+
+            // ---------- EXPLOSION ANIMATION ----------
+            function explode(colorName) {
+                const canvas = document.getElementById('explosionCanvas');
+                const ctx = canvas.getContext('2d');
+                canvas.width = window.innerWidth;
+                canvas.height = window.innerHeight;
+
+                const colors = {
+                    Red: '#ff4d4d',
+                    Orange: '#ffa502',
+                    Yellow: '#f1c40f',
+                    Green: '#2ecc71'
+                };
+                const baseColor = colors[colorName] || colorName;
+
+                const particles = [];
+                const particleCount = 200;
+                const centerX = canvas.width / 2;
+                const centerY = canvas.height / 2;
+
+                for (let i = 0; i < particleCount; i++) {
+                    const angle = Math.random() * Math.PI * 2;
+                    const speed = 2 + Math.random() * 8;
+                    particles.push({
+                        x: centerX,
+                        y: centerY,
+                        vx: Math.cos(angle) * speed,
+                        vy: Math.sin(angle) * speed,
+                        radius: 2 + Math.random() * 6,
+                        alpha: 1,
+                        decay: 0.01 + Math.random() * 0.03,
+                        color: baseColor
+                    });
+                }
+
+                function draw() {
+                    ctx.clearRect(0, 0, canvas.width, canvas.height);
+                    let alive = false;
+                    particles.forEach(p => {
+                        p.x += p.vx;
+                        p.y += p.vy;
+                        p.alpha -= p.decay;
+                        if (p.alpha > 0) {
+                            alive = true;
+                            ctx.beginPath();
+                            ctx.arc(p.x, p.y, p.radius, 0, Math.PI*2);
+                            ctx.fillStyle = p.color;
+                            ctx.globalAlpha = p.alpha;
+                            ctx.fill();
+                        }
+                    });
+                    ctx.globalAlpha = 1;
+                    if (alive) requestAnimationFrame(draw);
+                    else {
+                        // Clear canvas after animation ends
+                        ctx.clearRect(0,0,canvas.width,canvas.height);
+                    }
+                }
+
+                // Flash effect
+                document.body.style.backgroundColor = baseColor;
+                setTimeout(() => { document.body.style.backgroundColor = '#f0f2f5'; }, 500);
+
+                draw();
+            }
+
+            // ---------- ADMIN COMBO DETECTION ----------
+            let lastClicks = [];
+            const adminPanel = document.getElementById('adminPanel');
+            const userList = document.getElementById('userList');
+            const closeAdmin = document.getElementById('closeAdmin');
+
+            function updateAdminPanel() {
+                const users = JSON.parse(localStorage.getItem('users') || '[]');
+                userList.innerHTML = '';
+                users.forEach(user => {
+                    const li = document.createElement('li');
+                    li.textContent = user + ' ';
+                    const sabotageKey = 'sabotage_' + user;
+                    const expiry = localStorage.getItem(sabotageKey);
+                    if (expiry && Date.now() < parseInt(expiry)) {
+                        // Already sabotaged
+                        const releaseBtn = document.createElement('button');
+                        releaseBtn.className = 'release-btn';
+                        releaseBtn.textContent = 'Release';
+                        releaseBtn.addEventListener('click', () => {
+                            localStorage.removeItem(sabotageKey);
+                            updateAdminPanel();
+                        });
+                        li.appendChild(releaseBtn);
+                    } else {
+                        // Can sabotage
+                        const sabotageBtn = document.createElement('button');
+                        sabotageBtn.className = 'sabotage-btn';
+                        sabotageBtn.textContent = 'Sabotage';
+                        sabotageBtn.addEventListener('click', () => {
+                            localStorage.setItem(sabotageKey, Date.now() + 2 * 60 * 1000); // 2 min
+                            updateAdminPanel();
+                        });
+                        li.appendChild(sabotageBtn);
+                    }
+                    userList.appendChild(li);
+                });
+            }
+
+            function showAdminPanel() {
+                adminPanel.style.display = 'block';
+                updateAdminPanel();
+            }
+
+            closeAdmin.addEventListener('click', () => {
+                adminPanel.style.display = 'none';
+            });
+
+            function handleColorClick(color) {
+                lastClicks.push(color);
+                if (lastClicks.length > 4) lastClicks.shift();
+                // Check admin combo: Red, Green, Blue, Orange
+                if (lastClicks.length === 4 &&
+                    lastClicks[0] === 'Red' &&
+                    lastClicks[1] === 'Green' &&
+                    lastClicks[2] === 'Blue' &&
+                    lastClicks[3] === 'Orange') {
+                    showAdminPanel();
+                    lastClicks = []; // reset
+                }
+            }
+
+            // ---------- SABOTAGE LOCK ----------
             const lockOverlay = document.getElementById('lockOverlay');
-            const container = document.getElementById('colorPicker');
-            const buttons = document.querySelectorAll('.btn');
-
+            const lockTimerDisplay = document.getElementById('lockTimer');
             let lockActive = false;
-            let lockTimer = null;
-            let fullscreenInterval = null;
+            let lockInterval = null;
+            let lockTimeout = null;
 
-            // ----- Block all user input during lock -----
             function blockAll(e) {
                 if (!lockActive) return;
                 e.preventDefault();
                 e.stopPropagation();
-                e.stopImmediatePropagation();   // strongest blocking
-                if (e.type === 'keydown') {
-                    // Extra: re-request fullscreen immediately if Esc was pressed
-                    if (e.key === 'Escape' && !document.fullscreenElement) {
-                        document.documentElement.requestFullscreen().catch(()=>{});
-                    }
-                    return false;
-                }
-                if (e.type === 'contextmenu') return false;
+                e.stopImmediatePropagation();
+                return false;
             }
 
-            // ----- Optional nag on tab close -----
             function beforeUnloadHandler(e) {
                 if (!lockActive) return;
                 e.preventDefault();
-                e.returnValue = 'Device is locked. Leave?';
+                e.returnValue = 'Your device is sabotaged! Wait 2 minutes.';
             }
 
-            // ----- Clean up and unlock -----
             function removeLock() {
                 lockActive = false;
-                if (lockTimer) clearTimeout(lockTimer);
-                if (fullscreenInterval) clearInterval(fullscreenInterval);
-                lockTimer = null;
-                fullscreenInterval = null;
-
-                if (document.fullscreenElement) {
-                    document.exitFullscreen().catch(() => {});
-                }
-                if (document.pointerLockElement) {
-                    document.exitPointerLock();
-                }
-
+                if (lockInterval) clearInterval(lockInterval);
+                if (lockTimeout) clearTimeout(lockTimeout);
                 lockOverlay.style.display = 'none';
-                container.style.display = '';
-                document.body.style.backgroundImage = 'none';
-                document.body.style.backgroundColor = '#f0f2f5';
                 document.body.style.cursor = '';
-
                 document.removeEventListener('keydown', blockAll, true);
                 document.removeEventListener('contextmenu', blockAll, true);
                 document.removeEventListener('click', blockAll, true);
                 window.removeEventListener('beforeunload', beforeUnloadHandler);
+                if (document.pointerLockElement) document.exitPointerLock();
             }
 
-            // ----- Keep fullscreen active (spam re‑request) -----
-            function maintainFullscreen() {
-                if (!lockActive) return;
-                if (!document.fullscreenElement) {
-                    document.documentElement.requestFullscreen().catch(() => {});
-                }
-                // Pointer lock (cursor hidden by overlay anyway, but extra layer)
-                if (!document.pointerLockElement) {
-                    document.body.requestPointerLock().catch(() => {});
-                }
-            }
-
-            // ----- Start the 15‑minute lock -----
-            function startLock() {
+            function startLock(remainingMs) {
                 if (lockActive) return;
-
                 lockActive = true;
-
-                // 1. Hide color picker, show the image overlay ALWAYS
-                container.style.display = 'none';
-                lockOverlay.style.display = 'flex';     // 'flex' to centre any potential text, or 'block' works too
-
-                // 2. Request fullscreen (user gesture active)
-                document.documentElement.requestFullscreen().catch(() => {});
-
-                // 3. Pointer lock (hides real cursor)
-                document.body.requestPointerLock().catch(() => {});
-
-                // 4. Aggressive fullscreen re-request every 300ms
-                fullscreenInterval = setInterval(maintainFullscreen, 300);
-
-                // 5. Block all escape routes
+                lockOverlay.style.display = 'flex';
+                document.body.style.cursor = 'none';
                 document.addEventListener('keydown', blockAll, true);
                 document.addEventListener('contextmenu', blockAll, true);
                 document.addEventListener('click', blockAll, true);
                 window.addEventListener('beforeunload', beforeUnloadHandler);
+                document.body.requestPointerLock().catch(()=>{});
 
-                // 6. Auto‑unlock after 15 minutes (900,000 ms)
-                lockTimer = setTimeout(removeLock, 15 * 60 * 1000);
+                function updateTimer() {
+                    const now = Date.now();
+                    const expiry = parseInt(localStorage.getItem('sabotage_' + currentUser));
+                    if (!expiry || now >= expiry) {
+                        removeLock();
+                        localStorage.removeItem('sabotage_' + currentUser);
+                        return;
+                    }
+                    const diff = expiry - now;
+                    const mins = Math.floor(diff / 60000);
+                    const secs = Math.floor((diff % 60000) / 1000);
+                    lockTimerDisplay.textContent = `${String(mins).padStart(2,'0')}:${String(secs).padStart(2,'0')}`;
+                }
+
+                updateTimer();
+                lockInterval = setInterval(updateTimer, 200);
+                // Safety timeout in case interval fails
+                lockTimeout = setTimeout(() => {
+                    removeLock();
+                    localStorage.removeItem('sabotage_' + currentUser);
+                }, remainingMs + 1000);
             }
 
-            // ----- Handle button clicks -----
-            buttons.forEach(button => {
-                button.addEventListener('click', function() {
-                    if (lockActive) return;
-
-                    const color = this.getAttribute('data-color');
-
-                    if (color !== 'Blue') {
-                        document.body.style.backgroundImage = 'none';
-                        document.body.style.backgroundColor = color.toLowerCase();
-                    } else {
-                        startLock();
+            function checkSabotage() {
+                if (!currentUser) return;
+                const key = 'sabotage_' + currentUser;
+                const expiry = localStorage.getItem(key);
+                if (!expiry) return;
+                const now = Date.now();
+                if (now >= parseInt(expiry)) {
+                    localStorage.removeItem(key);
+                    if (lockActive) removeLock();
+                } else {
+                    if (!lockActive) {
+                        startLock(parseInt(expiry) - now);
                     }
+                }
+            }
+
+            // ---------- INIT MAIN APP ----------
+            function initMainApp() {
+                // Check for sabotage on load
+                checkSabotage();
+                // Check periodically
+                setInterval(checkSabotage, 1000);
+
+                // Button handlers
+                const buttons = document.querySelectorAll('.btn');
+                buttons.forEach(btn => {
+                    btn.addEventListener('click', function() {
+                        if (lockActive) return; // ignore during sabotage
+                        const color = this.getAttribute('data-color');
+                        handleColorClick(color);
+                        if (['Red','Orange','Yellow','Green'].includes(color)) {
+                            explode(color);
+                        } else if (color === 'Blue') {
+                            document.body.style.backgroundColor = '#3498db';
+                            setTimeout(() => { document.body.style.backgroundColor = '#f0f2f5'; }, 1000);
+                        }
+                    });
                 });
-            });
+            }
         })();
     </script>
 </body>
