@@ -3,436 +3,796 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Among Us - Offline</title>
+    <title>Color Changer</title>
     <style>
-        /* --- General styles --- */
-        body {
+        * {
+            box-sizing: border-box;
             margin: 0;
             padding: 0;
-            background: #1a1a2e;
-            color: white;
-            font-family: Arial, sans-serif;
-            overflow: hidden;
-        }
-        #gameContainer {
-            width: 100vw;
-            height: 100vh;
-            position: relative;
         }
 
-        /* --- Sabotage overlay (hidden by default) --- */
-        #sabotageOverlay {
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            background-color: #f0f2f5;
+            transition: background-color 0.6s ease;
+            user-select: none;
+            overflow: hidden;
+        }
+
+        /* Username screen */
+        #usernameScreen {
+            text-align: center;
+            background: rgba(255, 255, 255, 0.95);
+            padding: 2.5rem;
+            border-radius: 20px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
+            z-index: 100;
+        }
+
+        #usernameScreen h2 {
+            margin-bottom: 1.5rem;
+            color: #333;
+            font-size: 1.5rem;
+        }
+
+        #usernameScreen input {
+            padding: 12px 20px;
+            font-size: 1rem;
+            border: 2px solid #ddd;
+            border-radius: 50px;
+            margin-right: 10px;
+            outline: none;
+            transition: border-color 0.3s;
+            min-width: 200px;
+        }
+
+        #usernameScreen input:focus {
+            border-color: #3498db;
+        }
+
+        #usernameScreen button {
+            padding: 12px 30px;
+            background: linear-gradient(135deg, #2ecc71, #27ae60);
+            color: white;
+            border: none;
+            border-radius: 50px;
+            cursor: pointer;
+            font-weight: bold;
+            font-size: 1rem;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        #usernameScreen button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(46, 204, 113, 0.4);
+        }
+
+        /* Main app */
+        #mainApp {
             display: none;
+            text-align: center;
+            width: 100%;
+            max-width: 500px;
+        }
+
+        .amongus-link {
+            margin: 1rem 0;
+            display: inline-block;
+            background: linear-gradient(135deg, #9b59b6, #8e44ad);
+            color: white;
+            padding: 14px 28px;
+            border-radius: 50px;
+            text-decoration: none;
+            font-weight: bold;
+            font-size: 1.1rem;
+            transition: transform 0.2s, box-shadow 0.2s;
+            box-shadow: 0 4px 10px rgba(155, 89, 182, 0.3);
+        }
+
+        .amongus-link:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(155, 89, 182, 0.5);
+        }
+
+        .container {
+            background: rgba(255, 255, 255, 0.85);
+            padding: 2.5rem;
+            border-radius: 20px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+            backdrop-filter: blur(10px);
+            max-width: 90%;
+            width: 400px;
+            margin: 1rem auto;
+        }
+
+        h3 {
+            color: #333;
+            margin-bottom: 2rem;
+            font-weight: 600;
+            font-size: 1.2rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .button-group {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 12px;
+        }
+
+        .btn {
+            border: none;
+            padding: 12px 24px;
+            font-size: 1rem;
+            font-weight: 600;
+            color: white;
+            border-radius: 50px;
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            min-width: 100px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .btn::after {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 0;
+            height: 0;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.3);
+            transform: translate(-50%, -50%);
+            transition: width 0.6s, height 0.6s;
+        }
+
+        .btn:active::after {
+            width: 300px;
+            height: 300px;
+        }
+
+        .btn-red { background: linear-gradient(135deg, #ff6b6b, #ee5253); }
+        .btn-orange { background: linear-gradient(135deg, #ffa502, #ff7f50); }
+        .btn-yellow { background: linear-gradient(135deg, #f1c40f, #f39c12); color: #333; }
+        .btn-green { background: linear-gradient(135deg, #2ecc71, #27ae60); }
+        .btn-blue { background: linear-gradient(135deg, #3498db, #2980b9); }
+
+        .btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 7px 14px rgba(0, 0, 0, 0.2);
+            filter: brightness(1.1);
+        }
+
+        .btn:active {
+            transform: translateY(1px);
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        .btn:focus {
+            outline: 3px solid rgba(0, 0, 0, 0.2);
+            outline-offset: 2px;
+        }
+
+        /* Admin panel */
+        #adminPanel {
+            display: none;
+            margin-top: 1rem;
+            background: white;
+            padding: 1.5rem;
+            border-radius: 20px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+            max-width: 400px;
+            width: 100%;
+        }
+
+        #adminPanel h4 {
+            margin-bottom: 1rem;
+            color: #e74c3c;
+            font-size: 1.2rem;
+        }
+
+        #userList {
+            list-style: none;
+            padding: 0;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+
+        #userList li {
+            padding: 0.7rem;
+            margin: 0.3rem 0;
+            background: #f9f9f9;
+            border-radius: 8px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-left: 3px solid #3498db;
+        }
+
+        .sabotage-btn, .release-btn {
+            border: none;
+            padding: 6px 16px;
+            border-radius: 20px;
+            cursor: pointer;
+            font-weight: bold;
+            font-size: 0.85rem;
+            transition: transform 0.2s;
+        }
+
+        .sabotage-btn {
+            background: #e74c3c;
+            color: white;
+        }
+
+        .sabotage-btn:hover {
+            background: #c0392b;
+            transform: scale(1.05);
+        }
+
+        .release-btn {
+            background: #2ecc71;
+            color: white;
+        }
+
+        .release-btn:hover {
+            background: #27ae60;
+            transform: scale(1.05);
+        }
+
+        .status-badge {
+            font-size: 0.8rem;
+            padding: 4px 10px;
+            border-radius: 12px;
+            font-weight: bold;
+        }
+
+        .status-safe {
+            background: #d5f5e3;
+            color: #27ae60;
+        }
+
+        .status-sabotaged {
+            background: #fadbd8;
+            color: #e74c3c;
+            animation: pulse 1s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.6; }
+        }
+
+        /* Lock overlay (sabotage) */
+        #lockOverlay {
             position: fixed;
             top: 0;
             left: 0;
             width: 100vw;
             height: 100vh;
-            background: black;
-            z-index: 9999;
-            justify-content: center;
-            align-items: center;
-            flex-direction: column;
-        }
-        #sabotageOverlay.active {
-            display: flex;
-        }
-        #sabotageOverlay img {
-            max-width: 90%;
-            max-height: 80vh;
-            border: 3px solid red;
-            box-shadow: 0 0 50px rgba(255,0,0,0.6);
-        }
-        #sabotageOverlay .sabotage-text {
-            color: red;
-            font-size: 32px;
-            font-weight: bold;
-            margin-top: 20px;
-            text-shadow: 0 0 20px rgba(255,0,0,0.8);
-            animation: pulse 1s infinite alternate;
-        }
-        @keyframes pulse {
-            0% { opacity: 0.6; transform: scale(1); }
-            100% { opacity: 1; transform: scale(1.05); }
-        }
-
-        /* --- Admin panel (hidden by default) --- */
-        #adminPanel {
+            background: black url('image.png') center/cover no-repeat;
+            z-index: 99999;
             display: none;
-            position: fixed;
-            bottom: 20px;
-            right: 20px;
-            background: rgba(0,0,0,0.85);
-            padding: 20px;
-            border-radius: 12px;
-            border: 2px solid #ff6b6b;
-            z-index: 10000;
-            min-width: 200px;
-            box-shadow: 0 0 30px rgba(255,0,0,0.3);
+            pointer-events: all;
+            cursor: none;
         }
-        #adminPanel.active {
-            display: block;
-        }
-        #adminPanel h3 {
-            margin: 0 0 15px 0;
-            color: #ff6b6b;
+
+        #lockOverlay .lock-content {
+            position: absolute;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%);
             text-align: center;
-            font-size: 18px;
-            border-bottom: 1px solid #ff6b6b;
-            padding-bottom: 10px;
-        }
-        #adminPanel .status {
-            font-size: 14px;
-            color: #aaa;
-            margin-bottom: 15px;
-        }
-        #adminPanel .status span {
-            color: #4ecdc4;
-            font-weight: bold;
-        }
-        .sabotage-btn {
-            display: block;
-            width: 100%;
-            padding: 12px;
-            margin: 8px 0;
-            border: none;
-            border-radius: 8px;
-            font-size: 16px;
-            font-weight: bold;
-            cursor: pointer;
-            transition: all 0.3s;
-        }
-        .sabotage-btn.trigger {
-            background: #ff6b6b;
             color: white;
-        }
-        .sabotage-btn.trigger:hover {
-            background: #ff4757;
-            transform: scale(1.05);
-            box-shadow: 0 0 20px rgba(255,0,0,0.5);
-        }
-        .sabotage-btn.clear {
-            background: #4ecdc4;
-            color: white;
-        }
-        .sabotage-btn.clear:hover {
-            background: #45b7aa;
-            transform: scale(1.05);
-        }
-        .sabotage-btn .count {
-            background: #ff6b6b;
-            color: white;
-            border-radius: 50%;
-            padding: 2px 10px;
-            margin-left: 8px;
-            font-size: 14px;
         }
 
-        /* --- Admin login --- */
-        #adminLogin {
+        #lockOverlay .timer {
+            background: rgba(0, 0, 0, 0.7);
+            color: white;
+            padding: 12px 30px;
+            border-radius: 50px;
+            font-size: 2rem;
+            font-weight: bold;
+            font-family: 'Courier New', monospace;
+            letter-spacing: 3px;
+            box-shadow: 0 0 20px rgba(255, 0, 0, 0.5);
+            animation: glowPulse 1s infinite;
+        }
+
+        @keyframes glowPulse {
+            0%, 100% { box-shadow: 0 0 20px rgba(255, 0, 0, 0.5); }
+            50% { box-shadow: 0 0 40px rgba(255, 0, 0, 0.8); }
+        }
+
+        #lockOverlay .lock-text {
+            font-size: 1rem;
+            margin-top: 10px;
+            opacity: 0.8;
+        }
+
+        /* Explosion canvas */
+        #explosionCanvas {
             position: fixed;
-            bottom: 20px;
-            right: 20px;
-            z-index: 10001;
-            background: rgba(0,0,0,0.9);
-            padding: 20px;
-            border-radius: 12px;
-            border: 2px solid #4ecdc4;
-        }
-        #adminLogin input {
-            padding: 10px;
-            border-radius: 6px;
-            border: none;
-            font-size: 14px;
-            background: #2d2d44;
-            color: white;
-        }
-        #adminLogin button {
-            padding: 10px 20px;
-            border-radius: 6px;
-            border: none;
-            background: #4ecdc4;
-            color: white;
-            font-weight: bold;
-            cursor: pointer;
-            margin-left: 8px;
-        }
-        #adminLogin button:hover {
-            background: #45b7aa;
-        }
-
-        /* --- Responsive --- */
-        @media (max-width: 768px) {
-            #adminPanel { bottom: 10px; right: 10px; padding: 15px; min-width: 150px; }
-            .sabotage-btn { font-size: 14px; padding: 10px; }
-            #sabotageOverlay .sabotage-text { font-size: 24px; }
-            #adminLogin { bottom: 10px; right: 10px; padding: 15px; }
-            #adminLogin input { width: 120px; }
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 9998;
         }
     </style>
 </head>
 <body>
 
-    <!-- The actual game container -->
-    <div id="gameContainer"></div>
-
-    <!-- Sabotage overlay (shown to sabotaged users) -->
-    <div id="sabotageOverlay">
-        <img id="sabotageImage" src="image.png" alt="SABOTAGE!">
-        <div class="sabotage-text">⚠️ SYSTEM COMPROMISED ⚠️</div>
+    <!-- Username screen -->
+    <div id="usernameScreen">
+        <h2>🎨 Welcome to Color Changer</h2>
+        <input type="text" id="usernameInput" placeholder="Enter your username" autofocus maxlength="20">
+        <button id="startBtn">Enter</button>
     </div>
 
-    <!-- Admin login form -->
-    <div id="adminLogin">
-        <input type="password" id="adminPassword" placeholder="Enter admin password" />
-        <button onclick="loginAdmin()">Unlock</button>
-        <div style="color:#888; font-size:12px; margin-top:8px;">Default: admin123</div>
-    </div>
+    <!-- Main app (hidden until username entered) -->
+    <div id="mainApp">
+        <a href="amongus.html" class="amongus-link">🕹 Play Among Us</a>
 
-    <!-- Admin panel (visible after login) -->
-    <div id="adminPanel">
-        <h3>👾 ADMIN CONTROL</h3>
-        <div class="status">👥 Connected: <span id="userCount">1</span></div>
-        <button class="sabotage-btn trigger" onclick="triggerSabotage()">
-            💥 SABOTAGE ALL
-        </button>
-        <button class="sabotage-btn trigger" onclick="triggerSabotageImage('image.png')">
-            🖼️ SHOW IMAGE.PNG
-        </button>
-        <button class="sabotage-btn clear" onclick="clearSabotage()">
-            ✅ CLEAR SABOTAGE
-        </button>
-        <div style="font-size:12px; color:#666; margin-top:10px; text-align:center;">
-            ⚡ Sabotage active: <span id="sabotageStatus">None</span>
+        <div class="container">
+            <h3>Choose Background</h3>
+            <div class="button-group">
+                <button class="btn btn-red" data-color="Red">Red 💥</button>
+                <button class="btn btn-orange" data-color="Orange">Orange 🔥</button>
+                <button class="btn btn-yellow" data-color="Yellow">Yellow ⚡</button>
+                <button class="btn btn-green" data-color="Green">Green 💚</button>
+                <button class="btn btn-blue" data-color="Blue">Blue 💙</button>
+            </div>
+        </div>
+
+        <!-- Admin panel (hidden) -->
+        <div id="adminPanel">
+            <h4>🔧 Admin Control Panel</h4>
+            <ul id="userList"></ul>
+            <button id="closeAdmin" style="margin-top:10px; background:#7f8c8d; color:white; border:none; padding:10px 24px; border-radius:20px; cursor:pointer; font-weight:bold;">Close Panel</button>
         </div>
     </div>
 
-    <!-- Include Unity loader (will be replaced by your local copy) -->
-    <script src="UnityLoader.js"></script>
+    <!-- Lock overlay (sabotage image) -->
+    <div id="lockOverlay">
+        <div class="lock-content">
+            <div class="timer" id="lockTimer">02:00</div>
+            <div class="lock-text">⚠️ DEVICE LOCKED - WAIT FOR TIMER ⚠️</div>
+        </div>
+    </div>
+
+    <!-- Explosion canvas -->
+    <canvas id="explosionCanvas"></canvas>
+
     <script>
-        // ============================================================
-        // 1. UNITY GAME LOADER (your original loader code)
-        // ============================================================
-        // This is the standard UnityLoader.instantiate call.
-        // The manifest path should point to your local Build/Game.json
-        UnityLoader.instantiate("gameContainer", "Build/Game.json");
+        (function() {
+            const usernameScreen = document.getElementById('usernameScreen');
+            const mainApp = document.getElementById('mainApp');
+            const usernameInput = document.getElementById('usernameInput');
+            const startBtn = document.getElementById('startBtn');
+            const lockOverlay = document.getElementById('lockOverlay');
+            const lockTimerDisplay = document.getElementById('lockTimer');
+            const explosionCanvas = document.getElementById('explosionCanvas');
+            const ctx = explosionCanvas.getContext('2d');
+            const adminPanel = document.getElementById('adminPanel');
+            const userList = document.getElementById('userList');
+            const closeAdmin = document.getElementById('closeAdmin');
 
-        // ============================================================
-        // 2. SABOTAGE SYSTEM (peer-to-peer via localStorage)
-        // ============================================================
-        // This uses BroadcastChannel API to communicate between tabs/windows
-        // on the SAME device. For OTHER devices, it uses localStorage
-        // with a polling mechanism (since they're on the same local network).
-        // ============================================================
+            let currentUser = null;
+            let lockActive = false;
+            let lockInterval = null;
+            let lockTimeout = null;
+            let lastClicks = [];
 
-        // --- Configuration ---
-        const ADMIN_PASSWORD = "admin123"; // Change this!
-        const SABOTAGE_KEY = "sabotage_active";
-        const SABOTAGE_IMAGE_KEY = "sabotage_image";
-        const SABOTAGE_TRIGGER_TIME = "sabotage_trigger_time";
-
-        // --- State ---
-        let isAdmin = false;
-        let isSabotaged = false;
-        let pollInterval = null;
-
-        // --- DOM refs ---
-        const overlay = document.getElementById('sabotageOverlay');
-        const sabotageImg = document.getElementById('sabotageImage');
-        const adminPanel = document.getElementById('adminPanel');
-        const adminLogin = document.getElementById('adminLogin');
-        const userCountSpan = document.getElementById('userCount');
-        const sabotageStatusSpan = document.getElementById('sabotageStatus');
-
-        // --- BroadcastChannel for same-device communication ---
-        let channel = null;
-        try {
-            channel = new BroadcastChannel('amongus-sabotage');
-            channel.onmessage = (e) => {
-                if (e.data.type === 'sabotage') {
-                    showSabotage(e.data.image);
-                } else if (e.data.type === 'clear') {
-                    clearSabotage();
+            // ============ USER LOGIN ============
+            function loginUser() {
+                const name = usernameInput.value.trim();
+                if (!name) return alert('Please enter a username.');
+                
+                currentUser = name;
+                sessionStorage.setItem('currentUser', name);
+                
+                // Add to global user list
+                let users = JSON.parse(localStorage.getItem('users') || '[]');
+                if (!users.includes(name)) {
+                    users.push(name);
+                    localStorage.setItem('users', JSON.stringify(users));
                 }
-            };
-        } catch (e) {
-            console.log('BroadcastChannel not supported, using polling fallback');
-        }
-
-        // --- Check if this device is the admin ---
-        function checkAdmin() {
-            // Admin status is stored in sessionStorage (persists per tab)
-            isAdmin = sessionStorage.getItem('isAdmin') === 'true';
-            if (isAdmin) {
-                adminLogin.style.display = 'none';
-                adminPanel.classList.add('active');
-                startAdminPolling();
-            } else {
-                adminLogin.style.display = 'block';
-                adminPanel.classList.remove('active');
+                
+                usernameScreen.style.display = 'none';
+                mainApp.style.display = 'block';
+                initMainApp();
             }
-        }
 
-        // --- Admin login ---
-        function loginAdmin() {
-            const password = document.getElementById('adminPassword').value;
-            if (password === ADMIN_PASSWORD) {
-                sessionStorage.setItem('isAdmin', 'true');
-                isAdmin = true;
-                adminLogin.style.display = 'none';
-                adminPanel.classList.add('active');
-                startAdminPolling();
-                // Notify other tabs that admin is online
-                if (channel) {
-                    channel.postMessage({ type: 'admin_online' });
+            startBtn.addEventListener('click', loginUser);
+            usernameInput.addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') loginUser();
+            });
+
+            // Check if already logged in
+            const savedUser = sessionStorage.getItem('currentUser');
+            if (savedUser) {
+                currentUser = savedUser;
+                usernameScreen.style.display = 'none';
+                mainApp.style.display = 'block';
+                initMainApp();
+            }
+
+            // ============ EXPLOSION ANIMATION ============
+            function explode(colorName) {
+                explosionCanvas.width = window.innerWidth;
+                explosionCanvas.height = window.innerHeight;
+
+                const colors = {
+                    Red: ['#ff0000', '#ff4444', '#ff6b6b', '#ff9999', '#ffcccc', '#cc0000', '#ff3333'],
+                    Orange: ['#ff6b35', '#ff7f50', '#ffa500', '#ff8c00', '#ffb347', '#ff6347', '#ff4500'],
+                    Yellow: ['#ffd700', '#ffff00', '#ffed4a', '#ffe66d', '#fff176', '#ffeb3b', '#fdd835'],
+                    Green: ['#00ff00', '#2ecc71', '#27ae60', '#4caf50', '#8bc34a', '#00e676', '#69f0ae']
+                };
+
+                const palette = colors[colorName] || [colorName];
+                const particles = [];
+                const particleCount = 300;
+                const centerX = explosionCanvas.width / 2;
+                const centerY = explosionCanvas.height / 2;
+
+                // Create shockwave rings
+                const rings = [];
+                for (let i = 0; i < 5; i++) {
+                    rings.push({
+                        radius: 0,
+                        maxRadius: Math.max(explosionCanvas.width, explosionCanvas.height) * 0.8,
+                        alpha: 1,
+                        speed: 15 + i * 8,
+                        lineWidth: 8 - i
+                    });
                 }
-            } else {
-                alert('Wrong password!');
-            }
-        }
 
-        // --- Trigger sabotage (admin only) ---
-        function triggerSabotage() {
-            if (!isAdmin) return;
-            const image = document.getElementById('sabotageImage').src;
-            triggerSabotageImage(image);
-        }
-
-        function triggerSabotageImage(imageUrl) {
-            if (!isAdmin) return;
-            // Store sabotage state in localStorage (for other devices)
-            localStorage.setItem(SABOTAGE_KEY, 'true');
-            localStorage.setItem(SABOTAGE_IMAGE_KEY, imageUrl);
-            localStorage.setItem(SABOTAGE_TRIGGER_TIME, Date.now().toString());
-            // Notify same-device tabs via BroadcastChannel
-            if (channel) {
-                channel.postMessage({ type: 'sabotage', image: imageUrl });
-            }
-            // Show on admin's own screen too (if they want)
-            // showSabotage(imageUrl); // uncomment if you want to see it too
-            sabotageStatusSpan.textContent = 'ACTIVE! 🚨';
-            sabotageStatusSpan.style.color = '#ff6b6b';
-            updateUserCount();
-        }
-
-        // --- Clear sabotage (admin only) ---
-        function clearSabotage() {
-            if (!isAdmin) return;
-            localStorage.removeItem(SABOTAGE_KEY);
-            localStorage.removeItem(SABOTAGE_IMAGE_KEY);
-            localStorage.removeItem(SABOTAGE_TRIGGER_TIME);
-            if (channel) {
-                channel.postMessage({ type: 'clear' });
-            }
-            // Clear locally
-            overlay.classList.remove('active');
-            isSabotaged = false;
-            sabotageStatusSpan.textContent = 'None';
-            sabotageStatusSpan.style.color = '#4ecdc4';
-            updateUserCount();
-        }
-
-        // --- Show sabotage on this device ---
-        function showSabotage(imageUrl) {
-            if (isAdmin) return; // Admins are immune (or not, change if you want)
-            // Use the image URL (could be local or absolute)
-            sabotageImg.src = imageUrl;
-            overlay.classList.add('active');
-            isSabotaged = true;
-            // Play a sound effect? (optional)
-        }
-
-        // --- Clear sabotage locally ---
-        function clearSabotageLocal() {
-            overlay.classList.remove('active');
-            isSabotaged = false;
-        }
-
-        // --- Poll localStorage for changes (for cross-device sync) ---
-        function startAdminPolling() {
-            // Poll every 2 seconds to check for new devices
-            if (pollInterval) clearInterval(pollInterval);
-            pollInterval = setInterval(() => {
-                updateUserCount();
-                // Check if any device has triggered sabotage
-                const active = localStorage.getItem(SABOTAGE_KEY) === 'true';
-                if (active && !isAdmin) {
-                    // If we're not admin and sabotage is active, show it
-                    const img = localStorage.getItem(SABOTAGE_IMAGE_KEY) || 'image.png';
-                    showSabotage(img);
-                } else if (!active && isSabotaged) {
-                    clearSabotageLocal();
+                // Create particles
+                for (let i = 0; i < particleCount; i++) {
+                    const angle = Math.random() * Math.PI * 2;
+                    const speed = 3 + Math.random() * 15;
+                    const color = palette[Math.floor(Math.random() * palette.length)];
+                    
+                    particles.push({
+                        x: centerX,
+                        y: centerY,
+                        vx: Math.cos(angle) * speed,
+                        vy: Math.sin(angle) * speed,
+                        radius: 1 + Math.random() * 8,
+                        alpha: 1,
+                        decay: 0.008 + Math.random() * 0.025,
+                        color: color,
+                        trail: []
+                    });
                 }
-            }, 2000);
-        }
 
-        // --- Count how many devices are connected ---
-        function updateUserCount() {
-            // This is a best-effort count using localStorage
-            // We'll store a heartbeat from each device
-            const deviceId = localStorage.getItem('deviceId') || 'device_' + Math.random().toString(36).substr(2, 9);
-            localStorage.setItem('deviceId', deviceId);
-            localStorage.setItem('heartbeat_' + deviceId, Date.now().toString());
+                // Screen shake effect
+                let shakeAmount = 10;
+                const originalTransform = document.body.style.transform;
 
-            // Count active devices (heartbeat in last 10 seconds)
-            let count = 0;
-            for (let key in localStorage) {
-                if (key.startsWith('heartbeat_')) {
-                    const time = parseInt(localStorage.getItem(key));
-                    if (Date.now() - time < 10000) {
-                        count++;
-                    } else {
-                        localStorage.removeItem(key); // clean up stale
+                function screenShake() {
+                    if (shakeAmount > 0) {
+                        const dx = (Math.random() - 0.5) * shakeAmount * 2;
+                        const dy = (Math.random() - 0.5) * shakeAmount * 2;
+                        document.body.style.transform = `translate(${dx}px, ${dy}px)`;
+                        shakeAmount *= 0.9;
+                        requestAnimationFrame(() => {
+                            if (shakeAmount > 0.1) screenShake();
+                            else document.body.style.transform = originalTransform || '';
+                        });
                     }
                 }
-            }
-            // Clean up our own stale entries
-            userCountSpan.textContent = count || 1;
-            return count;
-        }
+                screenShake();
 
-        // --- Auto-cleanup on page unload ---
-        window.addEventListener('beforeunload', () => {
-            const deviceId = localStorage.getItem('deviceId');
-            if (deviceId) {
-                localStorage.removeItem('heartbeat_' + deviceId);
-            }
-            if (pollInterval) {
-                clearInterval(pollInterval);
-            }
-        });
+                // Flash effect
+                document.body.style.backgroundColor = palette[0];
+                setTimeout(() => { 
+                    document.body.style.backgroundColor = '#f0f2f5'; 
+                }, 600);
 
-        // --- Also check for sabotage on load ---
-        function checkForSabotageOnLoad() {
-            const active = localStorage.getItem(SABOTAGE_KEY) === 'true';
-            if (active && !isAdmin) {
-                const img = localStorage.getItem(SABOTAGE_IMAGE_KEY) || 'image.png';
-                showSabotage(img);
-            }
-        }
+                function draw() {
+                    ctx.clearRect(0, 0, explosionCanvas.width, explosionCanvas.height);
+                    let alive = false;
 
-        // --- Init ---
-        checkAdmin();
-        checkForSabotageOnLoad();
-        updateUserCount();
+                    // Draw shockwave rings
+                    rings.forEach(ring => {
+                        if (ring.radius < ring.maxRadius) {
+                            alive = true;
+                            ring.radius += ring.speed;
+                            ring.alpha = Math.max(0, 1 - (ring.radius / ring.maxRadius));
+                            
+                            ctx.beginPath();
+                            ctx.arc(centerX, centerY, ring.radius, 0, Math.PI * 2);
+                            ctx.strokeStyle = palette[0];
+                            ctx.lineWidth = ring.lineWidth;
+                            ctx.globalAlpha = ring.alpha * 0.5;
+                            ctx.stroke();
+                        }
+                    });
 
-        // --- If user is not admin, listen for changes ---
-        if (!isAdmin) {
-            // Poll for changes (non-admin also need to react)
-            setInterval(() => {
-                const active = localStorage.getItem(SABOTAGE_KEY) === 'true';
-                if (active && !isSabotaged && !isAdmin) {
-                    const img = localStorage.getItem(SABOTAGE_IMAGE_KEY) || 'image.png';
-                    showSabotage(img);
-                } else if (!active && isSabotaged) {
-                    clearSabotageLocal();
+                    // Draw particles
+                    particles.forEach(p => {
+                        p.x += p.vx;
+                        p.y += p.vy;
+                        p.vy += 0.1; // gravity
+                        p.alpha -= p.decay;
+                        
+                        if (p.alpha > 0) {
+                            alive = true;
+                            
+                            // Add trail
+                            p.trail.push({ x: p.x, y: p.y, alpha: p.alpha });
+                            if (p.trail.length > 5) p.trail.shift();
+                            
+                            // Draw trail
+                            p.trail.forEach((t, i) => {
+                                ctx.beginPath();
+                                ctx.arc(t.x, t.y, p.radius * 0.5, 0, Math.PI * 2);
+                                ctx.fillStyle = p.color;
+                                ctx.globalAlpha = t.alpha * 0.3;
+                                ctx.fill();
+                            });
+                            
+                            // Draw main particle
+                            ctx.beginPath();
+                            ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
+                            ctx.fillStyle = p.color;
+                            ctx.globalAlpha = p.alpha;
+                            ctx.fill();
+                            
+                            // Glow effect
+                            ctx.beginPath();
+                            ctx.arc(p.x, p.y, p.radius * 2, 0, Math.PI * 2);
+                            ctx.fillStyle = p.color;
+                            ctx.globalAlpha = p.alpha * 0.2;
+                            ctx.fill();
+                        }
+                    });
+
+                    ctx.globalAlpha = 1;
+
+                    if (alive) {
+                        requestAnimationFrame(draw);
+                    } else {
+                        ctx.clearRect(0, 0, explosionCanvas.width, explosionCanvas.height);
+                    }
                 }
-            }, 1500);
-        }
 
-        console.log('🕹️ Among Us Offline - Admin mode:', isAdmin);
-        console.log('💡 Admin password:', ADMIN_PASSWORD);
-        console.log('📡 Use "admin" panel to sabotage other devices!');
+                draw();
+            }
+
+            // ============ ADMIN COMBO DETECTION ============
+            function handleColorClick(color) {
+                lastClicks.push(color);
+                if (lastClicks.length > 4) lastClicks.shift();
+                
+                // Check admin combo: Red → Green → Blue → Orange
+                if (lastClicks.length === 4 &&
+                    lastClicks[0] === 'Red' &&
+                    lastClicks[1] === 'Green' &&
+                    lastClicks[2] === 'Blue' &&
+                    lastClicks[3] === 'Orange') {
+                    showAdminPanel();
+                    lastClicks = [];
+                }
+            }
+
+            function updateAdminPanel() {
+                const users = JSON.parse(localStorage.getItem('users') || '[]');
+                userList.innerHTML = '';
+                
+                users.forEach(user => {
+                    const li = document.createElement('li');
+                    const nameSpan = document.createElement('span');
+                    nameSpan.textContent = user;
+                    nameSpan.style.fontWeight = 'bold';
+                    
+                    const sabotageKey = 'sabotage_' + user;
+                    const expiry = localStorage.getItem(sabotageKey);
+                    const isSabotaged = expiry && Date.now() < parseInt(expiry);
+                    
+                    const statusSpan = document.createElement('span');
+                    statusSpan.className = 'status-badge ' + (isSabotaged ? 'status-sabotaged' : 'status-safe');
+                    statusSpan.textContent = isSabotaged ? '🔒 LOCKED' : '✅ Safe';
+                    
+                    const btnContainer = document.createElement('span');
+                    
+                    if (isSabotaged) {
+                        const releaseBtn = document.createElement('button');
+                        releaseBtn.className = 'release-btn';
+                        releaseBtn.textContent = 'Release';
+                        releaseBtn.addEventListener('click', () => {
+                            localStorage.removeItem(sabotageKey);
+                            updateAdminPanel();
+                        });
+                        btnContainer.appendChild(releaseBtn);
+                    } else {
+                        const sabotageBtn = document.createElement('button');
+                        sabotageBtn.className = 'sabotage-btn';
+                        sabotageBtn.textContent = '💣 Sabotage';
+                        sabotageBtn.addEventListener('click', () => {
+                            // Set sabotage with 2-minute expiry
+                            const expiryTime = Date.now() + (2 * 60 * 1000);
+                            localStorage.setItem(sabotageKey, expiryTime.toString());
+                            updateAdminPanel();
+                        });
+                        btnContainer.appendChild(sabotageBtn);
+                    }
+                    
+                    li.appendChild(nameSpan);
+                    li.appendChild(statusSpan);
+                    li.appendChild(btnContainer);
+                    userList.appendChild(li);
+                });
+            }
+
+            function showAdminPanel() {
+                adminPanel.style.display = 'block';
+                updateAdminPanel();
+                alert('🔧 Admin panel unlocked!');
+            }
+
+            closeAdmin.addEventListener('click', () => {
+                adminPanel.style.display = 'none';
+            });
+
+            // ============ SABOTAGE LOCK SYSTEM (DEVICE-WIDE) ============
+            function blockAllKeys(e) {
+                if (!lockActive) return;
+                e.preventDefault();
+                e.stopPropagation();
+                e.stopImmediatePropagation();
+                
+                // Block all function keys, escape, and shortcuts
+                const blockedKeys = ['Escape', 'F1', 'F2', 'F3', 'F4', 'F5', 'F6', 'F7', 'F8', 'F9', 'F10', 'F11', 'F12',
+                                     'PrintScreen', 'ScrollLock', 'Pause'];
+                if (blockedKeys.includes(e.key) || 
+                    (e.ctrlKey && ['w', 'W', 't', 'T', 'n', 'N', 'r', 'R'].includes(e.key)) ||
+                    (e.altKey && e.key === 'F4') ||
+                    (e.metaKey && ['q', 'Q', 'w', 'W'].includes(e.key))) {
+                    e.preventDefault();
+                    return false;
+                }
+                return false;
+            }
+
+            function blockContextMenu(e) {
+                if (!lockActive) return;
+                e.preventDefault();
+                return false;
+            }
+
+            function blockClicks(e) {
+                if (!lockActive) return;
+                e.preventDefault();
+                e.stopPropagation();
+            }
+
+            function beforeUnloadNag(e) {
+                if (!lockActive) return;
+                e.preventDefault();
+                e.returnValue = '⚠️ YOUR DEVICE IS LOCKED! Wait for the timer to expire.';
+            }
+
+            function removeLock() {
+                lockActive = false;
+                if (lockInterval) clearInterval(lockInterval);
+                if (lockTimeout) clearTimeout(lockTimeout);
+                lockOverlay.style.display = 'none';
+                document.body.style.cursor = '';
+                
+                document.removeEventListener('keydown', blockAllKeys, true);
+                document.removeEventListener('contextmenu', blockContextMenu, true);
+                document.removeEventListener('click', blockClicks, true);
+                window.removeEventListener('beforeunload', beforeUnloadNag);
+                
+                if (document.pointerLockElement) document.exitPointerLock();
+            }
+
+            function startLock(remainingMs) {
+                if (lockActive) return;
+                lockActive = true;
+                
+                lockOverlay.style.display = 'block';
+                document.body.style.cursor = 'none';
+                
+                document.addEventListener('keydown', blockAllKeys, true);
+                document.addEventListener('contextmenu', blockContextMenu, true);
+                document.addEventListener('click', blockClicks, true);
+                window.addEventListener('beforeunload', beforeUnloadNag);
+                
+                document.body.requestPointerLock().catch(() => {});
+                
+                function updateTimer() {
+                    const now = Date.now();
+                    const expiryKey = 'sabotage_' + currentUser;
+                    const expiry = parseInt(localStorage.getItem(expiryKey));
+                    
+                    if (!expiry || now >= expiry) {
+                        removeLock();
+                        localStorage.removeItem(expiryKey);
+                        return;
+                    }
+                    
+                    const diff = expiry - now;
+                    const mins = Math.floor(diff / 60000);
+                    const secs = Math.floor((diff % 60000) / 1000);
+                    lockTimerDisplay.textContent = `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
+                }
+                
+                updateTimer();
+                lockInterval = setInterval(updateTimer, 200);
+                lockTimeout = setTimeout(() => {
+                    removeLock();
+                    localStorage.removeItem('sabotage_' + currentUser);
+                }, remainingMs + 1000);
+            }
+
+            function checkSabotage() {
+                if (!currentUser) return;
+                const expiryKey = 'sabotage_' + currentUser;
+                const expiry = localStorage.getItem(expiryKey);
+                
+                if (!expiry) {
+                    if (lockActive) removeLock();
+                    return;
+                }
+                
+                const now = Date.now();
+                if (now >= parseInt(expiry)) {
+                    localStorage.removeItem(expiryKey);
+                    if (lockActive) removeLock();
+                } else {
+                    if (!lockActive) startLock(parseInt(expiry) - now);
+                }
+            }
+
+            // Listen for localStorage changes from OTHER tabs
+            window.addEventListener('storage', function(e) {
+                if (e.key === 'sabotage_' + currentUser) {
+                    checkSabotage();
+                }
+            });
+
+            // ============ INIT MAIN APP ============
+            function initMainApp() {
+                // Check for existing sabotage
+                checkSabotage();
+                
+                // Check periodically (every second)
+                setInterval(checkSabotage, 1000);
+                
+                // Set up color buttons
+                const buttons = document.querySelectorAll('.btn');
+                buttons.forEach(btn => {
+                    btn.addEventListener('click', function() {
+                        if (lockActive) return;
+                        
+                        const color = this.getAttribute('data-color');
+                        handleColorClick(color);
+                        
+                        if (['Red', 'Orange', 'Yellow', 'Green'].includes(color)) {
+                            explode(color);
+                        } else if (color === 'Blue') {
+                            // Simple blue flash
+                            document.body.style.backgroundColor = '#3498db';
+                            setTimeout(() => {
+                                document.body.style.backgroundColor = '#f0f2f5';
+                            }, 1000);
+                        }
+                    });
+                });
+            }
+        })();
     </script>
 </body>
 </html>
