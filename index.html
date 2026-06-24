@@ -3,62 +3,68 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>NEXUS CHESS // Tournament Grid</title>
+<title>NEXUS CHESS // Real-Time Tournament Grid</title>
+
+<!-- External CDN dependencies -->
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database-compat.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/chess.js/0.13.4/chess.min.js"></script>
+
 <style>
 /* ============================================================
-   NEXUS CHESS — Premium dark cyber-futuristic theme
+   CORE THEME — Premium dark cyber-futuristic aesthetic
    ============================================================ */
-
 :root {
-  --bg-1: #0f0c29;
-  --bg-2: #302b63;
-  --bg-3: #24243e;
+  --bg-0: #0f0c29;
+  --bg-1: #302b63;
+  --bg-2: #24243e;
   --neon-cyan: #00f0ff;
-  --neon-pink: #ff006e;
-  --neon-purple: #b537f2;
-  --neon-yellow: #ffd60a;
-  --neon-green: #00ff88;
-  --neon-red: #ff3b3b;
-  --neon-orange: #ff8c00;
-  --neon-blue: #3b82f6;
-  --text: #e6e6ff;
-  --text-dim: #8a8aaa;
-  --glass-bg: rgba(20, 18, 45, 0.55);
-  --glass-bg-strong: rgba(20, 18, 45, 0.78);
-  --glass-border: rgba(255, 255, 255, 0.10);
-  --radius: 14px;
-  --shadow-deep: 0 18px 60px rgba(0, 0, 0, 0.55);
+  --neon-magenta: #ff2bd6;
+  --neon-violet: #8b5cf6;
+  --neon-red: #ff3b5c;
+  --neon-orange: #ff8b3d;
+  --neon-yellow: #ffd23f;
+  --neon-green: #3dffa3;
+  --neon-blue: #3d9bff;
+  --text-hi: #f4f6ff;
+  --text-lo: #b8bcd9;
+  --glass-bg: rgba(20, 18, 48, 0.55);
+  --glass-border: rgba(0, 240, 255, 0.25);
+  --shadow-glow: 0 0 24px rgba(0, 240, 255, 0.18), 0 0 48px rgba(139, 92, 246, 0.12);
 }
 
-* { margin: 0; padding: 0; box-sizing: border-box; }
+* { box-sizing: border-box; margin: 0; padding: 0; }
 
 html, body {
-  height: 100%;
   width: 100%;
-  overflow-x: hidden;
-}
-
-body {
-  background: linear-gradient(135deg, var(--bg-1) 0%, var(--bg-2) 50%, var(--bg-3) 100%);
-  background-size: 200% 200%;
-  animation: gradientShift 24s ease infinite;
-  color: var(--text);
-  font-family: 'Segoe UI', 'Inter', 'Helvetica Neue', system-ui, sans-serif;
   min-height: 100vh;
-  letter-spacing: 0.3px;
+  font-family: 'Inter', 'Segoe UI', system-ui, -apple-system, sans-serif;
+  color: var(--text-hi);
+  background: linear-gradient(135deg, var(--bg-0) 0%, var(--bg-1) 50%, var(--bg-2) 100%);
+  background-attachment: fixed;
+  overflow-x: hidden;
   -webkit-font-smoothing: antialiased;
 }
 
-@keyframes gradientShift {
-  0%, 100% { background-position: 0% 50%; }
-  50%      { background-position: 100% 50%; }
+/* Animated grid overlay for depth */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background-image:
+    linear-gradient(rgba(0, 240, 255, 0.04) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(0, 240, 255, 0.04) 1px, transparent 1px);
+  background-size: 40px 40px;
+  pointer-events: none;
+  z-index: 0;
+  animation: grid-drift 60s linear infinite;
+}
+@keyframes grid-drift {
+  from { background-position: 0 0, 0 0; }
+  to   { background-position: 40px 40px, 40px 40px; }
 }
 
-.hidden { display: none !important; }
-
-/* ============================================================
-   Particle Canvas — fixed overlay, no pointer events
-   ============================================================ */
+/* Particle canvas — full viewport overlay */
 #particleCanvas {
   position: fixed;
   inset: 0;
@@ -69,2312 +75,2406 @@ body {
 }
 
 /* ============================================================
-   Login modal
+   LOGIN MODAL
    ============================================================ */
-.modal-overlay {
+#loginModal {
   position: fixed;
   inset: 0;
-  background: radial-gradient(circle at center, rgba(15, 12, 41, 0.75), rgba(0, 0, 0, 0.92));
+  z-index: 9500;
   display: flex;
   align-items: center;
   justify-content: center;
-  z-index: 5000;
-  backdrop-filter: blur(14px);
-  -webkit-backdrop-filter: blur(14px);
-  animation: fadeIn 0.4s ease;
+  background: radial-gradient(ellipse at center, rgba(15, 12, 41, 0.85), rgba(15, 12, 41, 0.98));
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+  transition: opacity 0.4s ease;
 }
+#loginModal.hidden { opacity: 0; pointer-events: none; }
 
-@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
-
-.modal {
-  background: var(--glass-bg-strong);
-  backdrop-filter: blur(22px);
-  -webkit-backdrop-filter: blur(22px);
-  border: 1px solid rgba(0, 240, 255, 0.4);
-  border-radius: 20px;
-  padding: 56px 48px;
-  text-align: center;
-  box-shadow: 0 0 60px rgba(0, 240, 255, 0.25), inset 0 0 30px rgba(181, 55, 242, 0.08);
-  width: min(440px, 92vw);
+.login-card {
   position: relative;
-  overflow: hidden;
+  width: 420px;
+  max-width: 92vw;
+  padding: 48px 40px;
+  background: var(--glass-bg);
+  border: 1px solid var(--glass-border);
+  border-radius: 18px;
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  box-shadow: var(--shadow-glow);
+  text-align: center;
 }
-
-.modal::before {
+.login-card::before {
   content: '';
   position: absolute;
-  inset: -2px;
-  background: linear-gradient(135deg, var(--neon-cyan), var(--neon-purple), var(--neon-pink));
-  z-index: -1;
-  border-radius: 22px;
-  opacity: 0.55;
-  filter: blur(14px);
+  inset: -1px;
+  border-radius: 18px;
+  padding: 1px;
+  background: linear-gradient(135deg, var(--neon-cyan), transparent, var(--neon-magenta));
+  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  pointer-events: none;
 }
-
-.modal h1 {
-  font-size: 42px;
+.login-card h1 {
+  font-size: 28px;
   font-weight: 800;
-  letter-spacing: 8px;
-  background: linear-gradient(90deg, var(--neon-cyan), var(--neon-purple), var(--neon-pink));
+  letter-spacing: 4px;
+  background: linear-gradient(90deg, var(--neon-cyan), var(--neon-magenta));
   -webkit-background-clip: text;
   background-clip: text;
   -webkit-text-fill-color: transparent;
-  margin-bottom: 6px;
-  text-shadow: 0 0 30px rgba(0, 240, 255, 0.35);
+  margin-bottom: 8px;
 }
-
-.modal .tag {
-  color: var(--text-dim);
+.login-card .subtitle {
+  color: var(--text-lo);
   font-size: 12px;
-  letter-spacing: 5px;
-  text-transform: uppercase;
-  margin-bottom: 36px;
-}
-
-.modal input {
-  width: 100%;
-  padding: 14px 18px;
-  background: rgba(0, 0, 0, 0.35);
-  border: 1px solid var(--glass-border);
-  border-radius: 10px;
-  color: var(--text);
-  font-size: 16px;
   letter-spacing: 2px;
-  margin-bottom: 18px;
+  text-transform: uppercase;
+  margin-bottom: 32px;
+}
+.login-card input {
+  width: 100%;
+  padding: 14px 16px;
+  background: rgba(0, 0, 0, 0.35);
+  border: 1px solid rgba(0, 240, 255, 0.2);
+  border-radius: 10px;
+  color: var(--text-hi);
+  font-size: 15px;
+  letter-spacing: 1px;
   outline: none;
-  transition: border-color 0.25s, box-shadow 0.25s;
+  transition: all 0.25s ease;
 }
-
-.modal input:focus {
+.login-card input:focus {
   border-color: var(--neon-cyan);
-  box-shadow: 0 0 0 3px rgba(0, 240, 255, 0.15), 0 0 20px rgba(0, 240, 255, 0.25);
+  box-shadow: 0 0 0 3px rgba(0, 240, 255, 0.15);
 }
-
-.btn-primary {
+.login-card button {
+  margin-top: 20px;
   width: 100%;
   padding: 14px;
-  background: linear-gradient(90deg, rgba(0, 240, 255, 0.18), rgba(181, 55, 242, 0.18));
-  border: 1px solid var(--neon-cyan);
+  background: linear-gradient(135deg, var(--neon-cyan), var(--neon-violet));
+  border: none;
   border-radius: 10px;
-  color: var(--neon-cyan);
+  color: #0a0820;
   font-size: 14px;
-  letter-spacing: 4px;
-  font-weight: 700;
-  cursor: pointer;
+  font-weight: 800;
+  letter-spacing: 2px;
   text-transform: uppercase;
-  transition: all 0.25s;
-  position: relative;
-  overflow: hidden;
+  cursor: pointer;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
 }
-
-.btn-primary:hover {
-  background: linear-gradient(90deg, rgba(0, 240, 255, 0.35), rgba(181, 55, 242, 0.35));
-  box-shadow: 0 0 24px rgba(0, 240, 255, 0.5);
-  transform: translateY(-1px);
+.login-card button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(0, 240, 255, 0.35);
 }
-
-.btn-primary:active { transform: translateY(0); }
+.login-error {
+  color: var(--neon-red);
+  font-size: 12px;
+  margin-top: 12px;
+  min-height: 16px;
+}
 
 /* ============================================================
-   App shell
+   MAIN DASHBOARD
    ============================================================ */
-#app { padding: 18px 22px 60px; }
+#dashboard {
+  position: relative;
+  z-index: 1;
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 24px;
+  opacity: 0;
+  transition: opacity 0.6s ease;
+}
+#dashboard.visible { opacity: 1; }
 
-header.app-header {
+.topbar {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 14px 22px;
-  margin-bottom: 22px;
+  padding: 18px 24px;
   background: var(--glass-bg);
+  border: 1px solid var(--glass-border);
+  border-radius: 14px;
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
-  border: 1px solid var(--glass-border);
-  border-radius: var(--radius);
-  box-shadow: var(--shadow-deep);
+  margin-bottom: 24px;
+  box-shadow: var(--shadow-glow);
 }
-
-.logo {
-  font-size: 22px;
-  font-weight: 800;
-  letter-spacing: 6px;
-  background: linear-gradient(90deg, var(--neon-cyan), var(--neon-purple));
-  -webkit-background-clip: text;
-  background-clip: text;
-  -webkit-text-fill-color: transparent;
-  text-shadow: 0 0 18px rgba(0, 240, 255, 0.3);
-}
-
-.user-info {
+.topbar .brand {
   display: flex;
   align-items: center;
   gap: 14px;
+}
+.topbar .brand .logo {
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
+  background: linear-gradient(135deg, var(--neon-cyan), var(--neon-magenta));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 900;
+  font-size: 18px;
+  color: #0a0820;
+  box-shadow: 0 0 16px rgba(0, 240, 255, 0.4);
+}
+.topbar .brand h1 {
+  font-size: 18px;
+  font-weight: 800;
+  letter-spacing: 3px;
+}
+.topbar .user-chip {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 16px;
+  background: rgba(0, 0, 0, 0.3);
+  border: 1px solid rgba(0, 240, 255, 0.2);
+  border-radius: 999px;
   font-size: 13px;
-  letter-spacing: 2px;
+}
+.topbar .user-chip .dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--neon-green);
+  box-shadow: 0 0 8px var(--neon-green);
+  animation: pulse-dot 1.5s ease-in-out infinite;
+}
+@keyframes pulse-dot {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.4; }
 }
 
-.user-info .label { color: var(--text-dim); }
-.user-info .name {
-  color: var(--neon-cyan);
-  font-weight: 700;
-  text-shadow: 0 0 8px rgba(0, 240, 255, 0.4);
+/* Particle control bar */
+.control-bar {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  padding: 18px;
+  background: var(--glass-bg);
+  border: 1px solid var(--glass-border);
+  border-radius: 14px;
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  margin-bottom: 24px;
 }
-
-.status-pill {
-  padding: 4px 12px;
-  border-radius: 20px;
-  background: rgba(0, 255, 136, 0.12);
-  border: 1px solid var(--neon-green);
-  color: var(--neon-green);
+.control-bar .label {
+  align-self: center;
   font-size: 11px;
   letter-spacing: 2px;
-  font-weight: 700;
+  color: var(--text-lo);
+  text-transform: uppercase;
+  margin-right: 8px;
 }
+.ctrl-btn {
+  position: relative;
+  padding: 12px 22px;
+  border: 1px solid currentColor;
+  border-radius: 10px;
+  background: rgba(0, 0, 0, 0.25);
+  color: var(--c);
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: all 0.25s ease;
+  overflow: hidden;
+}
+.ctrl-btn::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: currentColor;
+  opacity: 0;
+  transition: opacity 0.25s ease;
+}
+.ctrl-btn:hover::before { opacity: 0.12; }
+.ctrl-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px currentColor;
+}
+.ctrl-btn:active { transform: translateY(0); }
+.ctrl-btn.red    { --c: var(--neon-red); }
+.ctrl-btn.orange { --c: var(--neon-orange); }
+.ctrl-btn.yellow { --c: var(--neon-yellow); }
+.ctrl-btn.green  { --c: var(--neon-green); }
+.ctrl-btn.blue   { --c: var(--neon-blue); }
 
-.status-pill.queue   { background: rgba(255, 214, 10, 0.12); border-color: var(--neon-yellow); color: var(--neon-yellow); }
-.status-pill.match   { background: rgba(255, 0, 110, 0.15);  border-color: var(--neon-pink);   color: var(--neon-pink);   }
-.status-pill.locked  { background: rgba(255, 59, 59, 0.15);  border-color: var(--neon-red);    color: var(--neon-red);    }
-.status-pill.idle    { background: rgba(138, 138, 170, 0.12); border-color: var(--text-dim);   color: var(--text-dim);    }
-
-/* ============================================================
-   Dashboard layout
-   ============================================================ */
-#dashboard {
+/* Layout grid */
+.grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 22px;
-  max-width: 1400px;
-  margin: 0 auto;
+  gap: 24px;
+}
+@media (max-width: 900px) {
+  .grid { grid-template-columns: 1fr; }
 }
 
 .panel {
+  padding: 22px;
   background: var(--glass-bg);
+  border: 1px solid var(--glass-border);
+  border-radius: 14px;
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
-  border: 1px solid var(--glass-border);
-  border-radius: var(--radius);
-  padding: 22px;
-  box-shadow: var(--shadow-deep);
-  position: relative;
-  overflow: hidden;
+  box-shadow: var(--shadow-glow);
 }
-
-.panel::before {
-  content: '';
-  position: absolute;
-  top: 0; left: 0;
-  width: 100%;
-  height: 2px;
-  background: linear-gradient(90deg, transparent, var(--neon-cyan), transparent);
-  opacity: 0.5;
-}
-
 .panel h2 {
-  font-size: 13px;
-  letter-spacing: 4px;
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: 3px;
+  text-transform: uppercase;
   color: var(--neon-cyan);
-  margin-bottom: 18px;
-  text-transform: uppercase;
-  text-shadow: 0 0 10px rgba(0, 240, 255, 0.3);
-}
-
-/* ============================================================
-   Control panel — 5 nodes
-   ============================================================ */
-.control-panel { grid-column: 1 / -1; }
-
-.button-grid {
-  display: grid;
-  grid-template-columns: repeat(5, 1fr);
-  gap: 14px;
-}
-
-.ctrl-btn {
-  position: relative;
-  padding: 22px 12px;
-  border: 2px solid;
-  border-radius: 12px;
-  background: rgba(0, 0, 0, 0.3);
-  color: var(--text);
-  font-size: 13px;
-  font-weight: 800;
-  letter-spacing: 4px;
-  cursor: pointer;
-  text-transform: uppercase;
-  transition: transform 0.18s, box-shadow 0.25s, background 0.25s;
-  overflow: hidden;
-}
-
-.ctrl-btn::after {
-  content: '';
-  position: absolute;
-  inset: 0;
-  background: radial-gradient(circle at 50% 120%, currentColor, transparent 70%);
-  opacity: 0.18;
-  pointer-events: none;
-  transition: opacity 0.25s;
-}
-
-.ctrl-btn:hover { transform: translateY(-2px); }
-.ctrl-btn:hover::after { opacity: 0.35; }
-.ctrl-btn:active { transform: translateY(0); }
-
-.ctrl-btn[data-color="red"]    { color: var(--neon-red);    border-color: var(--neon-red);    box-shadow: 0 0 14px rgba(255, 59, 59, 0.25), inset 0 0 14px rgba(255, 59, 59, 0.08); }
-.ctrl-btn[data-color="orange"] { color: var(--neon-orange); border-color: var(--neon-orange); box-shadow: 0 0 14px rgba(255, 140, 0, 0.25), inset 0 0 14px rgba(255, 140, 0, 0.08); }
-.ctrl-btn[data-color="yellow"] { color: var(--neon-yellow); border-color: var(--neon-yellow); box-shadow: 0 0 14px rgba(255, 214, 10, 0.25), inset 0 0 14px rgba(255, 214, 10, 0.08); }
-.ctrl-btn[data-color="green"]  { color: var(--neon-green);  border-color: var(--neon-green);  box-shadow: 0 0 14px rgba(0, 255, 136, 0.25), inset 0 0 14px rgba(0, 255, 136, 0.08); }
-.ctrl-btn[data-color="blue"]   { color: var(--neon-blue);   border-color: var(--neon-blue);   box-shadow: 0 0 14px rgba(59, 130, 246, 0.25), inset 0 0 14px rgba(59, 130, 246, 0.08); }
-
-.ctrl-btn:hover { box-shadow: 0 0 32px currentColor, inset 0 0 22px rgba(255, 255, 255, 0.06); }
-
-/* ============================================================
-   Lobby panel
-   ============================================================ */
-.lobby-info {
-  display: flex;
-  gap: 18px;
   margin-bottom: 16px;
-  font-size: 13px;
-  color: var(--text-dim);
-  letter-spacing: 1.5px;
-  flex-wrap: wrap;
+  padding-bottom: 10px;
+  border-bottom: 1px solid rgba(0, 240, 255, 0.15);
 }
 
-.lobby-info span { color: var(--neon-cyan); font-weight: 700; }
-
-.lobby-info .countdown {
-  color: var(--neon-yellow);
-  font-weight: 800;
-  text-shadow: 0 0 10px rgba(255, 214, 10, 0.5);
-  animation: pulse 0.9s ease-in-out infinite;
-}
-
-@keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.55; } }
-
-#queueBtn {
-  width: 100%;
-  padding: 14px;
-  border: 1px solid var(--neon-green);
-  background: rgba(0, 255, 136, 0.1);
-  color: var(--neon-green);
-  border-radius: 10px;
-  font-size: 13px;
-  letter-spacing: 4px;
-  font-weight: 800;
-  cursor: pointer;
-  text-transform: uppercase;
-  transition: all 0.25s;
-  margin-bottom: 16px;
-}
-
-#queueBtn:hover { background: rgba(0, 255, 136, 0.22); box-shadow: 0 0 22px rgba(0, 255, 136, 0.45); }
-#queueBtn.in-queue { border-color: var(--neon-red); background: rgba(255, 59, 59, 0.12); color: var(--neon-red); }
-#queueBtn.in-queue:hover { background: rgba(255, 59, 59, 0.22); box-shadow: 0 0 22px rgba(255, 59, 59, 0.45); }
-
-.queue-list {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  max-height: 220px;
-  overflow-y: auto;
-}
-
-.queue-item {
+/* Lobby */
+.lobby-row {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 8px 12px;
-  background: rgba(0, 0, 0, 0.3);
-  border-left: 3px solid var(--neon-cyan);
-  border-radius: 6px;
-  font-size: 13px;
-  letter-spacing: 1.5px;
-}
-
-.queue-item.me { border-left-color: var(--neon-green); color: var(--neon-green); }
-
-/* ============================================================
-   Tournament bracket
-   ============================================================ */
-.bracket-panel { grid-column: 1 / -1; }
-
-.bracket-scroll { overflow-x: auto; padding-bottom: 8px; }
-
-.bracket-rounds {
-  display: flex;
-  gap: 28px;
-  min-width: max-content;
-}
-
-.bracket-round {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-  min-width: 220px;
-}
-
-.bracket-round-title {
-  font-size: 11px;
-  letter-spacing: 3px;
-  color: var(--neon-purple);
-  text-transform: uppercase;
-  margin-bottom: 4px;
-  text-shadow: 0 0 8px rgba(181, 55, 242, 0.4);
-}
-
-.bracket-match {
-  background: rgba(0, 0, 0, 0.35);
-  border: 1px solid var(--glass-border);
+  padding: 10px 12px;
+  background: rgba(0, 0, 0, 0.25);
+  border: 1px solid rgba(255, 255, 255, 0.05);
   border-radius: 8px;
-  padding: 8px 12px;
-  font-size: 12px;
+  margin-bottom: 8px;
+  font-size: 13px;
+  transition: all 0.2s ease;
 }
+.lobby-row.me {
+  border-color: var(--neon-cyan);
+  box-shadow: 0 0 12px rgba(0, 240, 255, 0.2);
+}
+.lobby-row .uname { font-weight: 600; }
+.lobby-row .ustatus {
+  font-size: 11px;
+  color: var(--text-lo);
+  letter-spacing: 1px;
+}
+.lobby-row .ustatus.in-queue { color: var(--neon-yellow); }
+.lobby-row .ustatus.in-match { color: var(--neon-magenta); }
+.lobby-row .ustatus.locked { color: var(--neon-red); }
 
-.bracket-match .player-row {
-  display: flex;
-  justify-content: space-between;
-  padding: 4px 0;
+.action-btn {
+  padding: 8px 14px;
+  background: linear-gradient(135deg, var(--neon-violet), var(--neon-magenta));
+  border: none;
+  border-radius: 6px;
+  color: #fff;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+.action-btn:hover { transform: translateY(-1px); box-shadow: 0 4px 14px rgba(255, 43, 214, 0.4); }
+.action-btn.danger { background: linear-gradient(135deg, var(--neon-red), #c81e3a); }
+.action-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+#queueCount {
+  font-size: 28px;
+  font-weight: 800;
+  color: var(--neon-yellow);
+  text-shadow: 0 0 12px rgba(255, 210, 63, 0.5);
+}
+#queueTimer {
+  font-size: 13px;
+  color: var(--text-lo);
+  margin-top: 4px;
   letter-spacing: 1px;
 }
 
-.bracket-match .player-row.winner { color: var(--neon-green); font-weight: 700; }
-.bracket-match .player-row.loser  { color: var(--text-dim); text-decoration: line-through; }
-.bracket-match .player-row.bye    { color: var(--neon-yellow); font-style: italic; }
-.bracket-match .player-row.pending { color: var(--text-dim); }
-.bracket-match .score { color: var(--neon-cyan); font-size: 11px; }
+/* Tournament bracket */
+.bracket {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  max-height: 480px;
+  overflow-y: auto;
+  padding-right: 6px;
+}
+.bracket::-webkit-scrollbar { width: 6px; }
+.bracket::-webkit-scrollbar-track { background: rgba(0,0,0,0.2); border-radius: 3px; }
+.bracket::-webkit-scrollbar-thumb { background: var(--neon-violet); border-radius: 3px; }
 
-.bracket-empty {
-  color: var(--text-dim);
-  font-style: italic;
-  text-align: center;
-  padding: 20px;
+.round-block { }
+.round-block h3 {
+  font-size: 11px;
   letter-spacing: 2px;
+  color: var(--neon-violet);
+  margin-bottom: 8px;
+  text-transform: uppercase;
+}
+.match-card {
+  padding: 12px 14px;
+  background: rgba(0, 0, 0, 0.3);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 8px;
+  margin-bottom: 8px;
+  font-size: 12px;
+  transition: all 0.2s ease;
+}
+.match-card.active {
+  border-color: var(--neon-green);
+  box-shadow: 0 0 12px rgba(61, 255, 163, 0.25);
+}
+.match-card.finished { opacity: 0.7; }
+.match-card .player-line {
+  display: flex;
+  justify-content: space-between;
+  padding: 3px 0;
+}
+.match-card .player-line.winner { color: var(--neon-green); font-weight: 700; }
+.match-card .player-line.loser { color: var(--text-lo); text-decoration: line-through; }
+.match-card .vs {
+  text-align: center;
+  color: var(--neon-magenta);
+  font-size: 10px;
+  letter-spacing: 2px;
+  margin: 4px 0;
+}
+.match-card .match-status {
+  margin-top: 6px;
+  font-size: 10px;
+  color: var(--text-lo);
+  letter-spacing: 1px;
+  text-align: right;
 }
 
 /* ============================================================
-   Match panel — chess board + clocks
+   CHESS MATCH VIEW
    ============================================================ */
-.match-panel { grid-column: 1 / -1; }
-
-.match-header {
-  display: grid;
-  grid-template-columns: 1fr auto 1fr;
+#matchView {
+  position: fixed;
+  inset: 0;
+  z-index: 8000;
+  display: none;
   align-items: center;
-  gap: 18px;
-  margin-bottom: 18px;
+  justify-content: center;
+  background: radial-gradient(ellipse at center, rgba(15, 12, 41, 0.92), rgba(15, 12, 41, 0.99));
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  padding: 24px;
 }
+#matchView.visible { display: flex; }
 
-.player-card {
+.match-container {
   display: flex;
   flex-direction: column;
+  gap: 16px;
+  max-width: 720px;
+  width: 100%;
+}
+
+.match-header {
+  display: flex;
+  justify-content: space-between;
   align-items: center;
-  padding: 12px 18px;
-  background: rgba(0, 0, 0, 0.35);
+  padding: 14px 20px;
+  background: var(--glass-bg);
   border: 1px solid var(--glass-border);
-  border-radius: 10px;
-  transition: all 0.25s;
+  border-radius: 12px;
 }
-
-.player-card.active {
-  border-color: var(--neon-cyan);
-  box-shadow: 0 0 20px rgba(0, 240, 255, 0.35);
-}
-
-.player-card .pname {
-  font-size: 13px;
-  letter-spacing: 2px;
-  margin-bottom: 6px;
-  color: var(--text);
-}
-
-.player-card .clock {
-  font-family: 'Courier New', monospace;
-  font-size: 28px;
+.match-header .opponent {
+  font-size: 14px;
   font-weight: 700;
   letter-spacing: 2px;
-  color: var(--neon-cyan);
-  text-shadow: 0 0 12px rgba(0, 240, 255, 0.5);
+}
+.match-header .role {
+  font-size: 11px;
+  color: var(--text-lo);
+  letter-spacing: 1px;
 }
 
-.player-card .clock.low { color: var(--neon-red); text-shadow: 0 0 12px rgba(255, 59, 59, 0.6); animation: pulse 0.6s infinite; }
-.player-card .clock.zero { color: var(--neon-red); }
-
-.vs {
-  font-size: 14px;
-  letter-spacing: 4px;
-  color: var(--neon-pink);
-  font-weight: 800;
-  text-shadow: 0 0 12px rgba(255, 0, 110, 0.5);
-}
-
-.board-wrapper {
+.clocks {
   display: flex;
-  justify-content: center;
-  margin: 18px 0;
+  justify-content: space-between;
+  gap: 12px;
+}
+.clock {
+  flex: 1;
+  padding: 12px 16px;
+  background: rgba(0, 0, 0, 0.35);
+  border: 1px solid rgba(0, 240, 255, 0.15);
+  border-radius: 10px;
+  text-align: center;
+  font-family: 'Courier New', monospace;
+  font-size: 24px;
+  font-weight: 800;
+  letter-spacing: 2px;
+  transition: all 0.2s ease;
+}
+.clock.active {
+  border-color: var(--neon-green);
+  color: var(--neon-green);
+  box-shadow: 0 0 12px rgba(61, 255, 163, 0.3);
+}
+.clock.low { color: var(--neon-red); border-color: var(--neon-red); animation: clock-blink 0.5s ease-in-out infinite; }
+@keyframes clock-blink { 50% { opacity: 0.5; } }
+.clock .label {
+  display: block;
+  font-size: 10px;
+  letter-spacing: 2px;
+  color: var(--text-lo);
+  margin-bottom: 4px;
+  font-family: 'Inter', sans-serif;
+  font-weight: 600;
 }
 
 .chess-board {
   display: grid;
   grid-template-columns: repeat(8, 1fr);
   grid-template-rows: repeat(8, 1fr);
-  width: min(560px, 92vw);
-  height: min(560px, 92vw);
-  border: 3px solid var(--neon-cyan);
-  border-radius: 6px;
-  box-shadow: 0 0 40px rgba(0, 240, 255, 0.35), inset 0 0 30px rgba(0, 0, 0, 0.5);
+  aspect-ratio: 1 / 1;
+  width: 100%;
+  max-width: 560px;
+  margin: 0 auto;
+  border: 2px solid var(--neon-cyan);
+  border-radius: 8px;
   overflow: hidden;
+  box-shadow: 0 0 32px rgba(0, 240, 255, 0.25);
 }
-
 .square {
   position: relative;
   display: flex;
   align-items: center;
   justify-content: center;
+  font-size: clamp(28px, 6vw, 44px);
   cursor: pointer;
   user-select: none;
-  transition: background 0.15s;
+  transition: background 0.15s ease;
 }
-
-.square.light { background: #e8e8f5; }
-.square.dark  { background: #4a4768; }
-
-.square.selected { box-shadow: inset 0 0 0 3px var(--neon-yellow); }
-.square.legal-move::after {
+.square.light { background: #e8eaf6; }
+.square.dark  { background: #5a4ba3; }
+.square.selected { background: rgba(255, 210, 63, 0.6) !important; box-shadow: inset 0 0 0 3px var(--neon-yellow); }
+.square.legal::after {
   content: '';
   position: absolute;
   width: 28%;
   height: 28%;
   border-radius: 50%;
-  background: rgba(0, 255, 136, 0.6);
-  box-shadow: 0 0 10px rgba(0, 255, 136, 0.8);
+  background: rgba(61, 255, 163, 0.5);
+  pointer-events: none;
 }
 .square.legal-capture::after {
   content: '';
   position: absolute;
   inset: 4%;
-  border: 3px solid rgba(255, 0, 110, 0.85);
   border-radius: 50%;
-  box-shadow: 0 0 12px rgba(255, 0, 110, 0.6);
-}
-.square.last-move { background: rgba(255, 214, 10, 0.35) !important; }
-.square.in-check  { background: radial-gradient(circle, rgba(255, 59, 59, 0.75), transparent 70%) !important; }
-
-.piece {
-  font-size: min(48px, 7vw);
-  line-height: 1;
-  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.6);
+  border: 4px solid rgba(255, 59, 92, 0.7);
+  background: transparent;
   pointer-events: none;
-  transition: transform 0.15s;
 }
+.square.last-move { box-shadow: inset 0 0 0 3px rgba(0, 240, 255, 0.6); }
+.square.in-check { background: rgba(255, 59, 92, 0.5) !important; }
+.piece {
+  display: inline-block;
+  line-height: 1;
+  text-shadow: 0 2px 4px rgba(0,0,0,0.4);
+  pointer-events: none;
+}
+.piece.white { color: #ffffff; }
+.piece.black { color: #1a1a2e; }
 
-.piece.white { color: #ffffff; text-shadow: 0 0 4px #000, 0 2px 5px rgba(0,0,0,0.7); }
-.piece.black { color: #1a1a2e; text-shadow: 0 0 4px #fff8, 0 2px 5px rgba(0,0,0,0.7); }
-
-.square:hover .piece { transform: scale(1.08); }
-
-.match-controls {
+.match-footer {
   display: flex;
-  align-items: flex-start;
-  gap: 18px;
-  margin-top: 14px;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
 }
-
-#resignBtn {
-  padding: 10px 18px;
-  border: 1px solid var(--neon-red);
-  background: rgba(255, 59, 59, 0.1);
-  color: var(--neon-red);
-  border-radius: 8px;
+.match-footer .status-msg {
   font-size: 12px;
-  letter-spacing: 3px;
-  font-weight: 700;
-  cursor: pointer;
-  text-transform: uppercase;
-  transition: all 0.25s;
-}
-
-#resignBtn:hover { background: rgba(255, 59, 59, 0.22); box-shadow: 0 0 18px rgba(255, 59, 59, 0.5); }
-
-.move-history {
-  flex: 1;
-  background: rgba(0, 0, 0, 0.35);
-  border: 1px solid var(--glass-border);
-  border-radius: 8px;
-  padding: 10px 14px;
-  font-family: 'Courier New', monospace;
-  font-size: 12px;
-  max-height: 120px;
-  overflow-y: auto;
+  color: var(--text-lo);
   letter-spacing: 1px;
-  color: var(--text-dim);
-  line-height: 1.7;
+  flex: 1;
 }
-
-.move-history .move-num { color: var(--neon-purple); margin-right: 6px; }
-.move-history .move-san  { color: var(--text); margin-right: 10px; }
+.resign-btn {
+  padding: 10px 18px;
+  background: linear-gradient(135deg, var(--neon-red), #c81e3a);
+  border: none;
+  border-radius: 8px;
+  color: #fff;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+.resign-btn:hover { transform: translateY(-1px); box-shadow: 0 4px 14px rgba(255, 59, 92, 0.5); }
 
 /* ============================================================
-   Lockout overlay
+   LOCKOUT OVERLAY — 120s penalty
    ============================================================ */
 #lockOverlay {
   position: fixed;
   inset: 0;
   z-index: 9999;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background:
-    radial-gradient(circle at 30% 30%, rgba(255, 59, 59, 0.45), transparent 60%),
-    radial-gradient(circle at 70% 70%, rgba(181, 55, 242, 0.4), transparent 60%),
-    linear-gradient(135deg, #1a0000 0%, #0f0c29 50%, #1a002a 100%);
+  display: none;
+  background: radial-gradient(ellipse at center, rgba(80, 0, 20, 0.85), rgba(20, 0, 5, 0.98));
   backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
-  animation: lockDrop 0.45s cubic-bezier(0.16, 1, 0.3, 1);
 }
+#lockOverlay.visible { display: flex; align-items: center; justify-content: center; flex-direction: column; }
 
-/* If you place an actual image.png alongside index.html, set:
-   background: url('image.png') center/cover no-repeat; */
-#lockOverlay::before {
-  content: '';
+#lockOverlay .lock-bg {
   position: absolute;
   inset: 0;
-  background:
-    repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(255, 59, 59, 0.04) 2px, rgba(255, 59, 59, 0.04) 4px),
-    repeating-linear-gradient(90deg, transparent, transparent 3px, rgba(0, 240, 255, 0.03) 3px, rgba(0, 240, 255, 0.03) 6px);
+  background-image:
+    repeating-linear-gradient(45deg, rgba(255, 59, 92, 0.06) 0 24px, transparent 24px 48px),
+    repeating-linear-gradient(-45deg, rgba(255, 59, 92, 0.04) 0 24px, transparent 24px 48px);
   pointer-events: none;
-  animation: scanlines 4s linear infinite;
 }
 
-@keyframes scanlines { from { background-position: 0 0; } to { background-position: 0 100px; } }
-
-@keyframes lockDrop {
-  from { transform: translateY(-100%); opacity: 0; }
-  to   { transform: translateY(0); opacity: 1; }
-}
-
-.lock-content {
-  text-align: center;
-  z-index: 2;
+#lockOverlay .lock-placeholder {
   position: relative;
-  padding: 40px;
-}
-
-.lock-glyph {
-  width: 220px;
-  height: 220px;
-  margin: 0 auto 30px;
+  width: min(60vmin, 480px);
+  height: min(60vmin, 480px);
   border-radius: 50%;
-  background: radial-gradient(circle, rgba(255, 59, 59, 0.3), transparent 70%);
+  background:
+    radial-gradient(circle at 50% 40%, rgba(255, 59, 92, 0.4), transparent 60%),
+    repeating-conic-gradient(from 0deg, rgba(255, 59, 92, 0.15) 0deg 10deg, transparent 10deg 20deg);
+  border: 4px solid var(--neon-red);
+  box-shadow:
+    0 0 60px rgba(255, 59, 92, 0.6),
+    inset 0 0 80px rgba(255, 59, 92, 0.3);
+  animation: lock-spin 8s linear infinite;
   display: flex;
   align-items: center;
   justify-content: center;
+}
+@keyframes lock-spin { to { transform: rotate(360deg); } }
+
+#lockOverlay .lock-icon {
+  font-size: 120px;
+  color: var(--neon-red);
+  text-shadow: 0 0 32px rgba(255, 59, 92, 0.9);
+  animation: lock-pulse 1.2s ease-in-out infinite;
+}
+@keyframes lock-pulse {
+  0%, 100% { transform: scale(1); opacity: 1; }
+  50% { transform: scale(1.1); opacity: 0.7; }
+}
+
+#lockOverlay .lock-title {
   position: relative;
-  animation: lockPulse 1.6s ease-in-out infinite;
-}
-
-.lock-glyph::before {
-  content: '';
-  position: absolute;
-  inset: 0;
-  border: 2px dashed var(--neon-red);
-  border-radius: 50%;
-  animation: lockSpin 6s linear infinite;
-}
-
-.lock-glyph::after {
-  content: '⏻';
-  font-size: 96px;
-  color: var(--neon-red);
-  text-shadow: 0 0 30px rgba(255, 59, 59, 0.85), 0 0 60px rgba(255, 59, 59, 0.5);
-  font-weight: 200;
-}
-
-@keyframes lockPulse {
-  0%, 100% { transform: scale(1); filter: drop-shadow(0 0 20px rgba(255, 59, 59, 0.6)); }
-  50%      { transform: scale(1.05); filter: drop-shadow(0 0 40px rgba(255, 59, 59, 0.9)); }
-}
-
-@keyframes lockSpin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
-
-.lock-content h1 {
-  font-size: 38px;
-  font-weight: 800;
-  letter-spacing: 10px;
-  color: var(--neon-red);
-  text-shadow: 0 0 24px rgba(255, 59, 59, 0.7);
-  margin-bottom: 12px;
-}
-
-.lock-sub {
-  color: var(--text-dim);
-  font-size: 12px;
-  letter-spacing: 4px;
-  text-transform: uppercase;
-  margin-bottom: 26px;
-}
-
-.lock-countdown {
-  font-family: 'Courier New', monospace;
-  font-size: 72px;
-  font-weight: 700;
+  margin-top: 32px;
+  font-size: 28px;
+  font-weight: 900;
   letter-spacing: 6px;
-  color: var(--neon-cyan);
-  text-shadow: 0 0 24px rgba(0, 240, 255, 0.65), 0 0 60px rgba(0, 240, 255, 0.3);
-  background: rgba(0, 0, 0, 0.5);
-  padding: 14px 32px;
-  border: 1px solid rgba(0, 240, 255, 0.4);
-  border-radius: 12px;
-  display: inline-block;
-}
-
-.lock-countdown.urgent {
   color: var(--neon-red);
-  text-shadow: 0 0 24px rgba(255, 59, 59, 0.85);
-  border-color: var(--neon-red);
-  animation: pulse 0.5s infinite;
+  text-shadow: 0 0 24px rgba(255, 59, 92, 0.7);
+  text-align: center;
 }
-
-.lock-message {
-  margin-top: 24px;
-  color: var(--text-dim);
+#lockOverlay .lock-subtitle {
+  position: relative;
+  margin-top: 8px;
   font-size: 12px;
   letter-spacing: 3px;
-  max-width: 480px;
-  line-height: 1.8;
+  color: var(--text-lo);
+  text-transform: uppercase;
+  text-align: center;
+}
+#lockOverlay .lock-countdown {
+  position: relative;
+  margin-top: 24px;
+  font-family: 'Courier New', monospace;
+  font-size: 56px;
+  font-weight: 800;
+  color: #fff;
+  letter-spacing: 4px;
+  text-shadow: 0 0 24px rgba(255, 255, 255, 0.5);
+}
+#lockOverlay .lock-countdown .ms {
+  font-size: 28px;
+  color: var(--neon-yellow);
+  margin-left: 6px;
 }
 
 /* ============================================================
-   Notifications
+   NOTIFICATIONS
    ============================================================ */
 #notifications {
   position: fixed;
-  top: 20px;
-  right: 20px;
-  z-index: 8000;
+  top: 24px;
+  right: 24px;
+  z-index: 9700;
   display: flex;
   flex-direction: column;
   gap: 10px;
-  pointer-events: none;
   max-width: 360px;
 }
-
-.notify {
-  background: var(--glass-bg-strong);
-  backdrop-filter: blur(14px);
-  border: 1px solid var(--glass-border);
+.notif {
+  padding: 14px 18px;
+  background: var(--glass-bg);
   border-left: 4px solid var(--neon-cyan);
   border-radius: 8px;
-  padding: 12px 18px;
-  color: var(--text);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
   font-size: 13px;
-  letter-spacing: 1px;
-  box-shadow: var(--shadow-deep);
-  animation: notifyIn 0.35s cubic-bezier(0.16, 1, 0.3, 1);
-  pointer-events: auto;
+  color: var(--text-hi);
+  box-shadow: var(--shadow-glow);
+  animation: notif-in 0.3s ease;
+}
+.notif.error { border-left-color: var(--neon-red); }
+.notif.success { border-left-color: var(--neon-green); }
+.notif.warn { border-left-color: var(--neon-yellow); }
+.notif.fading { animation: notif-out 0.3s ease forwards; }
+@keyframes notif-in {
+  from { transform: translateX(120%); opacity: 0; }
+  to { transform: translateX(0); opacity: 1; }
+}
+@keyframes notif-out {
+  to { transform: translateX(120%); opacity: 0; }
 }
 
-.notify.info    { border-left-color: var(--neon-cyan); }
-.notify.success { border-left-color: var(--neon-green); }
-.notify.warn    { border-left-color: var(--neon-yellow); }
-.notify.error   { border-left-color: var(--neon-red); }
-.notify.fading  { animation: notifyOut 0.35s forwards; }
-
-@keyframes notifyIn  { from { transform: translateX(120%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
-@keyframes notifyOut { from { transform: translateX(0); opacity: 1; } to { transform: translateX(120%); opacity: 0; } }
-
-/* ============================================================
-   Shake + chromatic aberration (during particle explosions)
-   ============================================================ */
-body.shaking { animation: shakeChromatic 0.55s cubic-bezier(0.36, 0.07, 0.19, 0.97); }
-
-@keyframes shakeChromatic {
-  0%   { transform: translate(0, 0)    skewX(0deg);  filter: hue-rotate(0deg)   drop-shadow(0 0 0 transparent); }
-  10%  { transform: translate(-5px, 3px) skewX(-1deg); filter: hue-rotate(20deg)  drop-shadow(2px 0 0 rgba(255,0,110,0.6)) drop-shadow(-2px 0 0 rgba(0,240,255,0.6)); }
-  20%  { transform: translate(5px, -3px) skewX(1deg);  filter: hue-rotate(-18deg) drop-shadow(2px 0 0 rgba(255,0,110,0.6)) drop-shadow(-2px 0 0 rgba(0,240,255,0.6)); }
-  30%  { transform: translate(-4px, -3px) skewX(-0.5deg); filter: hue-rotate(12deg) drop-shadow(1px 0 0 rgba(255,0,110,0.4)) drop-shadow(-1px 0 0 rgba(0,240,255,0.4)); }
-  40%  { transform: translate(4px, 3px) skewX(0.5deg); filter: hue-rotate(-10deg) drop-shadow(1px 0 0 rgba(255,0,110,0.4)) drop-shadow(-1px 0 0 rgba(0,240,255,0.4)); }
-  50%  { transform: translate(-3px, 2px) skewX(0deg);  filter: hue-rotate(6deg)  drop-shadow(1px 0 0 rgba(255,0,110,0.3)) drop-shadow(-1px 0 0 rgba(0,240,255,0.3)); }
-  60%  { transform: translate(3px, -2px) skewX(0deg);  filter: hue-rotate(-6deg) drop-shadow(0 0 0 transparent); }
-  70%  { transform: translate(-2px, 1px) skewX(0deg);  filter: hue-rotate(3deg)  drop-shadow(0 0 0 transparent); }
-  80%  { transform: translate(2px, -1px) skewX(0deg);  filter: hue-rotate(-3deg) drop-shadow(0 0 0 transparent); }
-  90%  { transform: translate(-1px, 1px) skewX(0deg);  filter: hue-rotate(0deg)  drop-shadow(0 0 0 transparent); }
-  100% { transform: translate(0, 0)    skewX(0deg);  filter: hue-rotate(0deg)   drop-shadow(0 0 0 transparent); }
+/* Viewport shake & chromatic aberration */
+@keyframes viewport-shake {
+  0%, 100% { transform: translate(0, 0); }
+  10% { transform: translate(-4px, 2px); }
+  20% { transform: translate(4px, -2px); }
+  30% { transform: translate(-3px, -3px); }
+  40% { transform: translate(3px, 3px); }
+  50% { transform: translate(-2px, 1px); }
+  60% { transform: translate(2px, -1px); }
+  70% { transform: translate(-1px, 2px); }
+  80% { transform: translate(1px, -2px); }
+  90% { transform: translate(-1px, 1px); }
 }
+.shaking { animation: viewport-shake 0.5s ease-in-out; }
 
-/* ============================================================
-   Blue flash (Blue button) — pulses the dashboard
-   ============================================================ */
-#dashboard.blue-flash { animation: blueFlash 1.2s ease-out; }
-
-@keyframes blueFlash {
-  0%   { box-shadow: 0 0 0   rgba(59, 130, 246, 0);   filter: brightness(1); }
-  15%  { box-shadow: 0 0 80px rgba(59, 130, 246, 0.9), 0 0 160px rgba(59, 130, 246, 0.5); filter: brightness(1.45) hue-rotate(-15deg); }
-  35%  { box-shadow: 0 0 50px rgba(59, 130, 246, 0.6); filter: brightness(1.2); }
-  60%  { box-shadow: 0 0 30px rgba(59, 130, 246, 0.35); filter: brightness(1.08); }
-  100% { box-shadow: 0 0 0   rgba(59, 130, 246, 0);   filter: brightness(1); }
+/* Blue flash effect */
+@keyframes blue-flash {
+  0%   { box-shadow: var(--shadow-glow); background: var(--glass-bg); }
+  25%  { box-shadow: 0 0 80px rgba(61, 155, 255, 0.9), 0 0 160px rgba(61, 155, 255, 0.5); background: rgba(61, 155, 255, 0.18); }
+  50%  { box-shadow: 0 0 60px rgba(61, 155, 255, 0.7), 0 0 120px rgba(61, 155, 255, 0.4); background: rgba(61, 155, 255, 0.12); }
+  100% { box-shadow: var(--shadow-glow); background: var(--glass-bg); }
 }
-
-#dashboard.blue-flash .panel {
-  border-color: rgba(59, 130, 246, 0.6);
-  animation: panelGlow 1.2s ease-out;
-}
-
-@keyframes panelGlow {
-  0%   { box-shadow: var(--shadow-deep); }
-  20%  { box-shadow: 0 0 40px rgba(59, 130, 246, 0.7), var(--shadow-deep); }
-  100% { box-shadow: var(--shadow-deep); }
-}
-
-/* ============================================================
-   Responsive
-   ============================================================ */
-@media (max-width: 900px) {
-  #dashboard { grid-template-columns: 1fr; }
-  .button-grid { grid-template-columns: repeat(2, 1fr); }
-  .modal h1 { font-size: 32px; letter-spacing: 5px; }
-  .lock-content h1 { font-size: 28px; letter-spacing: 6px; }
-  .lock-countdown { font-size: 52px; }
-}
+.blue-flashing { animation: blue-flash 1.2s ease-in-out; }
 
 /* Scrollbars */
 ::-webkit-scrollbar { width: 8px; height: 8px; }
-::-webkit-scrollbar-track { background: rgba(0, 0, 0, 0.3); }
-::-webkit-scrollbar-thumb { background: var(--neon-purple); border-radius: 4px; opacity: 0.5; }
-::-webkit-scrollbar-thumb:hover { background: var(--neon-cyan); }
+::-webkit-scrollbar-track { background: rgba(0,0,0,0.2); }
+::-webkit-scrollbar-thumb { background: var(--neon-violet); border-radius: 4px; }
 </style>
 </head>
 <body>
 
+<!-- Login Modal -->
+<div id="loginModal">
+  <div class="login-card">
+    <h1>NEXUS CHESS</h1>
+    <div class="subtitle">Real-Time Tournament Grid</div>
+    <input type="text" id="usernameInput" placeholder="Enter unique callsign" maxlength="20" autocomplete="off" />
+    <button id="loginBtn">Initialize Session</button>
+    <div class="login-error" id="loginError"></div>
+  </div>
+</div>
+
 <!-- Particle canvas overlay -->
 <canvas id="particleCanvas"></canvas>
 
-<!-- =================== LOGIN MODAL =================== -->
-<div id="loginModal" class="modal-overlay">
-  <div class="modal">
-    <h1>NEXUS CHESS</h1>
-    <div class="tag">Tournament Grid // v1.0</div>
-    <input id="usernameInput" type="text" placeholder="ENTER CALLSIGN" maxlength="16" autocomplete="off" />
-    <button id="loginBtn" class="btn-primary">Jack In</button>
-  </div>
-</div>
-
-<!-- =================== APP =================== -->
-<div id="app" class="hidden">
-  <header class="app-header">
-    <div class="logo">NEXUS CHESS</div>
-    <div class="user-info">
-      <span class="label">OPERATOR</span>
-      <span class="name" id="userLabel">—</span>
-      <span class="status-pill idle" id="statusLabel">IDLE</span>
-    </div>
-  </header>
-
-  <main id="dashboard">
-
-    <!-- Control panel -->
-    <section class="panel control-panel">
-      <h2>// System Controls</h2>
-      <div class="button-grid">
-        <button class="ctrl-btn" data-color="red">RED</button>
-        <button class="ctrl-btn" data-color="orange">ORANGE</button>
-        <button class="ctrl-btn" data-color="yellow">YELLOW</button>
-        <button class="ctrl-btn" data-color="green">GREEN</button>
-        <button class="ctrl-btn" data-color="blue">BLUE</button>
-      </div>
-    </section>
-
-    <!-- Lobby -->
-    <section class="panel lobby-panel" id="lobbyPanel">
-      <h2>// Lobby &amp; Matchmaking</h2>
-      <div class="lobby-info">
-        <div>ONLINE: <span id="onlineCount">0</span></div>
-        <div>IN QUEUE: <span id="queueCount">0</span></div>
-        <div id="countdownWrap" class="hidden">START IN: <span class="countdown" id="countdownTimer">30s</span></div>
-      </div>
-      <button id="queueBtn">Join Queue</button>
-      <div class="queue-list" id="queueList"></div>
-    </section>
-
-    <!-- Tournament bracket -->
-    <section class="panel bracket-panel hidden" id="bracketPanel">
-      <h2>// Tournament Bracket</h2>
-      <div class="bracket-scroll">
-        <div id="bracketView" class="bracket-rounds">
-          <div class="bracket-empty">No active tournament. Join the queue to begin.</div>
-        </div>
-      </div>
-    </section>
-
-    <!-- Match panel -->
-    <section class="panel match-panel hidden" id="matchPanel">
-      <h2>// Active Match</h2>
-      <div class="match-header">
-        <div class="player-card" id="whiteCard">
-          <div class="pname" id="whiteName">—</div>
-          <div class="clock" id="whiteClock">10:00</div>
-        </div>
-        <div class="vs">VS</div>
-        <div class="player-card" id="blackCard">
-          <div class="pname" id="blackName">—</div>
-          <div class="clock" id="blackClock">10:00</div>
-        </div>
-      </div>
-      <div class="board-wrapper">
-        <div id="chessBoard" class="chess-board"></div>
-      </div>
-      <div class="match-controls">
-        <button id="resignBtn">Resign</button>
-        <div class="move-history" id="moveHistory"></div>
-      </div>
-    </section>
-
-  </main>
-</div>
-
-<!-- =================== LOCKOUT OVERLAY =================== -->
-<div id="lockOverlay" class="hidden">
-  <div class="lock-content">
-    <div class="lock-glyph"></div>
-    <h1>DEFEAT LOCKOUT</h1>
-    <div class="lock-sub">Penalty Phase // Match Resolution</div>
-    <div class="lock-countdown" id="lockCountdown">120.000</div>
-    <div class="lock-message">
-      You have been defeated. All inputs are intercepted during this lockout phase.
-      The system will automatically restore lobby access when the countdown reaches zero.
-    </div>
-  </div>
-</div>
-
-<!-- =================== NOTIFICATIONS =================== -->
+<!-- Notifications -->
 <div id="notifications"></div>
 
-<!-- =================== EXTERNAL DEPENDENCIES =================== -->
-<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database-compat.js"></script>
-<script src="https://unpkg.com/chess.js@0.13.4/dist/chess.js"></script>
+<!-- Main Dashboard -->
+<div id="dashboard">
+  <div class="topbar">
+    <div class="brand">
+      <div class="logo">N</div>
+      <h1>NEXUS CHESS // TOURNAMENT GRID</h1>
+    </div>
+    <div class="user-chip">
+      <span class="dot"></span>
+      <span id="userChipName">—</span>
+    </div>
+  </div>
+
+  <!-- Particle Controls -->
+  <div class="control-bar">
+    <span class="label">Particle Nodes</span>
+    <button class="ctrl-btn red"    data-color="red">Red</button>
+    <button class="ctrl-btn orange" data-color="orange">Orange</button>
+    <button class="ctrl-btn yellow" data-color="yellow">Yellow</button>
+    <button class="ctrl-btn green"  data-color="green">Green</button>
+    <button class="ctrl-btn blue"   data-color="blue">Blue</button>
+  </div>
+
+  <div class="grid">
+    <!-- Lobby / Queue -->
+    <div class="panel" id="lobbyPanel">
+      <h2>Lobby // Matchmaking Queue</h2>
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">
+        <div>
+          <div style="font-size:11px; letter-spacing:2px; color:var(--text-lo); text-transform:uppercase;">Players in Queue</div>
+          <div id="queueCount">0</div>
+          <div id="queueTimer">Tournament starts at 4 players or 30s timer</div>
+        </div>
+        <div style="display:flex; flex-direction:column; gap:8px;">
+          <button class="action-btn" id="joinQueueBtn">Join Queue</button>
+          <button class="action-btn danger" id="leaveQueueBtn" style="display:none;">Leave Queue</button>
+        </div>
+      </div>
+      <div style="font-size:11px; letter-spacing:2px; color:var(--text-lo); text-transform:uppercase; margin-bottom:8px;">Online Operatives</div>
+      <div id="userList"></div>
+    </div>
+
+    <!-- Tournament Bracket -->
+    <div class="panel">
+      <h2>Tournament Bracket // Live</h2>
+      <div class="bracket" id="bracketView">
+        <div style="color:var(--text-lo); font-size:12px; text-align:center; padding:32px 0;">
+          No active tournament. Join the queue to begin.
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Chess Match View -->
+<div id="matchView">
+  <div class="match-container">
+    <div class="match-header">
+      <div>
+        <div class="opponent" id="opponentLabel">vs. ???</div>
+        <div class="role" id="roleLabel">You are: ???</div>
+      </div>
+      <div class="role" id="matchStatusLine">Awaiting move...</div>
+    </div>
+
+    <div class="clocks">
+      <div class="clock" id="clockBlack">
+        <span class="label">Black</span>
+        <span id="clockBlackTime">10:00</span>
+      </div>
+      <div class="clock" id="clockWhite">
+        <span class="label">White</span>
+        <span id="clockWhiteTime">10:00</span>
+      </div>
+    </div>
+
+    <div class="chess-board" id="chessBoard"></div>
+
+    <div class="match-footer">
+      <div class="status-msg" id="moveStatus">Click a piece to select, then click a target square.</div>
+      <button class="resign-btn" id="resignBtn">Resign</button>
+    </div>
+  </div>
+</div>
+
+<!-- Lockout Overlay -->
+<div id="lockOverlay">
+  <div class="lock-bg"></div>
+  <div class="lock-placeholder">
+    <div class="lock-icon">&#128274;</div>
+  </div>
+  <div class="lock-title">DEFEAT LOCKOUT</div>
+  <div class="lock-subtitle">Penalty phase active — interactions suspended</div>
+  <div class="lock-countdown">
+    <span id="lockSeconds">120</span><span class="ms" id="lockMs">.000</span>
+  </div>
+</div>
 
 <script>
 /* ============================================================
-   NEXUS CHESS — Application Logic
-   Single-file ES6+ application
+   PART 1 — FIREBASE INITIALIZATION
+   Replace the config below with your own Firebase project credentials.
    ============================================================ */
-'use strict';
+        const firebaseConfig = {
+          apiKey: "AIzaSyDqx4yZKKhAS3F2CokTxiY0yKxNsQ21jVc",
+          authDomain: "my-project-1704840967568.firebaseapp.com",
+          databaseURL: "https://my-project-1704840967568-default-rtdb.firebaseio.com",
+          projectId: "my-project-1704840967568",
+          storageBucket: "my-project-1704840967568.firebasestorage.app",
+          messagingSenderId: "160430314341",
+          appId: "1:160430314341:web:40da9a21dd9e86adeb078c"
+        };
 
-/* ============================================================
-   CONFIG — REPLACE WITH YOUR FIREBASE PROJECT CREDENTIALS
-   ============================================================ */
-    const firebaseConfig = {
-      apiKey: "AIzaSyDqx4yZKKhAS3F2CokTxiY0yKxNsQ21jVc",
-      authDomain: "my-project-1704840967568.firebaseapp.com",
-      databaseURL: "https://my-project-1704840967568-default-rtdb.firebaseio.com",
-      projectId: "my-project-1704840967568",
-      storageBucket: "my-project-1704840967568.firebasestorage.app",
-      messagingSenderId: "160430314341",
-      appId: "1:160430314341:web:40da9a21dd9e86adeb078c"
-    };
-
-/* ============================================================
-   CONSTANTS
-   ============================================================ */
-const TIME_CONTROL_MS = 10 * 60 * 1000;   // 10 minutes base
-const INCREMENT_MS    = 1 * 1000;          // 1 second increment per move
-const LOCKOUT_MS      = 120 * 1000;        // 120 seconds defeat penalty
-const MIN_PLAYERS      = 4;                 // Minimum to auto-start tournament
-const COUNTDOWN_MS     = 30 * 1000;        // Queue countdown when 2+ waiting
-const POLL_CLOCK_MS    = 100;              // Local clock tick interval
-
-const COLOR_PALETTES = {
-  red:    [[255, 60, 60], [255, 110, 70], [255, 160, 80], [255, 200, 110]],
-  orange: [[255, 140, 0], [255, 180, 50], [255, 220, 100], [255, 100, 50]],
-  yellow: [[255, 215, 10], [255, 240, 110], [255, 255, 210], [255, 200, 60]],
-  green:  [[0, 255, 136], [110, 255, 110], [50, 200, 80], [160, 255, 210]]
-};
-
-const PIECE_UNICODE = {
-  'K': '\u2654', 'Q': '\u2655', 'R': '\u2656', 'B': '\u2657', 'N': '\u2658', 'P': '\u2659',
-  'k': '\u265A', 'q': '\u265B', 'r': '\u265C', 'b': '\u265D', 'n': '\u265E', 'p': '\u265F'
-};
-
-/* ============================================================
-   STATE
-   ============================================================ */
-const state = {
-  uid: null,
-  username: null,
-  currentMatchId: null,
-  currentTournamentId: null,
-  color: null,                    // 'w' | 'b'
-  selectedSquare: null,
-  legalMoves: [],
-  chess: null,                    // local chess.js instance
-  serverTimeOffset: 0,            // serverTime - clientTime
-  inQueue: false,
-  isLockedOut: false,
-  isAuthenticating: false,
-  matchUnsubscribers: [],
-  tournamentUnsubscribers: [],
-  presenceRef: null,
-  queueBtnLabel: 'Join Queue'
-};
-
-/* ============================================================
-   FIREBASE INIT
-   ============================================================ */
-let db;
+let firebaseReady = false;
+let db = null;
 try {
-  firebase.initializeApp(FIREBASE_CONFIG);
-  db = firebase.database();
+  if (FIREBASE_CONFIG.apiKey && FIREBASE_CONFIG.apiKey !== "YOUR_API_KEY") {
+    firebase.initializeApp(FIREBASE_CONFIG);
+    db = firebase.database();
+    firebaseReady = true;
+  } else {
+    console.warn("[NEXUS] Firebase config is placeholder. Running in LOCAL simulation mode.");
+  }
 } catch (err) {
-  console.error('Firebase init failed:', err);
+  console.error("[NEXUS] Firebase init failed:", err);
 }
 
 /* ============================================================
-   UTILITIES
+   PART 2 — LOCAL FALLBACK STORE
+   If Firebase is unavailable, we use an in-memory pub/sub store
+   so the app remains fully functional for demonstration.
    ============================================================ */
-const $ = (id) => document.getElementById(id);
+const LocalStore = (function() {
+  const state = {};
+  const listeners = {}; // path -> Set of callbacks
 
+  function normalize(path) {
+    // Ensure leading slash, strip trailing slash (except root)
+    if (!path.startsWith('/')) path = '/' + path;
+    if (path.length > 1 && path.endsWith('/')) path = path.slice(0, -1);
+    return path;
+  }
+  function ensure(path) {
+    path = normalize(path);
+    if (!(path in state)) state[path] = undefined;
+    if (!listeners[path]) listeners[path] = new Set();
+  }
+  function getRef(path) {
+    path = normalize(path);
+    const parts = path.split('/').filter(Boolean);
+    let cur = state;
+    for (const p of parts) {
+      if (cur && typeof cur === 'object' && p in cur) cur = cur[p];
+      else return undefined;
+    }
+    return cur;
+  }
+  function setDeep(path, value) {
+    path = normalize(path);
+    const parts = path.split('/').filter(Boolean);
+    if (parts.length === 0) { state['/'] = value; return; }
+    let cur = state;
+    for (let i = 0; i < parts.length - 1; i++) {
+      if (typeof cur[parts[i]] !== 'object' || cur[parts[i]] === null) cur[parts[i]] = {};
+      cur = cur[parts[i]];
+    }
+    if (value === null) delete cur[parts[parts.length - 1]];
+    else cur[parts[parts.length - 1]] = value;
+  }
+
+  return {
+    ref(path) {
+      const normPath = normalize(path);
+      return {
+        path: normPath,
+        async set(value) { setDeep(normPath, value); LocalStore._notify(normPath, value); return; },
+        async update(partial) {
+          const cur = getRef(normPath) || {};
+          const merged = { ...cur, ...partial };
+          setDeep(normPath, merged);
+          LocalStore._notify(normPath, merged);
+          for (const k in partial) {
+            const childPath = normPath === '/' ? '/' + k : normPath + '/' + k;
+            LocalStore._notify(childPath, partial[k]);
+          }
+          return;
+        },
+        async remove() { setDeep(normPath, null); LocalStore._notify(normPath, null); return; },
+        async transaction(updateFn) {
+          const cur = getRef(normPath);
+          const next = updateFn(cur);
+          setDeep(normPath, next === undefined ? null : next);
+          LocalStore._notify(normPath, next === undefined ? null : next);
+          return;
+        },
+        onValue(cb) {
+          ensure(normPath);
+          listeners[normPath].add(cb);
+          // emit current
+          setTimeout(() => cb({ val: () => getRef(normPath) }), 0);
+          return () => listeners[normPath].delete(cb);
+        },
+        async once(eventType) {
+          // eventType is 'value' for our usage; return a snapshot-like object
+          return { val: () => getRef(normPath) };
+        },
+        onChildAdded(cb) {
+          ensure(normPath);
+          // emit existing children
+          const cur = getRef(normPath) || {};
+          if (cur && typeof cur === 'object') {
+            Object.keys(cur).forEach(k => setTimeout(() => cb({ key: k, val: () => cur[k] }), 0));
+          }
+          listeners[normPath].add((snap) => {
+            const v = snap.val();
+            if (v && typeof v === 'object') {
+              Object.keys(v).forEach(k => {
+                cb({ key: k, val: () => v[k] });
+              });
+            }
+          });
+          return () => listeners[normPath].delete(cb);
+        },
+        onDisconnect() {
+          // no-op for local mode
+          return { cancel() {}, set() {}, remove() {}, update() {} };
+        },
+        serverTimeOffset() { return 0; }
+      };
+    },
+    _notify(path, value) {
+      path = normalize(path);
+      ensure(path);
+      // notify exact path
+      listeners[path].forEach(cb => cb({ val: () => value }));
+      // notify ancestor paths
+      const parts = path.split('/').filter(Boolean);
+      for (let i = parts.length - 1; i > 0; i--) {
+        const ancestor = '/' + parts.slice(0, i).join('/');
+        ensure(ancestor);
+        const av = getRef(ancestor);
+        listeners[ancestor].forEach(cb => cb({ val: () => av }));
+      }
+    },
+    async serverTime() { return Date.now(); }
+  };
+})();
+
+// Unified data interface — switches between Firebase and Local
+// Wraps the Firebase compat ref in an adapter exposing the same API
+// as LocalStore.ref (onValue, onChildAdded, once, etc.) so the rest
+// of the app can call a single unified interface regardless of backend.
+class FirebaseRefAdapter {
+  constructor(firebaseRef) { this._ref = firebaseRef; }
+  async set(value) { return this._ref.set(value); }
+  async update(partial) { return this._ref.update(partial); }
+  async remove() { return this._ref.remove(); }
+  async transaction(updateFn) {
+    const result = await this._ref.transaction(updateFn);
+    return result; // { committed, snapshot }
+  }
+  async once(eventType) {
+    return this._ref.once(eventType || 'value');
+  }
+  onValue(cb) {
+    const wrapped = (snap) => cb(snap);
+    this._ref.on('value', wrapped);
+    return () => this._ref.off('value', wrapped);
+  }
+  onChildAdded(cb) {
+    const wrapped = (snap) => cb(snap);
+    this._ref.on('child_added', wrapped);
+    return () => this._ref.off('child_added', wrapped);
+  }
+  onDisconnect() { return this._ref.onDisconnect(); }
+  // passthrough for ServerValue etc.
+  get raw() { return this._ref; }
+}
+
+const Data = {
+  ref(path) {
+    if (firebaseReady) return new FirebaseRefAdapter(db.ref(path));
+    return LocalStore.ref(path);
+  },
+  serverTimeOffset() {
+    if (firebaseReady) return new FirebaseRefAdapter(db.ref('/.info/serverTimeOffset'));
+    return LocalStore.ref('/.info/serverTimeOffset');
+  },
+  async serverTime() {
+    if (firebaseReady) {
+      return firebase.database.ServerValue.TIMESTAMP;
+    }
+    return Date.now();
+  },
+  isLocal() { return !firebaseReady; }
+};
+
+/* ============================================================
+   PART 3 — SESSION & AUTH
+   ============================================================ */
+const Session = {
+  user: null,
+  uid: null,
+  init() {
+    const saved = sessionStorage.getItem('nexus_user');
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved);
+        this.user = parsed.user;
+        this.uid = parsed.uid;
+        return true;
+      } catch(e) { sessionStorage.removeItem('nexus_user'); }
+    }
+    return false;
+  },
+  async login(username) {
+    if (!username || username.trim().length < 2) throw new Error('Username must be at least 2 characters');
+    const clean = username.trim().slice(0, 20);
+    this.user = clean;
+    this.uid = 'u_' + clean.toLowerCase().replace(/[^a-z0-9]/g, '') + '_' + Math.random().toString(36).slice(2, 8);
+
+    // Write to global registry
+    const userRef = Data.ref('users/' + this.uid);
+    await userRef.set({
+      username: clean,
+      status: 'lobby',
+      lastSeen: await Data.serverTime()
+    });
+
+    // onDisconnect cleanup
+    if (firebaseReady) {
+      userRef.onDisconnect().remove();
+    }
+
+    sessionStorage.setItem('nexus_user', JSON.stringify({ user: this.user, uid: this.uid }));
+    return true;
+  }
+};
+
+/* ============================================================
+   PART 4 — NOTIFICATIONS
+   ============================================================ */
 function notify(message, type = 'info', duration = 4000) {
-  const wrap = $('notifications');
+  const container = document.getElementById('notifications');
   const el = document.createElement('div');
-  el.className = `notify ${type}`;
+  el.className = 'notif ' + type;
   el.textContent = message;
-  wrap.appendChild(el);
+  container.appendChild(el);
   setTimeout(() => {
     el.classList.add('fading');
-    setTimeout(() => el.remove(), 400);
+    setTimeout(() => el.remove(), 300);
   }, duration);
 }
 
-function fmtTime(ms) {
-  if (ms < 0) ms = 0;
-  const total = Math.floor(ms / 1000);
-  const m = Math.floor(total / 60);
-  const s = total % 60;
-  return `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
-}
-
-function fmtTimeMs(ms) {
-  if (ms < 0) ms = 0;
-  const total = ms / 1000;
-  const m = Math.floor(total / 60);
-  const s = Math.floor(total % 60);
-  const msec = Math.floor((ms % 1000));
-  return `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}.${String(msec).padStart(3, '0')}`;
-}
-
-function serverNow() {
-  return Date.now() + state.serverTimeOffset;
-}
-
-function randomId(prefix = 'id') {
-  return `${prefix}_${Date.now().toString(36)}_${Math.random().toString(36).substr(2, 9)}`;
-}
-
-function setStatus(label, cls) {
-  const el = $('statusLabel');
-  el.textContent = label;
-  el.className = `status-pill ${cls}`;
-}
-
 /* ============================================================
-   SERVER TIME SYNC
+   PART 5 — PARTICLE ENGINE
    ============================================================ */
-function initServerTimeSync() {
-  const offsetRef = db.ref('/.info/serverTimeOffset');
-  offsetRef.on('value', (snap) => {
-    state.serverTimeOffset = snap.val() || 0;
-  });
-}
+const ParticleEngine = (function() {
+  const canvas = document.getElementById('particleCanvas');
+  const ctx = canvas.getContext('2d');
+  let particles = [];
+  let rafId = null;
 
-/* ============================================================
-   AUTH / SESSION
-   ============================================================ */
-function tryRestoreSession() {
-  const saved = sessionStorage.getItem('nexus_uid');
-  const savedName = sessionStorage.getItem('nexus_username');
-  if (saved && savedName) {
-    state.uid = saved;
-    state.username = savedName;
-    return true;
+  function resize() {
+    canvas.width = window.innerWidth * devicePixelRatio;
+    canvas.height = window.innerHeight * devicePixelRatio;
+    canvas.style.width = window.innerWidth + 'px';
+    canvas.style.height = window.innerHeight + 'px';
+    ctx.scale(devicePixelRatio, devicePixelRatio);
   }
-  return false;
-}
+  window.addEventListener('resize', resize);
+  resize();
 
-function beginLogin() {
-  $('loginModal').classList.remove('hidden');
-  $('loginModal').style.display = 'flex';
-  $('usernameInput').focus();
-}
-
-function completeLogin(username) {
-  state.username = username;
-  if (!state.uid) state.uid = randomId('u');
-  sessionStorage.setItem('nexus_uid', state.uid);
-  sessionStorage.setItem('nexus_username', state.username);
-
-  $('loginModal').classList.add('hidden');
-  $('loginModal').style.display = 'none';
-  $('app').classList.remove('hidden');
-  $('userLabel').textContent = state.username.toUpperCase();
-
-  initPresence();
-  initQueueListener();
-  initTournamentGlobalListener();
-  initLockoutListener();
-  checkExistingSessionState();
-}
-
-function checkExistingSessionState() {
-  // Reattach to existing match/queue if session was refreshed
-  db.ref(`users/${state.uid}`).once('value').then((snap) => {
-    const u = snap.val();
-    if (!u) return;
-    if (u.inMatch) {
-      state.currentMatchId = u.inMatch;
-      attachToMatch(u.inMatch);
-    }
-    if (u.inQueue) {
-      state.inQueue = true;
-      updateQueueBtn();
-    }
-    if (u.inTournament) {
-      state.currentTournamentId = u.inTournament;
-      attachToTournament(u.inTournament);
-    }
-  }).catch((e) => console.warn('Session state check failed:', e));
-}
-
-/* ============================================================
-   PRESENCE
-   ============================================================ */
-function initPresence() {
-  const userRef = db.ref(`users/${state.uid}`);
-  state.presenceRef = userRef;
-
-  const presenceData = {
-    username: state.username,
-    status: 'online',
-    lastSeen: firebase.database.ServerValue.TIMESTAMP,
-    inQueue: false,
-    inMatch: null,
-    inTournament: null
+  const PALETTES = {
+    red:    ['#ff3b5c', '#ff6b8a', '#ff1a3d', '#ffaaaa', '#7a0a1f'],
+    orange: ['#ff8b3d', '#ffb366', '#ff6a1a', '#ffd9aa', '#7a3a0a'],
+    yellow: ['#ffd23f', '#ffe680', '#ffb300', '#fff5cc', '#7a5a00'],
+    green:  ['#3dffa3', '#80ffc4', '#00e676', '#c4ffe0', '#0a7a3a']
   };
 
-  userRef.set(presenceData).then(() => {
-    // onDisconnect cleanup — flag user as offline, remove from queue
-    userRef.onDisconnect().update({
-      status: 'offline',
-      lastSeen: firebase.database.ServerValue.TIMESTAMP,
-      inQueue: false
-    });
-    // Also remove from queue node
-    db.ref(`queue/${state.uid}`).onDisconnect().remove();
-    // And clear active match participation (opponent will get win)
-    db.ref(`lockouts/${state.uid}`).onDisconnect().remove();
-  }).catch((e) => {
-    console.error('Presence write failed:', e);
-    notify('Failed to register presence. Check Firebase config.', 'error', 6000);
-  });
-}
+  class Particle {
+    constructor(x, y, color, opts = {}) {
+      this.x = x; this.y = y;
+      this.color = color;
+      const angle = opts.angle !== undefined ? opts.angle : Math.random() * Math.PI * 2;
+      const speed = opts.speed !== undefined ? opts.speed : (Math.random() * 9 + 2);
+      this.vx = Math.cos(angle) * speed;
+      this.vy = Math.sin(angle) * speed;
+      this.gravity = opts.gravity !== undefined ? opts.gravity : 0.18;
+      this.friction = opts.friction !== undefined ? opts.friction : 0.985;
+      this.decay = opts.decay !== undefined ? opts.decay : (Math.random() * 0.018 + 0.012);
+      this.life = 1.0;
+      this.size = opts.size !== undefined ? opts.size : (Math.random() * 3 + 1.5);
+      this.trail = [];
+      this.maxTrail = 6;
+    }
+    update() {
+      this.trail.push({ x: this.x, y: this.y, life: this.life });
+      if (this.trail.length > this.maxTrail) this.trail.shift();
+      this.vx *= this.friction;
+      this.vy *= this.friction;
+      this.vy += this.gravity;
+      this.x += this.vx;
+      this.y += this.vy;
+      this.life -= this.decay;
+    }
+    draw(ctx) {
+      // Trail
+      for (let i = 0; i < this.trail.length; i++) {
+        const t = this.trail[i];
+        const alpha = (i / this.trail.length) * this.life * 0.5;
+        ctx.globalAlpha = Math.max(0, alpha);
+        ctx.fillStyle = this.color;
+        ctx.beginPath();
+        ctx.arc(t.x, t.y, this.size * (i / this.trail.length), 0, Math.PI * 2);
+        ctx.fill();
+      }
+      // Core
+      ctx.globalAlpha = Math.max(0, this.life);
+      ctx.shadowBlur = 12;
+      ctx.shadowColor = this.color;
+      ctx.fillStyle = this.color;
+      ctx.beginPath();
+      ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.shadowBlur = 0;
+      ctx.globalAlpha = 1;
+    }
+    isDead() { return this.life <= 0; }
+  }
+
+  function explode(x, y, colorKey) {
+    const palette = PALETTES[colorKey] || PALETTES.red;
+    const count = 120;
+    for (let i = 0; i < count; i++) {
+      const color = palette[Math.floor(Math.random() * palette.length)];
+      const angle = (Math.PI * 2 * i) / count + (Math.random() - 0.5) * 0.4;
+      const speed = Math.random() * 11 + 3;
+      particles.push(new Particle(x, y, color, { angle, speed }));
+    }
+    // Sparkle layer — small fast particles
+    for (let i = 0; i < 40; i++) {
+      const color = palette[Math.floor(Math.random() * palette.length)];
+      particles.push(new Particle(x, y, color, {
+        angle: Math.random() * Math.PI * 2,
+        speed: Math.random() * 4 + 1,
+        size: Math.random() * 1.5 + 0.5,
+        decay: 0.04,
+        gravity: 0.05
+      }));
+    }
+    // Shockwave ring
+    for (let i = 0; i < 60; i++) {
+      const color = palette[0];
+      const angle = (Math.PI * 2 * i) / 60;
+      particles.push(new Particle(x, y, color, {
+        angle, speed: 14, size: 2, decay: 0.05, gravity: 0, friction: 0.97
+      }));
+    }
+    startLoop();
+    triggerShake();
+  }
+
+  function triggerShake() {
+    document.body.classList.add('shaking');
+    setTimeout(() => document.body.classList.remove('shaking'), 500);
+  }
+
+  function startLoop() {
+    if (rafId) return;
+    function frame() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      for (let i = particles.length - 1; i >= 0; i--) {
+        particles[i].update();
+        particles[i].draw(ctx);
+        if (particles[i].isDead()) particles.splice(i, 1);
+      }
+      if (particles.length === 0) {
+        cancelAnimationFrame(rafId);
+        rafId = null;
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        return;
+      }
+      rafId = requestAnimationFrame(frame);
+    }
+    rafId = requestAnimationFrame(frame);
+  }
+
+  return { explode, triggerShake };
+})();
 
 /* ============================================================
-   QUEUE / MATCHMAKING
+   PART 6 — PRESENCE & LOBBY
    ============================================================ */
-function initQueueListener() {
-  db.ref('queue').on('value', (snap) => {
-    const queue = snap.val() || {};
-    renderQueue(queue);
-    evaluateMatchmaking(queue);
-  }, (err) => console.error('Queue listener error:', err));
-
-  db.ref('users').on('value', (snap) => {
-    const users = snap.val() || {};
-    let online = 0;
-    Object.values(users).forEach((u) => { if (u && u.status === 'online') online++; });
-    $('onlineCount').textContent = online;
-  }, (err) => console.error('Users listener error:', err));
-
-  // Meta countdown listener
-  db.ref('meta/queueCountdown').on('value', (snap) => {
-    const cd = snap.val();
-    if (cd && cd.expiresAt) {
-      $('countdownWrap').classList.remove('hidden');
-      tickCountdown(cd.expiresAt);
-    } else {
-      $('countdownWrap').classList.add('hidden');
-      if (window._countdownInterval) {
-        clearInterval(window._countdownInterval);
-        window._countdownInterval = null;
-      }
+const Presence = {
+  userListeners: [],
+  init() {
+    // Listen to all users
+    Data.ref('users').onValue((snap) => {
+      const users = snap.val() || {};
+      this.renderUsers(users);
+      Lobby.updateFromUsers(users);
+    });
+  },
+  renderUsers(users) {
+    const list = document.getElementById('userList');
+    list.innerHTML = '';
+    const entries = Object.entries(users).sort((a, b) => {
+      const an = (a[1] && a[1].username) || '';
+      const bn = (b[1] && b[1].username) || '';
+      return an.localeCompare(bn);
+    });
+    if (entries.length === 0) {
+      list.innerHTML = '<div style="color:var(--text-lo); font-size:12px; padding:12px;">No operatives online.</div>';
+      return;
     }
-  });
-}
+    entries.forEach(([uid, info]) => {
+      const row = document.createElement('div');
+      row.className = 'lobby-row' + (uid === Session.uid ? ' me' : '');
+      const status = (info && info.status) || 'lobby';
+      const statusClass = status === 'queue' ? 'in-queue' : (status === 'match' ? 'in-match' : (status === 'locked' ? 'locked' : ''));
+      const statusLabel = status === 'queue' ? 'IN QUEUE' : (status === 'match' ? 'IN MATCH' : (status === 'locked' ? 'LOCKED' : 'IDLE'));
+      row.innerHTML = `
+        <span class="uname">${(info && info.username) || 'Unknown'}${uid === Session.uid ? ' (you)' : ''}</span>
+        <span class="ustatus ${statusClass}">${statusLabel}</span>
+      `;
+      list.appendChild(row);
+    });
+  },
+  async setStatus(status) {
+    if (!Session.uid) return;
+    try {
+      await Data.ref('users/' + Session.uid).update({ status, lastSeen: await Data.serverTime() });
+    } catch (err) {
+      console.error('[Presence] setStatus failed:', err);
+    }
+  }
+};
 
-function renderQueue(queue) {
-  const list = $('queueList');
-  list.innerHTML = '';
-  const entries = Object.entries(queue).sort((a, b) => (a[1].joinedAt || 0) - (b[1].joinedAt || 0));
-  $('queueCount').textContent = entries.length;
-  entries.forEach(([uid, info]) => {
-    const div = document.createElement('div');
-    div.className = `queue-item ${uid === state.uid ? 'me' : ''}`;
-    div.innerHTML = `<span>${info.username}${uid === state.uid ? ' (YOU)' : ''}</span><span style="color:var(--text-dim);font-size:11px;">QUEUED</span>`;
-    list.appendChild(div);
-  });
-}
+/* ============================================================
+   PART 7 — MATCHMAKING & TOURNAMENT ENGINE
+   ============================================================ */
+const Lobby = {
+  inQueue: false,
+  queueUsers: {},   // uid -> info
+  queueTimer: null,
+  queueCountdown: 30,
+  currentCountdown: 30,
+  countdownInterval: null,
 
-async function toggleQueue() {
-  if (state.isLockedOut) { notify('Cannot queue during lockout.', 'warn'); return; }
-  if (state.currentMatchId) { notify('Already in a match.', 'warn'); return; }
-  try {
-    if (state.inQueue) {
-      await db.ref(`queue/${state.uid}`).remove();
-      await db.ref(`users/${state.uid}/inQueue`).set(false);
-      state.inQueue = false;
-      setStatus('IDLE', 'idle');
-      notify('Left matchmaking queue.', 'info');
+  init() {
+    document.getElementById('joinQueueBtn').addEventListener('click', () => this.joinQueue());
+    document.getElementById('leaveQueueBtn').addEventListener('click', () => this.leaveQueue());
+
+    // Listen to the queue
+    Data.ref('queue').onValue((snap) => {
+      this.queueUsers = snap.val() || {};
+      this.renderQueue();
+      this.tryStartTournament();
+    });
+
+    // Listen to tournaments — single global listener handles bracket render,
+    // match monitoring, and round advancement
+    Data.ref('tournaments').onValue((snap) => {
+      const tournaments = snap.val() || {};
+      Bracket.render(tournaments);
+      MatchMonitor.checkForMyMatch(tournaments);
+      TournamentOrchestrator.advanceFinishedRounds(tournaments);
+    });
+  },
+
+  renderQueue() {
+    const count = Object.keys(this.queueUsers).length;
+    document.getElementById('queueCount').textContent = count;
+
+    // Show/hide buttons
+    document.getElementById('joinQueueBtn').style.display = this.inQueue ? 'none' : 'block';
+    document.getElementById('leaveQueueBtn').style.display = this.inQueue ? 'block' : 'none';
+
+    // Update queue timer display
+    if (count > 0 && count < 4) {
+      document.getElementById('queueTimer').textContent = `Tournament starts at 4 players (currently ${count}) or when countdown expires`;
+      this.startCountdownIfNeeded();
+    } else if (count >= 4) {
+      document.getElementById('queueTimer').textContent = `Threshold reached — initializing tournament...`;
+      this.stopCountdown();
     } else {
-      await db.ref(`queue/${state.uid}`).set({
-        username: state.username,
-        joinedAt: firebase.database.ServerValue.TIMESTAMP
+      document.getElementById('queueTimer').textContent = `Tournament starts at 4 players or 30s timer`;
+      this.stopCountdown();
+    }
+  },
+
+  startCountdownIfNeeded() {
+    if (this.countdownInterval) return;
+    this.currentCountdown = this.queueCountdown;
+    this.countdownInterval = setInterval(() => {
+      this.currentCountdown--;
+      if (this.currentCountdown <= 0) {
+        this.stopCountdown();
+        this.tryStartTournament(true);
+      } else {
+        const count = Object.keys(this.queueUsers).length;
+        if (count > 0) {
+          document.getElementById('queueTimer').textContent = `Auto-start in ${this.currentCountdown}s (${count} player(s) queued)`;
+        }
+      }
+    }, 1000);
+  },
+
+  stopCountdown() {
+    if (this.countdownInterval) {
+      clearInterval(this.countdownInterval);
+      this.countdownInterval = null;
+    }
+  },
+
+  async joinQueue() {
+    if (!Session.uid) return;
+    try {
+      await Data.ref('queue/' + Session.uid).set({
+        username: Session.user,
+        joinedAt: await Data.serverTime()
       });
-      await db.ref(`users/${state.uid}/inQueue`).set(true);
-      state.inQueue = true;
-      setStatus('IN QUEUE', 'queue');
+      await Presence.setStatus('queue');
+      this.inQueue = true;
+      this.renderQueue();
       notify('Joined matchmaking queue.', 'success');
+    } catch (err) {
+      notify('Failed to join queue: ' + err.message, 'error');
     }
-    updateQueueBtn();
-  } catch (e) {
-    console.error('Queue toggle failed:', e);
-    notify(`Queue action failed: ${e.message}`, 'error');
-  }
-}
+  },
 
-function updateQueueBtn() {
-  const btn = $('queueBtn');
-  if (state.inQueue) {
-    btn.textContent = 'Leave Queue';
-    btn.classList.add('in-queue');
-  } else {
-    btn.textContent = 'Join Queue';
-    btn.classList.remove('in-queue');
-  }
-}
+  async leaveQueue() {
+    if (!Session.uid) return;
+    try {
+      await Data.ref('queue/' + Session.uid).remove();
+      await Presence.setStatus('lobby');
+      this.inQueue = false;
+      this.renderQueue();
+      notify('Left queue.', 'warn');
+    } catch (err) {
+      notify('Failed to leave queue: ' + err.message, 'error');
+    }
+  },
 
-/* ============================================================
-   AUTOMATED MATCHMAKING ORCHESTRATION
-   ------------------------------------------------------------
-   - When queue size >= MIN_PLAYERS, immediately form tournament
-   - When queue size >= 2 (and < MIN_PLAYERS), start 30s countdown
-   - When countdown expires, form tournament with current queue
-   - The user with the smallest uid in the queue becomes the
-     orchestrator (deterministic election via transaction).
-   ============================================================ */
-function evaluateMatchmaking(queue) {
-  const uids = Object.keys(queue || {});
-  if (uids.length < 2) return;
-  if (uids.length >= MIN_PLAYERS) {
-    maybeFormTournament(uids);
-  } else {
-    // Start countdown if not already running
-    db.ref('meta/queueCountdown').transaction((cd) => {
-      if (!cd) {
-        return { expiresAt: serverNow() + COUNTDOWN_MS, startedBy: state.uid };
-      }
-      return cd;
-    }).catch((e) => console.warn('Countdown start tx failed:', e));
-  }
-}
+  updateFromUsers(users) {
+    // If our entry was removed externally, reflect that
+    if (this.inQueue && !this.queueUsers[Session.uid]) {
+      this.inQueue = false;
+      this.renderQueue();
+    }
+  },
 
-function tickCountdown(expiresAt) {
-  if (window._countdownInterval) clearInterval(window._countdownInterval);
-  window._countdownInterval = setInterval(() => {
-    const remaining = expiresAt - serverNow();
-    if (remaining <= 0) {
-      clearInterval(window._countdownInterval);
-      window._countdownInterval = null;
-      $('countdownWrap').classList.add('hidden');
-      // Attempt to form tournament (only orchestrator will succeed)
-      db.ref('queue').once('value').then((snap) => {
-        const q = snap.val() || {};
-        const uids = Object.keys(q);
-        if (uids.length >= 2) maybeFormTournament(uids);
+  async tryStartTournament(force = false) {
+    const uids = Object.keys(this.queueUsers);
+    const count = uids.length;
+    if (count < 2) return;
+    if (!force && count < 4) return;
+
+    // Use a transaction to ensure only one client creates the tournament
+    const lockRef = Data.ref('tournamentLock');
+    try {
+      await lockRef.transaction((cur) => {
+        if (cur) return cur; // someone else is creating
+        return { lockedAt: Date.now(), by: Session.uid };
       });
-    } else {
-      $('countdownTimer').textContent = `${Math.ceil(remaining / 1000)}s`;
+    } catch(e) {
+      console.warn('[Lobby] tournament lock failed', e);
+      return;
     }
-  }, 250);
-}
 
-async function maybeFormTournament(uids) {
-  // Deterministic orchestrator election: smallest uid in queue
-  const orchestrator = uids.sort()[0];
-  if (orchestrator !== state.uid) return; // only orchestrator forms tournament
+    // Re-read queue inside lock
+    let queueSnap;
+    if (firebaseReady) {
+      queueSnap = await Data.ref('queue').once ? (await Data.ref('queue').once('value')) : null;
+    }
+    let currentQueue = this.queueUsers;
+    if (queueSnap && queueSnap.val) currentQueue = queueSnap.val() || {};
+    const queueUids = Object.keys(currentQueue);
+    if (queueUids.length < 2) {
+      await lockRef.remove();
+      return;
+    }
 
-  // Clear countdown
-  try {
-    await db.ref('meta/queueCountdown').remove();
-  } catch (e) { /* ignore */ }
+    try {
+      const tournamentId = 't_' + Date.now();
+      const players = queueUids.map(uid => ({ uid, username: currentQueue[uid].username || 'Player' }));
 
-  // Atomically claim the queue into a new tournament via transaction
-  try {
-    await db.ref('meta/formingLock').transaction((lock) => {
-      if (lock) return; // someone else is forming
-      return { by: state.uid, at: firebase.database.ServerValue.TIMESTAMP };
-    }).then(async (res) => {
-      if (!res.committed) {
-        notify('Tournament formation in progress by another node.', 'info');
-        return;
+      // Assign bye if odd
+      let byeUid = null;
+      let activePlayers = players.slice();
+      if (players.length % 2 === 1) {
+        const byeIdx = Math.floor(Math.random() * players.length);
+        byeUid = players[byeIdx].uid;
+        activePlayers = players.filter((_, i) => i !== byeIdx);
       }
 
-      // Re-read queue (it may have changed)
-      const queueSnap = await db.ref('queue').once('value');
-      const queue = queueSnap.val() || {};
-      const playerUids = Object.keys(queue);
-      if (playerUids.length < 2) {
-        await db.ref('meta/formingLock').remove();
-        return;
+      // Shuffle for fair pairing
+      for (let i = activePlayers.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [activePlayers[i], activePlayers[j]] = [activePlayers[j], activePlayers[i]];
       }
 
-      await createTournament(playerUids, queue);
-      await db.ref('meta/formingLock').remove();
-    });
-  } catch (e) {
-    console.error('Tournament formation failed:', e);
-    notify(`Tournament formation failed: ${e.message}`, 'error');
-    try { await db.ref('meta/formingLock').remove(); } catch (_) {}
+      // Pair them
+      const matches = {};
+      const matchList = [];
+      for (let i = 0; i < activePlayers.length; i += 2) {
+        if (i + 1 >= activePlayers.length) break;
+        const matchId = 'm_' + tournamentId + '_' + (i / 2);
+        const white = activePlayers[i];
+        const black = activePlayers[i + 1];
+        matches[matchId] = {
+          id: matchId,
+          white: { uid: white.uid, username: white.username },
+          black: { uid: black.uid, username: black.username },
+          fen: 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1',
+          pgn: '',
+          status: 'active',
+          moves: [],
+          whiteTime: 600000,  // 10 min in ms
+          blackTime: 600000,
+          lastMoveAt: Date.now(),
+          winner: null,
+          round: 1,
+          tournamentId
+        };
+        matchList.push(matchId);
+      }
+
+      const tournamentData = {
+        id: tournamentId,
+        createdAt: Date.now(),
+        status: 'active',
+        round: 1,
+        players: {},
+        rounds: {
+          1: {
+            matches,
+            bye: byeUid ? { uid: byeUid, username: (currentQueue[byeUid] || {}).username || 'Player' } : null,
+            status: 'active'
+          }
+        }
+      };
+      players.forEach(p => {
+        tournamentData.players[p.uid] = { username: p.username, eliminated: false, byes: (p.uid === byeUid ? 1 : 0) };
+      });
+
+      await Data.ref('tournaments/' + tournamentId).set(tournamentData);
+
+      // Clear the queue
+      if (firebaseReady) {
+        await Data.ref('queue').remove();
+      } else {
+        // Local: remove each
+        for (const uid of queueUids) {
+          await Data.ref('queue/' + uid).remove();
+        }
+      }
+
+      // Move all players to match status (or locked if bye)
+      for (const p of players) {
+        if (p.uid === byeUid) {
+          await Data.ref('users/' + p.uid).update({ status: 'lobby', currentTournament: tournamentId });
+          notify(`You received a BYE this round!`, 'success', 6000);
+        } else {
+          await Data.ref('users/' + p.uid).update({ status: 'match', currentTournament: tournamentId });
+        }
+      }
+
+      notify(`Tournament ${tournamentId} initialized with ${players.length} players.`, 'success', 5000);
+      this.inQueue = false;
+      this.stopCountdown();
+    } catch (err) {
+      console.error('[Lobby] Failed to start tournament:', err);
+      notify('Failed to start tournament: ' + err.message, 'error');
+    } finally {
+      try { await lockRef.remove(); } catch(e) {}
+    }
   }
-}
-
-async function createTournament(playerUids, queue) {
-  const tournamentId = randomId('t');
-  const players = {};
-  playerUids.forEach((uid) => {
-    players[uid] = {
-      username: queue[uid].username || 'Anonymous',
-      alive: true,
-      byes: 0
-    };
-  });
-
-  const tournament = {
-    id: tournamentId,
-    status: 'active',
-    type: 'single-elim',
-    createdAt: firebase.database.ServerValue.TIMESTAMP,
-    players,
-    rounds: {},
-    currentRound: 1
-  };
-
-  await db.ref(`tournaments/${tournamentId}`).set(tournament);
-
-  // Pair round 1
-  await orchestrateRound(tournamentId, 1);
-
-  // Notify all players
-  notify(`Tournament ${tournamentId} started with ${playerUids.length} players.`, 'success', 5000);
-
-  // Remove these players from queue
-  const updates = {};
-  playerUids.forEach((uid) => {
-    updates[`queue/${uid}`] = null;
-    updates[`users/${uid}/inQueue`] = false;
-    updates[`users/${uid}/inTournament`] = tournamentId;
-  });
-  await db.ref().update(updates);
-}
+};
 
 /* ============================================================
-   ROUND ORCHESTRATION (Single-Elimination)
-   ------------------------------------------------------------
-   Called by the orchestrator (smallest alive uid) when:
-   - A new round needs to start
-   - A match completes and round may advance
+   PART 8 — BRACKET RENDERING
    ============================================================ */
-async function orchestrateRound(tournamentId, roundNum) {
-  const tSnap = await db.ref(`tournaments/${tournamentId}`).once('value');
-  const t = tSnap.val();
-  if (!t) return;
-
-  // Election: smallest alive uid orchestrates
-  const aliveUids = Object.entries(t.players)
-    .filter(([_, p]) => p.alive)
-    .map(([uid]) => uid)
-    .sort();
-  if (aliveUids.length === 0) return;
-  if (aliveUids[0] !== state.uid) return; // not orchestrator
-
-  // Already paired this round?
-  if (t.rounds && t.rounds[roundNum] && t.rounds[roundNum].matches) {
-    return;
-  }
-
-  // Tournament complete?
-  if (aliveUids.length === 1) {
-    await db.ref(`tournaments/${tournamentId}/status`).set('complete');
-    await db.ref(`tournaments/${tournamentId}/winner`).set(aliveUids[0]);
-    notify(`Tournament complete! Winner: ${t.players[aliveUids[0]].username}`, 'success', 8000);
-    // Cleanup: remove tournament refs from users
-    const updates = {};
-    Object.keys(t.players).forEach((uid) => {
-      updates[`users/${uid}/inTournament`] = null;
-    });
-    await db.ref().update(updates);
-    return;
-  }
-
-  // Handle odd count: assign a bye to one random player
-  let pairingPool = [...aliveUids];
-  let byeUid = null;
-  if (pairingPool.length % 2 === 1) {
-    // Pick a random player to receive a bye
-    byeUid = pairingPool[Math.floor(Math.random() * pairingPool.length)];
-    pairingPool = pairingPool.filter((u) => u !== byeUid);
-  }
-
-  // Shuffle for fairness
-  for (let i = pairingPool.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [pairingPool[i], pairingPool[j]] = [pairingPool[j], pairingPool[i]];
-  }
-
-  // Create matches
-  const matches = {};
-  const matchUpdates = {};
-  for (let i = 0; i < pairingPool.length; i += 2) {
-    const w = pairingPool[i];
-    const b = pairingPool[i + 1];
-    const matchId = randomId('m');
-    matches[matchId] = {
-      white: w,
-      black: b,
-      whiteName: t.players[w].username,
-      blackName: t.players[b].username,
-      status: 'active',
-      fen: 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1',
-      turn: 'w',
-      whiteTime: TIME_CONTROL_MS,
-      blackTime: TIME_CONTROL_MS,
-      lastMoveAt: firebase.database.ServerValue.TIMESTAMP,
-      moves: [],
-      tournamentId,
-      round: roundNum,
-      createdAt: firebase.database.ServerValue.TIMESTAMP
-    };
-    matchUpdates[`matches/${matchId}`] = matches[matchId];
-    matchUpdates[`users/${w}/inMatch`] = matchId;
-    matchUpdates[`users/${b}/inMatch`] = matchId;
-  }
-
-  // Bye player advances automatically
-  if (byeUid) {
-    matchUpdates[`tournaments/${tournamentId}/players/${byeUid}/byes`] = (t.players[byeUid].byes || 0) + 1;
-    matchUpdates[`tournaments/${tournamentId}/rounds/${roundNum}/bye`] = byeUid;
-  }
-
-  matchUpdates[`tournaments/${tournamentId}/rounds/${roundNum}/matches`] = matches;
-  matchUpdates[`tournaments/${tournamentId}/rounds/${roundNum}/status`] = 'active';
-
-  await db.ref().update(matchUpdates);
-}
-
-/* ============================================================
-   TOURNAMENT GLOBAL LISTENER
-   ============================================================ */
-function initTournamentGlobalListener() {
-  // Listen to all tournaments to render active bracket
-  db.ref('tournaments').on('value', (snap) => {
-    const tournaments = snap.val() || {};
-    renderTournaments(tournaments);
-  }, (err) => console.error('Tournament listener error:', err));
-}
-
-function renderTournaments(tournaments) {
-  const view = $('bracketView');
-  view.innerHTML = '';
-
-  const active = Object.entries(tournaments)
-    .filter(([_, t]) => t.status !== 'archived')
-    .sort((a, b) => (b[1].createdAt || 0) - (a[1].createdAt || 0));
-
-  if (active.length === 0) {
-    view.innerHTML = '<div class="bracket-empty">No active tournament. Join the queue to begin.</div>';
-    $('bracketPanel').classList.add('hidden');
-    return;
-  }
-
-  $('bracketPanel').classList.remove('hidden');
-
-  active.forEach(([tid, t]) => {
+const Bracket = {
+  render(tournaments) {
+    const view = document.getElementById('bracketView');
+    const active = Object.entries(tournaments).filter(([id, t]) => t.status === 'active' || t.status === 'finished');
+    if (active.length === 0) {
+      view.innerHTML = '<div style="color:var(--text-lo); font-size:12px; text-align:center; padding:32px 0;">No active tournament. Join the queue to begin.</div>';
+      return;
+    }
+    view.innerHTML = '';
+    // Show the most recent active tournament
+    active.sort((a, b) => (b[1].createdAt || 0) - (a[1].createdAt || 0));
+    const [tid, t] = active[0];
     const rounds = t.rounds || {};
     const roundKeys = Object.keys(rounds).sort((a, b) => Number(a) - Number(b));
-
-    roundKeys.forEach((rk) => {
+    roundKeys.forEach(rk => {
       const round = rounds[rk];
-      const roundDiv = document.createElement('div');
-      roundDiv.className = 'bracket-round';
-      roundDiv.innerHTML = `<div class="bracket-round-title">Round ${rk}</div>`;
+      const block = document.createElement('div');
+      block.className = 'round-block';
+      block.innerHTML = `<h3>Round ${rk}${round.bye ? ' (1 bye assigned)' : ''}</h3>`;
 
       if (round.bye) {
-        const byeDiv = document.createElement('div');
-        byeDiv.className = 'bracket-match';
-        const byeName = (t.players[round.bye] || {}).username || '—';
-        byeDiv.innerHTML = `
-          <div class="player-row bye"><span>${byeName}</span><span class="score">BYE</span></div>
-          <div class="player-row pending"><span>—</span><span class="score">—</span></div>
+        const byeCard = document.createElement('div');
+        byeCard.className = 'match-card finished';
+        byeCard.innerHTML = `
+          <div class="player-line winner">${round.bye.username} — BYE</div>
+          <div class="match-status">auto-advanced</div>
         `;
-        roundDiv.appendChild(byeDiv);
+        block.appendChild(byeCard);
       }
 
       const matches = round.matches || {};
       Object.entries(matches).forEach(([mid, m]) => {
-        const mDiv = document.createElement('div');
-        mDiv.className = 'bracket-match';
-        const wName = m.whiteName || '—';
-        const bName = m.blackName || '—';
-        const wClass = m.status === 'complete'
-          ? (m.winner === m.white ? 'winner' : (m.winner === null ? '' : 'loser'))
-          : '';
-        const bClass = m.status === 'complete'
-          ? (m.winner === m.black ? 'winner' : (m.winner === null ? '' : 'loser'))
-          : '';
-        const wScore = m.status === 'complete' ? (m.winner === m.white ? '1' : (m.winner === null ? '½' : '0')) : '—';
-        const bScore = m.status === 'complete' ? (m.winner === m.black ? '1' : (m.winner === null ? '½' : '0')) : '—';
-        mDiv.innerHTML = `
-          <div class="player-row ${wClass}"><span>${wName}</span><span class="score">${wScore}</span></div>
-          <div class="player-row ${bClass}"><span>${bName}</span><span class="score">${bScore}</span></div>
+        const card = document.createElement('div');
+        card.className = 'match-card' + (m.status === 'active' ? ' active' : ' finished');
+        const white = m.white || {};
+        const black = m.black || {};
+        let whiteClass = '', blackClass = '';
+        if (m.winner === 'white') { whiteClass = 'winner'; blackClass = 'loser'; }
+        else if (m.winner === 'black') { blackClass = 'winner'; whiteClass = 'loser'; }
+        else if (m.winner === 'draw') { whiteClass = ''; blackClass = ''; }
+        const statusText = m.status === 'active' ? 'IN PROGRESS' :
+                           (m.winner === 'draw' ? 'DRAW' :
+                            m.winner ? 'FINISHED' : 'PENDING');
+        card.innerHTML = `
+          <div class="player-line ${whiteClass}"><span>${white.username || '?'}</span><span style="font-size:10px;opacity:0.6;">W</span></div>
+          <div class="vs">VS</div>
+          <div class="player-line ${blackClass}"><span>${black.username || '?'}</span><span style="font-size:10px;opacity:0.6;">B</span></div>
+          <div class="match-status">${statusText}${m.endReason ? ' · ' + m.endReason : ''}</div>
         `;
-        roundDiv.appendChild(mDiv);
+        // Click to spectate if active and not my match
+        if (m.status === 'active') {
+          card.style.cursor = 'pointer';
+          card.addEventListener('click', () => {
+            if (ChessMatch.isActiveForMe(m)) {
+              ChessMatch.openMatch(tid, mid, m);
+            } else {
+              notify('Match in progress between ' + (white.username||'?') + ' and ' + (black.username||'?') + '.', 'info');
+            }
+          });
+        }
+        block.appendChild(card);
       });
 
-      view.appendChild(roundDiv);
+      view.appendChild(block);
     });
-  });
-}
-
-function attachToTournament(tid) {
-  state.currentTournamentId = tid;
-  // Detach previous
-  state.tournamentUnsubscribers.forEach((fn) => fn());
-  state.tournamentUnsubscribers = [];
-
-  const ref = db.ref(`tournaments/${tid}`);
-  const handler = (snap) => {
-    const t = snap.val();
-    if (!t) return;
-    if (t.status === 'complete' && state.currentTournamentId === tid) {
-      const winner = t.winner;
-      const winnerName = (t.players[winner] || {}).username || 'Unknown';
-      if (winner !== state.uid) {
-        notify(`Tournament ended. Winner: ${winnerName}`, 'info', 6000);
-      } else {
-        notify('You won the tournament!', 'success', 8000);
-      }
-      state.currentTournamentId = null;
-    }
-  };
-  ref.on('value', handler);
-  state.tournamentUnsubscribers.push(() => ref.off('value', handler));
-}
+  }
+};
 
 /* ============================================================
-   MATCH ATTACHMENT
+   PART 8.5 — TOURNAMENT ORCHESTRATOR (round advancement)
+   Single global listener drives all bracket progression to
+   avoid listener leaks.
    ============================================================ */
-function attachToMatch(matchId) {
-  // Detach previous
-  state.matchUnsubscribers.forEach((fn) => fn());
-  state.matchUnsubscribers = [];
+const TournamentOrchestrator = {
+  advancing: new Set(), // tournament IDs currently being advanced
 
-  state.currentMatchId = matchId;
-  state.chess = new Chess();
-  state.selectedSquare = null;
-  state.legalMoves = [];
+  advanceFinishedRounds(tournaments) {
+    Object.entries(tournaments).forEach(([tid, t]) => {
+      if (t.status !== 'active') return;
+      const rounds = t.rounds || {};
+      const roundKeys = Object.keys(rounds).map(Number).sort((a, b) => a - b);
+      if (roundKeys.length === 0) return;
+      const currentRound = roundKeys[roundKeys.length - 1];
+      const round = rounds[currentRound];
+      if (!round || round.status !== 'active') return;
+      const matches = round.matches || {};
+      const matchList = Object.values(matches);
+      if (matchList.length === 0) return;
+      const allFinished = matchList.every(m => m.status === 'finished');
+      if (!allFinished) return;
+      if (this.advancing.has(tid)) return;
+      this.advancing.add(tid);
+      this.advanceTournament(tid, currentRound);
+    });
+  },
 
-  $('matchPanel').classList.remove('hidden');
-  $('bracketPanel').classList.remove('hidden');
-  setStatus('IN MATCH', 'match');
-
-  const ref = db.ref(`matches/${matchId}`);
-  const handler = (snap) => {
-    const m = snap.val();
-    if (!m) {
-      // Match deleted
-      detachFromMatch();
+  async advanceTournament(tid, finishedRound) {
+    const lockRef = Data.ref('tournamentLock');
+    try {
+      await lockRef.transaction((cur) => cur ? cur : { lockedAt: Date.now(), by: Session.uid });
+    } catch(e) {
+      this.advancing.delete(tid);
       return;
     }
-    onMatchUpdate(m);
-  };
-  ref.on('value', handler);
-  state.matchUnsubscribers.push(() => ref.off('value', handler));
 
-  // Start local clock ticker
-  startClockTicker();
-}
+    try {
+      await Data.ref('tournaments/' + tid).transaction((t) => {
+        if (!t) return t;
+        const rounds = t.rounds || {};
+        const round = rounds[finishedRound];
+        if (!round || round.status !== 'active') return t;
+        const matches = round.matches || {};
+        const matchList = Object.values(matches);
+        if (matchList.length === 0) return t;
+        const allFinished = matchList.every(m => m.status === 'finished');
+        if (!allFinished) return t;
+        round.status = 'finished';
 
-function detachFromMatch() {
-  state.matchUnsubscribers.forEach((fn) => fn());
-  state.matchUnsubscribers = [];
-  state.currentMatchId = null;
-  state.color = null;
-  state.chess = null;
-  state.selectedSquare = null;
-  stopClockTicker();
-  $('matchPanel').classList.add('hidden');
-  if (!state.isLockedOut) setStatus('IDLE', 'idle');
-}
+        // Collect winners + bye player
+        const winners = [];
+        matchList.forEach(m => {
+          if (m.winner === 'white' && m.white) winners.push({ uid: m.white.uid, username: m.white.username });
+          else if (m.winner === 'black' && m.black) winners.push({ uid: m.black.uid, username: m.black.username });
+          else if (m.winner === 'draw') {
+            if (m.white) winners.push({ uid: m.white.uid, username: m.white.username });
+            if (m.black) winners.push({ uid: m.black.uid, username: m.black.username });
+          }
+        });
+        if (round.bye) winners.push({ uid: round.bye.uid, username: round.bye.username });
 
-function onMatchUpdate(m) {
-  // Cache snapshot for clock ticker
-  _lastMatchSnapshot = m;
-  // Determine our color
-  if (m.white === state.uid) state.color = 'w';
-  else if (m.black === state.uid) state.color = 'b';
-  else state.color = null;
+        // If only one winner — tournament over
+        if (winners.length <= 1) {
+          t.status = 'finished';
+          t.champion = winners[0] || null;
+          return t;
+        }
 
-  // Sync local chess.js
-  state.chess = new Chess(m.fen);
+        // Assign new bye if odd
+        let byeUid = null;
+        let active = winners.slice();
+        if (winners.length % 2 === 1) {
+          const byeIdx = Math.floor(Math.random() * winners.length);
+          byeUid = winners[byeIdx].uid;
+          active = winners.filter((_, i) => i !== byeIdx);
+        }
 
-  // Update header
-  $('whiteName').textContent = m.whiteName || 'White';
-  $('blackName').textContent = m.blackName || 'Black';
+        // Shuffle for fair pairing
+        for (let i = active.length - 1; i > 0; i--) {
+          const j = Math.floor(Math.random() * (i + 1));
+          [active[i], active[j]] = [active[j], active[i]];
+        }
 
-  // Active card
-  $('whiteCard').classList.toggle('active', m.turn === 'w' && m.status === 'active');
-  $('blackCard').classList.toggle('active', m.turn === 'b' && m.status === 'active');
+        const newMatches = {};
+        for (let i = 0; i < active.length; i += 2) {
+          if (i + 1 >= active.length) break;
+          const matchId = 'm_' + tid + '_r' + (finishedRound + 1) + '_' + (i / 2);
+          newMatches[matchId] = {
+            id: matchId,
+            white: { uid: active[i].uid, username: active[i].username },
+            black: { uid: active[i+1].uid, username: active[i+1].username },
+            fen: 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1',
+            pgn: '',
+            status: 'active',
+            moves: [],
+            whiteTime: 600000,
+            blackTime: 600000,
+            lastMoveAt: Date.now(),
+            winner: null,
+            round: finishedRound + 1,
+            tournamentId: tid
+          };
+        }
 
-  // Render board
-  renderBoard(m);
+        const newRound = {
+          matches: newMatches,
+          bye: byeUid ? { uid: byeUid, username: (winners.find(w => w.uid === byeUid) || {}).username || 'Player' } : null,
+          status: 'active'
+        };
+        rounds[finishedRound + 1] = newRound;
+        t.round = finishedRound + 1;
+        t.rounds = rounds;
+        return t;
+      });
 
-  // Render move history
-  renderMoveHistory(m.moves || []);
-
-  // If match complete, handle end
-  if (m.status === 'complete') {
-    handleMatchEnd(m);
+      // Notify advancing players to return to lobby status so they can be
+      // picked up by the next round's matchmaking detection
+      // (status is updated by MatchMonitor when their next match opens)
+    } catch(e) {
+      console.error('[TournamentOrchestrator] advance failed', e);
+    } finally {
+      this.advancing.delete(tid);
+      try { await lockRef.remove(); } catch(e) {}
+    }
   }
-}
+};
 
-function renderBoard(m) {
-  const board = $('chessBoard');
-  board.innerHTML = '';
+/* ============================================================
+   PART 9 — MATCH MONITOR (auto-open my matches)
+   ============================================================ */
+const MatchMonitor = {
+  activeMatchRef: null,
+  activeMatchId: null,
 
-  // Board orientation: if player is black, flip
-  const flip = state.color === 'b';
-  const rows = flip ? [...Array(8).keys()].reverse() : [...Array(8).keys()];
-  const cols = flip ? [...Array(8).keys()].reverse() : [...Array(8).keys()];
-
-  const fenRows = m.fen.split(' ')[0].split('/');
-  const lastMove = m.lastMove || null;
-
-  // Check if current side to move is in check
-  let checkSquare = null;
-  if (state.chess && state.chess.in_check()) {
-    const turn = state.chess.turn();
-    const board2d = state.chess.board();
-    for (let r = 0; r < 8; r++) {
-      for (let c = 0; c < 8; c++) {
-        const piece = board2d[r][c];
-        if (piece && piece.type === 'k' && piece.color === turn) {
-          checkSquare = String.fromCharCode(97 + c) + (8 - r);
+  checkForMyMatch(tournaments) {
+    if (ChessMatch.isOpen) return; // already in a match
+    for (const [tid, t] of Object.entries(tournaments)) {
+      if (t.status !== 'active') continue;
+      const rounds = t.rounds || {};
+      for (const rk of Object.keys(rounds)) {
+        const matches = rounds[rk].matches || {};
+        for (const [mid, m] of Object.entries(matches)) {
+          if (m.status !== 'active') continue;
+          if ((m.white && m.white.uid === Session.uid) || (m.black && m.black.uid === Session.uid)) {
+            // It's my match — open it
+            ChessMatch.openMatch(tid, mid, m);
+            return;
+          }
         }
       }
     }
   }
+};
 
-  for (const r of rows) {
-    for (const c of cols) {
-      const sq = String.fromCharCode(97 + c) + (8 - r);
-      const div = document.createElement('div');
-      div.className = `square ${(r + c) % 2 === 0 ? 'light' : 'dark'}`;
-      div.dataset.square = sq;
+/* ============================================================
+   PART 10 — CHESS MATCH ENGINE
+   ============================================================ */
+const ChessMatch = {
+  isOpen: false,
+  tournamentId: null,
+  matchId: null,
+  matchData: null,
+  chess: null,
+  myColor: null,
+  selectedSquare: null,
+  legalMovesCache: [],
+  serverTimeOffset: 0,
+  clockInterval: null,
+  matchListener: null,
+  lastMoveAt: null,
+  isMyTurn: false,
+  resigning: false,
 
-      if (state.selectedSquare === sq) div.classList.add('selected');
-      if (state.legalMoves.some((mv) => mv.to === sq)) {
-        const targetPiece = fenPieceAt(m.fen, sq);
-        if (targetPiece) div.classList.add('legal-capture');
-        else div.classList.add('legal-move');
-      }
-      if (lastMove && (lastMove.from === sq || lastMove.to === sq)) div.classList.add('last-move');
-      if (checkSquare === sq) div.classList.add('in-check');
+  isActiveForMe(m) {
+    return (m.white && m.white.uid === Session.uid) || (m.black && m.black.uid === Session.uid);
+  },
 
-      const piece = fenPieceAt(m.fen, sq);
-      if (piece) {
-        const span = document.createElement('span');
-        span.className = `piece ${piece === piece.toUpperCase() ? 'white' : 'black'}`;
-        span.textContent = PIECE_UNICODE[piece];
-        div.appendChild(span);
-      }
+  init() {
+    // Track server time offset
+    Data.serverTimeOffset().onValue((snap) => {
+      this.serverTimeOffset = snap.val() || 0;
+    });
 
-      div.addEventListener('click', () => onSquareClick(sq));
-      board.appendChild(div);
-    }
-  }
-}
+    document.getElementById('resignBtn').addEventListener('click', () => this.confirmResign());
+  },
 
-function fenPieceAt(fen, square) {
-  const file = square.charCodeAt(0) - 97; // 0..7
-  const rank = parseInt(square[1], 10);   // 1..8
-  const row = 8 - rank;
-  const col = file;
-  const fenRow = fen.split(' ')[0].split('/')[row];
-  let c = 0;
-  for (const ch of fenRow) {
-    if (/\d/.test(ch)) {
-      c += parseInt(ch, 10);
-    } else {
-      if (c === col) return ch;
-      c++;
-    }
-  }
-  return null;
-}
-
-function onSquareClick(square) {
-  if (!state.chess || !state.currentMatchId) return;
-  if (state.color !== state.chess.turn()) {
-    notify('Not your turn.', 'warn', 1800);
-    return;
-  }
-
-  const piece = fenPieceAt(state.chess.fen(), square);
-  const pieceColor = piece ? (piece === piece.toUpperCase() ? 'w' : 'b') : null;
-
-  if (state.selectedSquare) {
-    // Attempt move
-    const moveAttempt = state.legalMoves.find((mv) => mv.to === square);
-    if (moveAttempt) {
-      makeMove(state.selectedSquare, square, moveAttempt.promotion || 'q');
-      state.selectedSquare = null;
-      state.legalMoves = [];
+  async openMatch(tid, mid, matchSnapshot) {
+    if (this.isOpen) return;
+    if (!this.isActiveForMe(matchSnapshot)) {
+      notify('This match is not yours.', 'warn');
       return;
     }
-    // If clicked own piece, reselect
-    if (pieceColor === state.color) {
-      selectSquare(square);
+    this.isOpen = true;
+    this.tournamentId = tid;
+    this.matchId = mid;
+    this.matchData = matchSnapshot;
+    this.myColor = matchSnapshot.white.uid === Session.uid ? 'white' : 'black';
+    this.chess = new Chess();
+    try {
+      if (matchSnapshot.fen) this.chess.load(matchSnapshot.fen);
+    } catch(e) {
+      console.warn('[ChessMatch] failed to load FEN, starting fresh:', e);
+    }
+
+    // UI
+    document.getElementById('matchView').classList.add('visible');
+    document.getElementById('opponentLabel').textContent = 'vs. ' + (this.myColor === 'white' ? matchSnapshot.black.username : matchSnapshot.white.username);
+    document.getElementById('roleLabel').textContent = 'You are: ' + this.myColor.toUpperCase();
+    document.getElementById('moveStatus').textContent = 'Click a piece to select, then click a target square.';
+
+    this.renderBoard();
+    this.startClock();
+
+    // Subscribe to match updates
+    const matchPath = 'tournaments/' + tid + '/rounds/' + (matchSnapshot.round || 1) + '/matches/' + mid;
+    this.matchListener = Data.ref(matchPath).onValue((snap) => {
+      if (!snap || !snap.val) return;
+      const m = snap.val();
+      if (!m) {
+        this.closeMatch('Match data lost.');
+        return;
+      }
+      this.matchData = m;
+      // Sync FEN
+      if (m.fen && m.fen !== this.chess.fen()) {
+        try { this.chess.load(m.fen); } catch(e) { console.warn('FEN reload failed', e); }
+      }
+      this.isMyTurn = (this.chess.turn() === 'w' && this.myColor === 'white') ||
+                      (this.chess.turn() === 'b' && this.myColor === 'black');
+      this.renderBoard();
+      this.updateClocksFromMatch();
+      this.updateStatusLine();
+
+      // Check for game end
+      if (m.status === 'finished') {
+        this.handleMatchEnd(m);
+      }
+    });
+  },
+
+  renderBoard() {
+    const board = document.getElementById('chessBoard');
+    board.innerHTML = '';
+    const fen = this.chess.fen();
+    const rows = fen.split(' ')[0].split('/');
+    const boardArr = [];
+    for (const row of rows) {
+      const arr = [];
+      for (const ch of row) {
+        if (/\d/.test(ch)) { for (let i = 0; i < parseInt(ch); i++) arr.push(null); }
+        else arr.push(ch);
+      }
+      boardArr.push(arr);
+    }
+
+    // If player is black, flip the board
+    const displayRows = this.myColor === 'black' ? boardArr.slice().reverse() : boardArr;
+    const displayCols = this.myColor === 'black' ? 7 : 0;
+
+    const lastMove = (this.matchData.moves && this.matchData.moves.length > 0)
+      ? this.matchData.moves[this.matchData.moves.length - 1]
+      : null;
+    let lastFrom = null, lastTo = null;
+    if (lastMove) {
+      lastFrom = lastMove.from;
+      lastTo = lastMove.to;
+    }
+
+    const inCheck = this.chess.in_check();
+
+    for (let r = 0; r < 8; r++) {
+      for (let c = 0; c < 8; c++) {
+        const actualR = this.myColor === 'black' ? 7 - r : r;
+        const actualC = this.myColor === 'black' ? 7 - c : c;
+        const piece = boardArr[actualR][actualC];
+        const square = document.createElement('div');
+        const isLight = (actualR + actualC) % 2 === 0;
+        square.className = 'square ' + (isLight ? 'light' : 'dark');
+        const file = 'abcdefgh'[actualC];
+        const rank = (8 - actualR).toString();
+        const squareName = file + rank;
+        square.dataset.square = squareName;
+
+        // Last move highlight
+        if (lastFrom && squareName === lastFrom) square.classList.add('last-move');
+        if (lastTo && squareName === lastTo) square.classList.add('last-move');
+
+        // Selected
+        if (this.selectedSquare === squareName) square.classList.add('selected');
+
+        // Legal move dots
+        if (this.legalMovesCache.some(mv => mv.to === squareName)) {
+          if (piece) square.classList.add('legal-capture');
+          else square.classList.add('legal');
+        }
+
+        // In-check highlight on king square
+        if (inCheck) {
+          if (piece === 'K' && this.chess.turn() === 'w') square.classList.add('in-check');
+          if (piece === 'k' && this.chess.turn() === 'b') square.classList.add('in-check');
+        }
+
+        if (piece) {
+          const pieceEl = document.createElement('span');
+          pieceEl.className = 'piece ' + (piece === piece.toUpperCase() ? 'white' : 'black');
+          pieceEl.textContent = this.glyphFor(piece);
+          square.appendChild(pieceEl);
+        }
+
+        square.addEventListener('click', () => this.onSquareClick(squareName));
+        board.appendChild(square);
+      }
+    }
+  },
+
+  glyphFor(piece) {
+    const map = {
+      'K': '\u2654', 'Q': '\u2655', 'R': '\u2656', 'B': '\u2657', 'N': '\u2658', 'P': '\u2659',
+      'k': '\u265A', 'q': '\u265B', 'r': '\u265C', 'b': '\u265D', 'n': '\u265E', 'p': '\u265F'
+    };
+    return map[piece] || '';
+  },
+
+  onSquareClick(squareName) {
+    if (!this.isOpen) return;
+    if (this.matchData.status !== 'active') return;
+    if (!this.isMyTurn) {
+      this.flashStatus('Not your turn.');
       return;
     }
-    // Otherwise deselect
-    state.selectedSquare = null;
-    state.legalMoves = [];
-    renderBoard(currentMatchSnapshot());
-    return;
-  } else {
-    if (pieceColor === state.color) {
-      selectSquare(square);
-    }
-  }
-}
 
-function selectSquare(square) {
-  state.selectedSquare = square;
-  try {
-    state.legalMoves = state.chess.moves({ square, verbose: true });
-  } catch (e) {
-    state.legalMoves = [];
-  }
-  renderBoard(currentMatchSnapshot());
-}
+    const piece = this.chess.get(squareName);
 
-let _lastMatchSnapshot = null;
-function currentMatchSnapshot() {
-  return _lastMatchSnapshot || { fen: state.chess ? state.chess.fen() : 'start', moves: [] };
-}
-
-function renderMoveHistory(moves) {
-  const el = $('moveHistory');
-  el.innerHTML = '';
-  if (!moves || moves.length === 0) {
-    el.innerHTML = '<span style="color:var(--text-dim);">// no moves yet</span>';
-    return;
-  }
-  for (let i = 0; i < moves.length; i += 2) {
-    const num = Math.floor(i / 2) + 1;
-    const w = moves[i] ? moves[i].san : '';
-    const b = moves[i + 1] ? moves[i + 1].san : '';
-    const row = document.createElement('div');
-    row.innerHTML = `<span class="move-num">${num}.</span><span class="move-san">${w}</span>${b ? `<span class="move-san">${b}</span>` : ''}`;
-    el.appendChild(row);
-  }
-  el.scrollTop = el.scrollHeight;
-}
-
-/* ============================================================
-   MOVE SUBMISSION (transactional)
-   ============================================================ */
-async function makeMove(from, to, promotion = 'q') {
-  if (!state.currentMatchId) return;
-  const matchRef = db.ref(`matches/${state.currentMatchId}`);
-
-  try {
-    const result = await matchRef.transaction((m) => {
-      if (!m) return m;
-      if (m.status !== 'active') return m;
-
-      // Verify it's our turn
-      const myColor = (m.white === state.uid) ? 'w' : (m.black === state.uid) ? 'b' : null;
-      if (!myColor || myColor !== m.turn) return m;
-
-      // Validate via chess.js
-      const chess = new Chess(m.fen);
-      let move;
-      try {
-        move = chess.move({ from, to, promotion });
-      } catch (e) {
-        return m; // invalid
+    // If a square is already selected, try to move
+    if (this.selectedSquare) {
+      // If clicking same square, deselect
+      if (squareName === this.selectedSquare) {
+        this.selectedSquare = null;
+        this.legalMovesCache = [];
+        this.renderBoard();
+        return;
       }
-      if (!move) return m;
-
-      // Compute clock
-      const now = Date.now() + state.serverTimeOffset;
-      const elapsed = now - (m.lastMoveAt || now);
-      const moverKey = myColor === 'w' ? 'whiteTime' : 'blackTime';
-      let moverTime = (m[moverKey] || 0) - elapsed + INCREMENT_MS;
-
-      let endState = null;
-      if (chess.in_checkmate()) {
-        endState = { status: 'complete', result: 'checkmate', winner: myColor === 'w' ? m.white : m.black, winnerColor: myColor, loser: myColor === 'w' ? m.black : m.white, endTime: now };
-      } else if (chess.in_stalemate()) {
-        endState = { status: 'complete', result: 'stalemate', winner: null, endTime: now };
-      } else if (chess.insufficient_material()) {
-        endState = { status: 'complete', result: 'insufficient_material', winner: null, endTime: now };
-      } else if (chess.in_threefold_repetition()) {
-        endState = { status: 'complete', result: 'threefold', winner: null, endTime: now };
-      } else if (chess.in_draw()) {
-        endState = { status: 'complete', result: 'draw', winner: null, endTime: now };
+      // If clicking another of our pieces, switch selection
+      if (piece && piece.color === this.chess.turn()) {
+        this.selectedSquare = squareName;
+        this.legalMovesCache = this.chess.moves({ square: squareName, verbose: true });
+        this.renderBoard();
+        return;
       }
-
-      m.fen = chess.fen();
-      m.turn = chess.turn();
-      m[moverKey] = Math.max(0, moverTime);
-      m.lastMoveAt = now;
-      m.lastMove = { from, to, promotion, san: move.san, by: state.uid, color: myColor, at: now };
-
-      // Push move to history
-      const moves = m.moves || [];
-      moves.push({ from, to, promotion, san: move.san, by: state.uid, color: myColor, at: now });
-      m.moves = moves;
-
-      if (endState) {
-        m.status = endState.status;
-        m.result = endState.result;
-        m.winner = endState.winner;
-        m.winnerColor = endState.winnerColor || null;
-        m.loser = endState.loser || null;
-        m.endTime = endState.endTime;
+      // Try to move
+      const move = this.legalMovesCache.find(mv => mv.to === squareName);
+      if (move) {
+        this.submitMove(this.selectedSquare, squareName);
+        this.selectedSquare = null;
+        this.legalMovesCache = [];
+      } else {
+        this.flashStatus('Illegal move.');
+        this.selectedSquare = null;
+        this.legalMovesCache = [];
+        this.renderBoard();
       }
-
-      return m;
-    });
-
-    if (!result.committed) {
-      notify('Move rejected by server.', 'warn');
+      return;
     }
-  } catch (e) {
-    console.error('Move transaction failed:', e);
-    notify(`Move failed: ${e.message}`, 'error');
-  }
-}
 
-/* ============================================================
-   RESIGNATION
-   ============================================================ */
-async function resignMatch() {
-  if (!state.currentMatchId) return;
-  if (!confirm('Resign current match? This will trigger a 120-second lockout.')) return;
-
-  const matchRef = db.ref(`matches/${state.currentMatchId}`);
-  try {
-    const result = await matchRef.transaction((m) => {
-      if (!m || m.status !== 'active') return m;
-      const myColor = (m.white === state.uid) ? 'w' : (m.black === state.uid) ? 'b' : null;
-      if (!myColor) return m;
-      m.status = 'complete';
-      m.result = 'resignation';
-      m.winner = myColor === 'w' ? m.black : m.white;
-      m.winnerColor = myColor === 'w' ? 'b' : 'w';
-      m.loser = state.uid;
-      m.endTime = Date.now() + state.serverTimeOffset;
-      return m;
-    });
-    if (!result.committed) notify('Resignation failed.', 'warn');
-  } catch (e) {
-    console.error('Resign failed:', e);
-    notify(`Resign failed: ${e.message}`, 'error');
-  }
-}
-
-/* ============================================================
-   MATCH END HANDLER
-   ============================================================ */
-function handleMatchEnd(m) {
-  // Update users: clear inMatch
-  db.ref(`users/${state.uid}/inMatch`).set(null).catch(() => {});
-
-  // Apply lockout to loser (if there is one and it's us)
-  if (m.loser && m.loser === state.uid && !state.isLockedOut) {
-    applyLockout(state.uid);
-  }
-
-  // If winner is us, notify
-  if (m.winner === state.uid) {
-    notify(`Victory! ${m.result}.`, 'success', 5000);
-  } else if (m.loser === state.uid) {
-    notify(`Defeat — ${m.result}. Lockout engaged.`, 'error', 5000);
-  } else if (m.winner === null) {
-    notify(`Draw — ${m.result}.`, 'info', 5000);
-  }
-
-  // Detach from match (but keep tournament attached for bracket updates)
-  setTimeout(() => {
-    if (state.currentMatchId === m.id || state.currentMatchId === null) {
-      // If we were the orchestrator, advance the round
-      maybeAdvanceRound(m);
-      detachFromMatch();
+    // First click — select piece
+    if (piece && piece.color === this.chess.turn()) {
+      this.selectedSquare = squareName;
+      this.legalMovesCache = this.chess.moves({ square: squareName, verbose: true });
+      this.renderBoard();
     }
-  }, 1500);
-}
+  },
 
-async function maybeAdvanceRound(completedMatch) {
-  if (!completedMatch.tournamentId) return;
-  try {
-    const tSnap = await db.ref(`tournaments/${completedMatch.tournamentId}`).once('value');
-    const t = tSnap.val();
-    if (!t) return;
+  async submitMove(from, to) {
+    if (!this.isOpen) return;
+    const matchPath = 'tournaments/' + this.tournamentId + '/rounds/' + (this.matchData.round || 1) + '/matches/' + this.matchId;
+    try {
+      const result = await Data.ref(matchPath).transaction((m) => {
+        if (!m) return m;
+        if (m.status !== 'active') return m; // already ended
 
-    const round = t.rounds && t.rounds[completedMatch.round];
-    if (!round || !round.matches) return;
+        // Re-load from current FEN to be safe
+        const c = new Chess();
+        try { c.load(m.fen); } catch(e) { return m; }
 
-    // Check all matches in this round are complete
-    const allMatches = Object.values(round.matches);
-    const allDone = allMatches.every((mm) => mm.status === 'complete');
-    if (!allDone) return;
+        // Verify it's the correct turn
+        const moverColor = c.turn(); // 'w' or 'b'
+        const moverIsWhite = (moverColor === 'w');
+        const submitterIsWhite = (m.white.uid === Session.uid);
+        if (moverIsWhite !== submitterIsWhite) return m; // not your turn
 
-    // Mark round complete
-    await db.ref(`tournaments/${completedMatch.tournamentId}/rounds/${completedMatch.round}/status`).set('complete');
+        let move;
+        try {
+          move = c.move({ from, to, promotion: 'q' });
+        } catch(e) { return m; }
+        if (!move) return m; // illegal
 
-    // Update alive status: losers die, winners stay alive, draw => both alive
-    const updates = {};
-    allMatches.forEach((mm) => {
-      if (mm.winner) {
-        const loserUid = mm.winner === mm.white ? mm.black : mm.white;
-        updates[`tournaments/${completedMatch.tournamentId}/players/${loserUid}/alive`] = false;
-      }
-    });
-    // Bye player already alive
-    await db.ref().update(updates);
+        // Apply increment to mover's clock
+        const now = Date.now() + this.serverTimeOffset;
+        const elapsed = Math.max(0, now - (m.lastMoveAt || now));
+        if (moverIsWhite) {
+          m.whiteTime = Math.max(0, (m.whiteTime || 600000) - elapsed + 1000);
+        } else {
+          m.blackTime = Math.max(0, (m.blackTime || 600000) - elapsed + 1000);
+        }
+        m.lastMoveAt = now;
+        m.fen = c.fen();
+        const moves = m.moves || [];
+        moves.push({ from, to, san: move.san, at: now, by: Session.uid });
+        m.moves = moves;
+        m.pgn = c.pgn();
 
-    // Advance to next round
-    await orchestrateRound(completedMatch.tournamentId, completedMatch.round + 1);
-  } catch (e) {
-    console.error('Advance round failed:', e);
-  }
-}
+        // Check end conditions
+        if (c.game_over()) {
+          if (c.in_checkmate()) {
+            m.winner = moverIsWhite ? 'white' : 'black';
+            m.endReason = 'checkmate';
+          } else if (c.in_stalemate()) {
+            m.winner = 'draw'; m.endReason = 'stalemate';
+          } else if (c.in_threefold_repetition()) {
+            m.winner = 'draw'; m.endReason = 'threefold';
+          } else if (c.insufficient_material()) {
+            m.winner = 'draw'; m.endReason = 'insufficient_material';
+          } else if (c.in_draw()) {
+            m.winner = 'draw'; m.endReason = 'fifty_move';
+          }
+          m.status = 'finished';
+          m.finishedAt = now;
+        } else {
+          // Check for time forfeit on the OTHER side (rare here, since clock ticks separately)
+          if (moverIsWhite && m.blackTime <= 0) { m.winner = 'white'; m.endReason = 'timeout'; m.status = 'finished'; m.finishedAt = now; }
+          else if (!moverIsWhite && m.whiteTime <= 0) { m.winner = 'black'; m.endReason = 'timeout'; m.status = 'finished'; m.finishedAt = now; }
+        }
+        return m;
+      });
 
-/* ============================================================
-   CLOCK ENGINE
-   ============================================================ */
-let _clockInterval = null;
-function startClockTicker() {
-  stopClockTicker();
-  _clockInterval = setInterval(tickClocks, POLL_CLOCK_MS);
-}
-
-function stopClockTicker() {
-  if (_clockInterval) {
-    clearInterval(_clockInterval);
-    _clockInterval = null;
-  }
-}
-
-function tickClocks() {
-  if (!state.currentMatchId || !state.chess) return;
-  const m = _lastMatchSnapshot;
-  if (!m || m.status !== 'active') {
-    // Still render base times
-    if (m) {
-      $('whiteClock').textContent = fmtTime(m.whiteTime || 0);
-      $('blackClock').textContent = fmtTime(m.blackTime || 0);
+      this.renderBoard();
+    } catch (err) {
+      console.error('[ChessMatch] move submit failed:', err);
+      notify('Move submission failed: ' + err.message, 'error');
     }
-    return;
-  }
+  },
 
-  const now = serverNow();
-  const elapsed = now - (m.lastMoveAt || now);
-  const turn = m.turn;
-  const wTime = turn === 'w' ? Math.max(0, (m.whiteTime || 0) - elapsed) : (m.whiteTime || 0);
-  const bTime = turn === 'b' ? Math.max(0, (m.blackTime || 0) - elapsed) : (m.blackTime || 0);
+  startClock() {
+    if (this.clockInterval) clearInterval(this.clockInterval);
+    this.clockInterval = setInterval(() => this.tickClock(), 100);
+  },
 
-  $('whiteClock').textContent = fmtTime(wTime);
-  $('blackClock').textContent = fmtTime(bTime);
+  tickClock() {
+    if (!this.matchData || this.matchData.status !== 'active') return;
+    const now = Date.now() + this.serverTimeOffset;
+    const last = this.matchData.lastMoveAt || now;
+    const elapsed = Math.max(0, now - last);
 
-  $('whiteClock').classList.toggle('low', wTime < 30000);
-  $('blackClock').classList.toggle('low', bTime < 30000);
-  $('whiteClock').classList.toggle('zero', wTime <= 0);
-  $('blackClock').classList.toggle('zero', bTime <= 0);
-
-  // Detect timeout — only the side to move's opponent (or the player to move themselves) can flag
-  if (turn === 'w' && wTime <= 0) {
-    flagTimeout('w');
-  } else if (turn === 'b' && bTime <= 0) {
-    flagTimeout('b');
-  }
-}
-
-function flagTimeout(timedOutColor) {
-  // Use transaction to set complete; only one client will commit
-  const matchRef = db.ref(`matches/${state.currentMatchId}`);
-  matchRef.transaction((m) => {
-    if (!m || m.status !== 'active') return m;
-    if (m.turn !== timedOutColor) return m;
-    m.status = 'complete';
-    m.result = 'timeout';
-    m.winner = timedOutColor === 'w' ? m.black : m.white;
-    m.winnerColor = timedOutColor === 'w' ? 'b' : 'w';
-    m.loser = timedOutColor === 'w' ? m.white : m.black;
-    m.endTime = Date.now() + state.serverTimeOffset;
-    if (timedOutColor === 'w') m.whiteTime = 0; else m.blackTime = 0;
-    return m;
-  }).catch((e) => console.error('Flag timeout tx failed:', e));
-}
-
-/* ============================================================
-   LOCKOUT OVERLAY
-   ============================================================ */
-function initLockoutListener() {
-  db.ref(`lockouts/${state.uid}`).on('value', (snap) => {
-    const lock = snap.val();
-    if (lock && lock.startedAt) {
-      const expiresAt = lock.startedAt + (lock.duration || LOCKOUT_MS);
-      showLockout(expiresAt);
+    const turn = this.chess.turn();
+    let whiteRemaining, blackRemaining;
+    if (turn === 'w') {
+      whiteRemaining = Math.max(0, (this.matchData.whiteTime || 600000) - elapsed);
+      blackRemaining = this.matchData.blackTime || 600000;
     } else {
-      hideLockout();
+      whiteRemaining = this.matchData.whiteTime || 600000;
+      blackRemaining = Math.max(0, (this.matchData.blackTime || 600000) - elapsed);
     }
-  });
-}
 
-async function applyLockout(loserUid) {
-  try {
-    await db.ref(`lockouts/${loserUid}`).set({
-      startedAt: firebase.database.ServerValue.TIMESTAMP,
-      duration: LOCKOUT_MS,
-      reason: 'match_defeat'
+    this.renderClocks(whiteRemaining, blackRemaining, turn);
+
+    // Time forfeit detection (only the player whose turn it is can flag)
+    if (turn === 'w' && whiteRemaining <= 0) {
+      this.declareTimeout('black');
+    } else if (turn === 'b' && blackRemaining <= 0) {
+      this.declareTimeout('white');
+    }
+  },
+
+  updateClocksFromMatch() {
+    // Just re-tick — listener-driven
+    this.tickClock();
+  },
+
+  renderClocks(whiteMs, blackMs, turn) {
+    const whiteEl = document.getElementById('clockWhiteTime');
+    const blackEl = document.getElementById('clockBlackTime');
+    const whiteBox = document.getElementById('clockWhite');
+    const blackBox = document.getElementById('clockBlack');
+    whiteEl.textContent = this.formatClock(whiteMs);
+    blackEl.textContent = this.formatClock(blackMs);
+    whiteBox.classList.toggle('active', turn === 'w');
+    blackBox.classList.toggle('active', turn === 'b');
+    whiteBox.classList.toggle('low', whiteMs < 30000);
+    blackBox.classList.toggle('low', blackMs < 30000);
+  },
+
+  formatClock(ms) {
+    const total = Math.max(0, ms);
+    const mins = Math.floor(total / 60000);
+    const secs = Math.floor((total % 60000) / 1000);
+    return mins.toString().padStart(2, '0') + ':' + secs.toString().padStart(2, '0');
+  },
+
+  async declareTimeout(winnerColor) {
+    if (!this.isOpen || !this.matchData || this.matchData.status !== 'active') return;
+    const matchPath = 'tournaments/' + this.tournamentId + '/rounds/' + (this.matchData.round || 1) + '/matches/' + this.matchId;
+    try {
+      await Data.ref(matchPath).transaction((m) => {
+        if (!m || m.status !== 'active') return m;
+        m.winner = winnerColor;
+        m.endReason = 'timeout';
+        m.status = 'finished';
+        m.finishedAt = Date.now() + this.serverTimeOffset;
+        return m;
+      });
+    } catch(e) { console.error(e); }
+  },
+
+  flashStatus(msg) {
+    const el = document.getElementById('moveStatus');
+    el.textContent = msg;
+    el.style.color = 'var(--neon-yellow)';
+    setTimeout(() => { el.style.color = ''; this.updateStatusLine(); }, 1500);
+  },
+
+  updateStatusLine() {
+    if (!this.matchData) return;
+    const el = document.getElementById('matchStatusLine');
+    if (this.matchData.status === 'finished') {
+      el.textContent = 'Match concluded: ' + (this.matchData.endReason || 'finished');
+      return;
+    }
+    if (this.isMyTurn) el.textContent = 'Your move.';
+    else el.textContent = 'Opponent\'s move...';
+  },
+
+  confirmResign() {
+    if (!this.isOpen || this.matchData.status !== 'active') return;
+    if (this.resigning) return;
+    this.resigning = true;
+    if (!confirm('Confirm resignation? This will count as a loss.')) {
+      this.resigning = false;
+      return;
+    }
+    this.resigning = false;
+    this.submitResign();
+  },
+
+  async submitResign() {
+    const winnerColor = this.myColor === 'white' ? 'black' : 'white';
+    const matchPath = 'tournaments/' + this.tournamentId + '/rounds/' + (this.matchData.round || 1) + '/matches/' + this.matchId;
+    try {
+      await Data.ref(matchPath).transaction((m) => {
+        if (!m || m.status !== 'active') return m;
+        m.winner = winnerColor;
+        m.endReason = 'resignation';
+        m.status = 'finished';
+        m.finishedAt = Date.now() + this.serverTimeOffset;
+        return m;
+      });
+      notify('You resigned the match.', 'warn');
+    } catch(e) { notify('Resign failed: ' + e.message, 'error'); }
+  },
+
+  handleMatchEnd(m) {
+    if (this.clockInterval) { clearInterval(this.clockInterval); this.clockInterval = null; }
+    const winnerColor = m.winner;
+    let resultMsg = '';
+    if (winnerColor === 'draw') resultMsg = 'Draw (' + (m.endReason || '') + ')';
+    else if (winnerColor === this.myColor) resultMsg = 'Victory! (' + (m.endReason || '') + ')';
+    else resultMsg = 'Defeat. (' + (m.endReason || '') + ')';
+    notify('Match ended: ' + resultMsg, winnerColor === this.myColor ? 'success' : 'error', 6000);
+
+    // Determine if this player should be locked out (only the loser)
+    const loser = (winnerColor === 'white') ? 'black' : (winnerColor === 'black' ? 'white' : null);
+
+    setTimeout(() => {
+      this.closeMatch(resultMsg);
+      if (loser === this.myColor) {
+        // Trigger penalty lockout
+        Lockout.trigger();
+      } else if (winnerColor === this.myColor) {
+        notify('You advance to the next round. Awaiting next matchup...', 'success', 6000);
+      } else {
+        notify('Draw — both players remain in bracket.', 'info');
+      }
+      // Mark user status back to lobby
+      Presence.setStatus('lobby');
+      // Round advancement is handled by TournamentOrchestrator via the
+      // global tournaments listener — no local listener needed here.
+    }, 2500);
+  },
+
+  closeMatch(reason) {
+    this.isOpen = false;
+    this.tournamentId = null;
+    this.matchId = null;
+    this.matchData = null;
+    this.selectedSquare = null;
+    this.legalMovesCache = [];
+    this.isMyTurn = false;
+    if (this.clockInterval) { clearInterval(this.clockInterval); this.clockInterval = null; }
+    if (this.matchListener) { try { this.matchListener(); } catch(e) {} this.matchListener = null; }
+    document.getElementById('matchView').classList.remove('visible');
+  }
+};
+
+/* ============================================================
+   PART 11 — LOCKOUT OVERLAY (120s)
+   ============================================================ */
+const Lockout = {
+  active: false,
+  endTime: 0,
+  intervalId: null,
+  blockedEvents: ['contextmenu', 'click', 'mousedown', 'mouseup', 'dblclick', 'selectstart', 'dragstart', 'keydown', 'keypress', 'keyup', 'wheel', 'touchstart', 'touchmove'],
+  interceptor: null,
+  lockRef: null,
+  serverOffset: 0,
+
+  init() {
+    Data.serverTimeOffset().onValue((snap) => {
+      this.serverOffset = snap.val() || 0;
     });
-    // onDisconnect cleanup
-    db.ref(`lockouts/${loserUid}`).onDisconnect().remove();
-  } catch (e) {
-    console.error('Failed to apply lockout:', e);
-  }
-}
 
-function showLockout(expiresAt) {
-  if (state.isLockedOut) return; // already shown
-  state.isLockedOut = true;
-  setStatus('LOCKED', 'locked');
+    // Listen for our own lockout state from Firebase
+    Data.ref('lockouts/' + Session.uid).onValue((snap) => {
+      if (!snap || !snap.val) return;
+      const v = snap.val();
+      if (v && v.active && v.endTime) {
+        if (!this.active) {
+          this.triggerFromRemote(v.endTime);
+        }
+      }
+    });
+  },
 
-  const overlay = $('lockOverlay');
-  overlay.classList.remove('hidden');
-  overlay.style.display = 'flex';
+  async trigger() {
+    if (this.active) return;
+    const now = Date.now() + this.serverOffset;
+    const endTime = now + 120000;
+    this.endTime = endTime;
 
-  installLockoutBlockers();
-  tickLockoutCountdown(expiresAt);
-}
+    // Persist to Firebase so the countdown is authoritative
+    try {
+      await Data.ref('lockouts/' + Session.uid).set({
+        active: true,
+        endTime: endTime,
+        startedAt: now,
+        duration: 120000
+      });
+      if (firebaseReady) {
+        Data.ref('lockouts/' + Session.uid).onDisconnect().remove();
+      }
+      // Auto-remove after expiry on the server side via client cleanup
+      setTimeout(() => this.release(), 120000 + 500);
+    } catch(e) {
+      console.error('[Lockout] failed to persist', e);
+    }
 
-function hideLockout() {
-  if (!state.isLockedOut) return;
-  state.isLockedOut = false;
-  const overlay = $('lockOverlay');
-  overlay.classList.add('hidden');
-  overlay.style.display = 'none';
-  removeLockoutBlockers();
-  if (window._lockInterval) {
-    clearInterval(window._lockInterval);
-    window._lockInterval = null;
-  }
-  setStatus(state.inQueue ? 'IN QUEUE' : 'IDLE', state.inQueue ? 'queue' : 'idle');
-  notify('Lockout ended. Lobby access restored.', 'success');
-}
+    this.showOverlay();
+    this.attachInterceptor();
+    Presence.setStatus('locked');
+  },
 
-function tickLockoutCountdown(expiresAt) {
-  const cdEl = $('lockCountdown');
-  if (window._lockInterval) clearInterval(window._lockInterval);
-  window._lockInterval = setInterval(() => {
-    const remaining = expiresAt - serverNow();
+  triggerFromRemote(endTime) {
+    this.endTime = endTime;
+    const now = Date.now() + this.serverOffset;
+    const remaining = endTime - now;
     if (remaining <= 0) {
-      clearInterval(window._lockInterval);
-      window._lockInterval = null;
-      cdEl.textContent = '0.000';
-      // Delete lockout ref — listener will hide overlay
-      db.ref(`lockouts/${state.uid}`).remove().catch(() => {});
+      // Already expired
+      Data.ref('lockouts/' + Session.uid).remove();
       return;
     }
-    cdEl.textContent = (remaining / 1000).toFixed(3);
-    cdEl.classList.toggle('urgent', remaining < 10000);
-  }, 50);
-}
+    this.showOverlay();
+    this.attachInterceptor();
+    Presence.setStatus('locked');
+    setTimeout(() => this.release(), remaining + 200);
+  },
 
-/* ============================================================
-   LOCKOUT EVENT BLOCKERS (capture: true)
-   ============================================================ */
-const _lockoutBlock = (e) => {
-  // Block all standard interactions inside the viewport
-  if (e.type === 'keydown' || e.type === 'keyup' || e.type === 'keypress') {
-    // Always block Escape, F1-F12, and all other keys during lockout
-    e.preventDefault();
-    e.stopPropagation();
-    return false;
-  }
-  if (e.type === 'contextmenu' || e.type === 'selectstart' || e.type === 'mousedown' || e.type === 'click' || e.type === 'dblclick' || e.type === 'touchstart' || e.type === 'touchmove') {
-    e.preventDefault();
-    e.stopPropagation();
-    return false;
-  }
-};
+  showOverlay() {
+    this.active = true;
+    const overlay = document.getElementById('lockOverlay');
+    overlay.classList.add('visible');
+    this.startCountdown();
+  },
 
-const _lockoutKeyBlock = (e) => {
-  // Explicitly block Escape and F1-F12
-  const key = e.key || '';
-  if (key === 'Escape' || /^F([1-9]|1[0-2])$/.test(key)) {
-    e.preventDefault();
-    e.stopPropagation();
-    return false;
-  }
-  // Block all keys during lockout
-  e.preventDefault();
-  e.stopPropagation();
-  return false;
-};
+  startCountdown() {
+    if (this.intervalId) clearInterval(this.intervalId);
+    const update = () => {
+      const now = Date.now() + this.serverOffset;
+      const remaining = Math.max(0, this.endTime - now);
+      const secs = Math.floor(remaining / 1000);
+      const ms = remaining % 1000;
+      document.getElementById('lockSeconds').textContent = secs.toString().padStart(3, '0');
+      document.getElementById('lockMs').textContent = '.' + ms.toString().padStart(3, '0');
+      if (remaining <= 0) {
+        this.release();
+      }
+    };
+    update();
+    this.intervalId = setInterval(update, 33); // ~30fps for smooth ms display
+  },
 
-function installLockoutBlockers() {
-  const opts = { capture: true, passive: false };
-  window.addEventListener('contextmenu', _lockoutBlock, opts);
-  window.addEventListener('selectstart', _lockoutBlock, opts);
-  window.addEventListener('click', _lockoutBlock, opts);
-  window.addEventListener('dblclick', _lockoutBlock, opts);
-  window.addEventListener('mousedown', _lockoutBlock, opts);
-  window.addEventListener('mouseup', _lockoutBlock, opts);
-  window.addEventListener('touchstart', _lockoutBlock, opts);
-  window.addEventListener('touchmove', _lockoutBlock, opts);
-  window.addEventListener('keydown', _lockoutKeyBlock, opts);
-  window.addEventListener('keyup', _lockoutKeyBlock, opts);
-  window.addEventListener('keypress', _lockoutKeyBlock, opts);
-  document.addEventListener('contextmenu', _lockoutBlock, opts);
-  document.addEventListener('selectstart', _lockoutBlock, opts);
-}
-
-function removeLockoutBlockers() {
-  const opts = { capture: true, passive: false };
-  window.removeEventListener('contextmenu', _lockoutBlock, opts);
-  window.removeEventListener('selectstart', _lockoutBlock, opts);
-  window.removeEventListener('click', _lockoutBlock, opts);
-  window.removeEventListener('dblclick', _lockoutBlock, opts);
-  window.removeEventListener('mousedown', _lockoutBlock, opts);
-  window.removeEventListener('mouseup', _lockoutBlock, opts);
-  window.removeEventListener('touchstart', _lockoutBlock, opts);
-  window.removeEventListener('touchmove', _lockoutBlock, opts);
-  window.removeEventListener('keydown', _lockoutKeyBlock, opts);
-  window.removeEventListener('keyup', _lockoutKeyBlock, opts);
-  window.removeEventListener('keypress', _lockoutKeyBlock, opts);
-  document.removeEventListener('contextmenu', _lockoutBlock, opts);
-  document.removeEventListener('selectstart', _lockoutBlock, opts);
-}
-
-/* ============================================================
-   PARTICLE ENGINE
-   ============================================================ */
-const canvas = $('particleCanvas');
-const ctx = canvas.getContext('2d');
-let particles = [];
-let rafId = null;
-
-function resizeCanvas() {
-  const dpr = Math.min(window.devicePixelRatio || 1, 2);
-  canvas.width = window.innerWidth * dpr;
-  canvas.height = window.innerHeight * dpr;
-  canvas.style.width = window.innerWidth + 'px';
-  canvas.style.height = window.innerHeight + 'px';
-  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-}
-window.addEventListener('resize', resizeCanvas);
-resizeCanvas();
-
-class Particle {
-  constructor(x, y, colorRgb) {
-    this.x = x;
-    this.y = y;
-    const angle = Math.random() * Math.PI * 2;
-    const speed = Math.random() * 11 + 4;
-    this.vx = Math.cos(angle) * speed;
-    this.vy = Math.sin(angle) * speed - Math.random() * 5;
-    this.size = Math.random() * 3.5 + 1.5;
-    this.life = 1.0;
-    this.decay = Math.random() * 0.018 + 0.012;
-    this.color = colorRgb;
-    this.gravity = 0.32;
-    this.friction = 0.965;
-  }
-  update() {
-    this.vx *= this.friction;
-    this.vy *= this.friction;
-    this.vy += this.gravity;
-    this.x += this.vx;
-    this.y += this.vy;
-    this.life -= this.decay;
-    return this.life > 0;
-  }
-  draw(ctx) {
-    const alpha = Math.max(0, this.life);
-    const size = Math.max(0.1, this.size * this.life);
-    const [r, g, b] = this.color;
-    ctx.save();
-    ctx.globalCompositeOperation = 'lighter';
-    const grad = ctx.createRadialGradient(this.x, this.y, 0, this.x, this.y, size * 3.5);
-    grad.addColorStop(0,   `rgba(${r}, ${g}, ${b}, ${alpha})`);
-    grad.addColorStop(0.4, `rgba(${r}, ${g}, ${b}, ${alpha * 0.5})`);
-    grad.addColorStop(1,   `rgba(${r}, ${g}, ${b}, 0)`);
-    ctx.fillStyle = grad;
-    ctx.beginPath();
-    ctx.arc(this.x, this.y, size * 3.5, 0, Math.PI * 2);
-    ctx.fill();
-    // bright core
-    ctx.fillStyle = `rgba(255, 255, 255, ${alpha * 0.7})`;
-    ctx.beginPath();
-    ctx.arc(this.x, this.y, Math.max(0.1, size * 0.5), 0, Math.PI * 2);
-    ctx.fill();
-    ctx.restore();
-  }
-}
-
-function explode(x, y, paletteKey) {
-  const palette = COLOR_PALETTES[paletteKey];
-  if (!palette) return;
-  const count = 180;
-  for (let i = 0; i < count; i++) {
-    const color = palette[Math.floor(Math.random() * palette.length)];
-    particles.push(new Particle(x, y, color));
-  }
-  // Additional spark burst
-  for (let i = 0; i < 40; i++) {
-    const p = new Particle(x, y, palette[0]);
-    p.size *= 0.5;
-    p.decay *= 1.6;
-    particles.push(p);
-  }
-  if (!rafId) startParticleLoop();
-
-  // Viewport shake + chromatic aberration
-  document.body.classList.add('shaking');
-  setTimeout(() => document.body.classList.remove('shaking'), 550);
-}
-
-function startParticleLoop() {
-  const loop = () => {
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-    particles = particles.filter((p) => {
-      const alive = p.update();
-      if (alive) p.draw(ctx);
-      return alive;
+  attachInterceptor() {
+    if (this.interceptor) return;
+    this.interceptor = (e) => {
+      // Block keystrokes except allowing the dev console (Ctrl+Shift+I/J/C) — but spec says block F1-F12 and Escape
+      if (e.type === 'keydown' || e.type === 'keypress' || e.type === 'keyup') {
+        const code = e.code || '';
+        const key = e.key || '';
+        // Block F1-F12
+        if (/^F([1-9]|1[0-2])$/.test(key)) { e.preventDefault(); e.stopPropagation(); return; }
+        // Block Escape
+        if (key === 'Escape') { e.preventDefault(); e.stopPropagation(); return; }
+        // Allow Ctrl/Cmd+Shift+I/J/C for dev tools (common dev escape)
+        if ((e.ctrlKey || e.metaKey) && e.shiftKey && ['KeyI','KeyJ','KeyC'].includes(e.code)) return;
+        // Block everything else
+        e.preventDefault();
+        e.stopPropagation();
+        return;
+      }
+      // Block all other events while overlay is visible
+      e.preventDefault();
+      e.stopPropagation();
+    };
+    this.blockedEvents.forEach(ev => {
+      window.addEventListener(ev, this.interceptor, { capture: true });
+      document.addEventListener(ev, this.interceptor, { capture: true });
     });
-    if (particles.length > 0) {
-      rafId = requestAnimationFrame(loop);
-    } else {
-      rafId = null;
-    }
-  };
-  rafId = requestAnimationFrame(loop);
+  },
+
+  detachInterceptor() {
+    if (!this.interceptor) return;
+    this.blockedEvents.forEach(ev => {
+      window.removeEventListener(ev, this.interceptor, { capture: true });
+      document.removeEventListener(ev, this.interceptor, { capture: true });
+    });
+    this.interceptor = null;
+  },
+
+  async release() {
+    if (!this.active) return;
+    this.active = false;
+    if (this.intervalId) { clearInterval(this.intervalId); this.intervalId = null; }
+    document.getElementById('lockOverlay').classList.remove('visible');
+    this.detachInterceptor();
+    try {
+      await Data.ref('lockouts/' + Session.uid).remove();
+    } catch(e) {}
+    await Presence.setStatus('lobby');
+    notify('Lockout ended. Returning to lobby.', 'success');
+  }
+};
+
+/* ============================================================
+   PART 12 — PARTICLE BUTTON WIRING
+   ============================================================ */
+function wireParticleButtons() {
+  document.querySelectorAll('.ctrl-btn').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      const color = btn.dataset.color;
+      if (color === 'blue') {
+        triggerBlueFlash();
+      } else {
+        const rect = btn.getBoundingClientRect();
+        const x = rect.left + rect.width / 2;
+        const y = rect.top + rect.height / 2;
+        ParticleEngine.explode(x, y, color);
+      }
+    });
+  });
 }
 
 function triggerBlueFlash() {
-  const dash = $('dashboard');
-  dash.classList.remove('blue-flash');
-  // Force reflow to restart animation
-  void dash.offsetWidth;
-  dash.classList.add('blue-flash');
-  setTimeout(() => dash.classList.remove('blue-flash'), 1300);
-  notify('System pulse engaged.', 'info', 2000);
+  const targets = [
+    document.getElementById('dashboard'),
+    document.getElementById('lobbyPanel'),
+    document.querySelector('.topbar'),
+    document.querySelector('.control-bar')
+  ];
+  targets.forEach(t => {
+    if (!t) return;
+    t.classList.remove('blue-flashing');
+    // Force reflow to restart animation
+    void t.offsetWidth;
+    t.classList.add('blue-flashing');
+    setTimeout(() => t.classList.remove('blue-flashing'), 1300);
+  });
+  notify('System pulse broadcast across dashboard.', 'info', 2000);
 }
 
 /* ============================================================
-   CONTROL BUTTON HANDLERS
+   PART 13 — BOOTSTRAP
    ============================================================ */
-document.querySelectorAll('.ctrl-btn').forEach((btn) => {
-  btn.addEventListener('click', (e) => {
-    const color = btn.dataset.color;
-    const rect = btn.getBoundingClientRect();
-    const x = rect.left + rect.width / 2;
-    const y = rect.top + rect.height / 2;
-    if (color === 'blue') {
-      triggerBlueFlash();
-    } else {
-      explode(x, y, color);
+async function bootstrap() {
+  // Try restore session
+  if (Session.init()) {
+    showDashboard();
+  }
+
+  // Login button
+  document.getElementById('loginBtn').addEventListener('click', async () => {
+    const username = document.getElementById('usernameInput').value;
+    const errEl = document.getElementById('loginError');
+    errEl.textContent = '';
+    try {
+      await Session.login(username);
+      showDashboard();
+    } catch(e) {
+      errEl.textContent = e.message;
     }
   });
-});
 
-/* ============================================================
-   QUEUE / RESIGN BUTTONS
-   ============================================================ */
-$('queueBtn').addEventListener('click', toggleQueue);
-$('resignBtn').addEventListener('click', resignMatch);
+  document.getElementById('usernameInput').addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') document.getElementById('loginBtn').click();
+  });
 
-/* ============================================================
-   LOGIN HANDLER
-   ============================================================ */
-$('loginBtn').addEventListener('click', () => {
-  const name = $('usernameInput').value.trim();
-  if (name.length < 2) {
-    notify('Callsign must be at least 2 characters.', 'warn');
-    return;
-  }
-  completeLogin(name);
-});
+  // Keyboard Enter on login modal
 
-$('usernameInput').addEventListener('keydown', (e) => {
-  if (e.key === 'Enter') $('loginBtn').click();
-});
+  // Lock overlay intercept must be initialized before showing dashboard,
+  // but only after login so we know our UID
+}
 
-/* ============================================================
-   BOOT
-   ============================================================ */
-function boot() {
-  if (!db) {
-    notify('Firebase failed to initialize. Please set FIREBASE_CONFIG at top of script.', 'error', 10000);
-    return;
-  }
-  initServerTimeSync();
-  if (tryRestoreSession()) {
-    completeLogin(state.username);
+function showDashboard() {
+  document.getElementById('loginModal').classList.add('hidden');
+  document.getElementById('dashboard').classList.add('visible');
+  document.getElementById('userChipName').textContent = Session.user;
+
+  Presence.init();
+  Lobby.init();
+  ChessMatch.init();
+  Lockout.init();
+  wireParticleButtons();
+
+  if (Data.isLocal()) {
+    notify('Running in LOCAL simulation mode (Firebase not configured). All features functional.', 'warn', 8000);
   } else {
-    beginLogin();
+    notify('Connected to NEXUS grid. Welcome, ' + Session.user + '.', 'success');
   }
 }
 
-// Ensure DOM is ready
-if (document.readyState === 'loading') {
-  document.addEventListener('DOMContentLoaded', boot);
-} else {
-  boot();
-}
-
-// Page lifecycle: refresh presence on visibility change
-document.addEventListener('visibilitychange', () => {
-  if (state.uid && state.presenceRef && document.visibilityState === 'visible') {
-    state.presenceRef.update({
-      status: 'online',
-      lastSeen: firebase.database.ServerValue.TIMESTAMP
-    }).catch(() => {});
-  }
-});
-
-window.addEventListener('beforeunload', () => {
-  if (state.presenceRef) {
-    state.presenceRef.update({
-      status: 'offline',
-      lastSeen: firebase.database.ServerValue.TIMESTAMP
-    }).catch(() => {});
-  }
-});
-
+// Start
+bootstrap();
 </script>
 </body>
 </html>
