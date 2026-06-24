@@ -3,288 +3,774 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>CyberChess Automated Arena</title>
+    <title>Nexus: Cyber Chess</title>
     
-    <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-database-compat.js"></script>
+    <!-- Dependencies -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/chess.js/0.10.3/chess.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;700;900&family=Rajdhani:wght@500;700&display=swap" rel="stylesheet">
 
     <style>
         :root {
-            --bg-gradient: linear-gradient(135deg, #0f0c29, #302b63, #24243e);
-            --neon-border: rgba(0, 255, 255, 0.5);
-            --glass-bg: rgba(20, 20, 35, 0.6);
-            --font-main: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            --sq-dark: #302b63;
-            --sq-light: #5c54a4;
-            --sq-highlight: rgba(255, 0, 60, 0.6);
+            --bg-start: #0f0c29;
+            --bg-mid: #302b63;
+            --bg-end: #24243e;
+            --neon-red: #ff2a2a;
+            --neon-orange: #ff7b00;
+            --neon-yellow: #fce803;
+            --neon-green: #00ff55;
+            --neon-blue: #00e5ff;
+            --glass-bg: rgba(16, 18, 27, 0.6);
+            --glass-border: rgba(255, 255, 255, 0.1);
         }
 
-        body, html {
-            margin: 0; padding: 0; width: 100%; height: 100%;
-            background: var(--bg-gradient); color: white;
-            font-family: var(--font-main); overflow: hidden;
-            display: flex; flex-direction: column;
+        body {
+            font-family: 'Rajdhani', sans-serif;
+            background: linear-gradient(135deg, var(--bg-start), var(--bg-mid), var(--bg-end));
+            background-attachment: fixed;
+            color: white;
+            overflow-x: hidden;
+            margin: 0;
+            min-height: 100vh;
         }
 
-        /* Utility Animations */
-        @keyframes chromaticShake {
-            0% { transform: translate(2px, 1px) rotate(0deg); text-shadow: -2px 0 red, 2px 0 blue; }
-            10% { transform: translate(-1px, -2px) rotate(-1deg); }
-            20% { transform: translate(-3px, 0px) rotate(1deg); text-shadow: 2px 0 red, -2px 0 blue; }
-            30% { transform: translate(0px, 2px) rotate(0deg); }
-            40% { transform: translate(1px, -1px) rotate(1deg); }
-            50% { transform: translate(-1px, 2px) rotate(-1deg); text-shadow: -2px 0 red, 2px 0 blue; }
-            60% { transform: translate(-3px, 1px) rotate(0deg); }
-            70% { transform: translate(2px, 1px) rotate(-1deg); }
-            80% { transform: translate(-1px, -1px) rotate(1deg); text-shadow: 2px 0 red, -2px 0 blue; }
-            90% { transform: translate(2px, 2px) rotate(0deg); }
-            100% { transform: translate(0, 0) rotate(0deg); text-shadow: none; }
-        }
-        .shake { animation: chromaticShake 0.4s cubic-bezier(.36,.07,.19,.97) both; }
-
-        @keyframes bluePulse {
-            0% { box-shadow: 0 0 0 0 rgba(0, 191, 255, 0.7); border-color: rgba(0, 191, 255, 1); }
-            70% { box-shadow: 0 0 20px 20px rgba(0, 191, 255, 0); border-color: var(--neon-border); }
-            100% { box-shadow: 0 0 0 0 rgba(0, 191, 255, 0); }
-        }
-        .flash-blue { animation: bluePulse 0.8s ease-out; }
-
-        /* Canvas Overlay */
-        #particle-canvas {
-            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-            pointer-events: none; z-index: 999;
+        h1, h2, h3, .cyber-font {
+            font-family: 'Orbitron', sans-serif;
         }
 
-        /* Glassmorphism Containers */
+        /* Glassmorphism */
         .glass-panel {
-            background: var(--glass-bg); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
-            border: 1px solid var(--neon-border); border-radius: 8px; padding: 20px;
-            box-shadow: 0 4px 30px rgba(0, 0, 0, 0.5);
+            background: var(--glass-bg);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid var(--glass-border);
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
         }
 
-        /* Top Control Bar */
-        #control-bar {
-            display: flex; justify-content: center; gap: 15px; padding: 15px;
-            background: rgba(0,0,0,0.4); border-bottom: 1px solid var(--neon-border);
-            z-index: 10;
-        }
-        .btn-node {
-            width: 40px; height: 40px; border-radius: 50%; border: 2px solid white;
-            cursor: pointer; transition: transform 0.2s; box-shadow: 0 0 10px rgba(255,255,255,0.2);
-        }
-        .btn-node:hover { transform: scale(1.1); }
-        #btn-red { background: #ff003c; border-color: #ff003c; }
-        #btn-orange { background: #ff8c00; border-color: #ff8c00; }
-        #btn-yellow { background: #ffd700; border-color: #ffd700; }
-        #btn-green { background: #00ff00; border-color: #00ff00; }
-        #btn-blue { background: #00bfff; border-color: #00bfff; }
-
-        /* Main Layout */
-        #main-dashboard {
-            flex-grow: 1; display: flex; align-items: center; justify-content: center;
-            position: relative; z-index: 5; flex-direction: column; transition: all 0.3s;
+        /* Effects */
+        #fx-canvas {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            pointer-events: none;
+            z-index: 50;
         }
 
-        /* Modals */
-        #login-modal, #lobby-view {
-            text-align: center; max-width: 400px; width: 100%;
+        .shake {
+            animation: shake 0.5s cubic-bezier(.36,.07,.19,.97) both;
+            transform: translate3d(0, 0, 0);
         }
-        input[type="text"] {
-            width: 80%; padding: 10px; margin: 15px 0; background: rgba(0,0,0,0.5);
-            border: 1px solid var(--neon-border); color: white; border-radius: 4px; outline: none;
+
+        .chromatic {
+            animation: chromatic-aberration 0.4s ease-in-out;
         }
-        button.action-btn {
-            background: transparent; color: white; border: 1px solid var(--neon-border);
-            padding: 10px 20px; font-size: 16px; cursor: pointer; border-radius: 4px;
-            text-transform: uppercase; letter-spacing: 1px; transition: 0.3s;
+
+        .pulse-flash {
+            animation: blue-pulse 0.8s ease-out;
         }
-        button.action-btn:hover { background: var(--neon-border); color: black; box-shadow: 0 0 15px var(--neon-border); }
 
         /* Chess Board */
-        #match-view { display: none; flex-direction: column; align-items: center; }
-        .clock-container { display: flex; justify-content: space-between; width: 400px; margin: 10px 0; font-size: 24px; font-weight: bold; }
-        #board {
-            display: grid; grid-template-columns: repeat(8, 50px); grid-template-rows: repeat(8, 50px);
-            border: 2px solid var(--neon-border); box-shadow: 0 0 20px rgba(0, 255, 255, 0.2);
+        .chess-board {
+            display: grid;
+            grid-template-columns: repeat(8, 1fr);
+            grid-template-rows: repeat(8, 1fr);
+            width: 100%;
+            max-width: 500px;
+            aspect-ratio: 1;
+            border: 2px solid var(--neon-blue);
+            box-shadow: 0 0 20px rgba(0, 229, 255, 0.3);
         }
+
         .square {
-            width: 50px; height: 50px; display: flex; justify-content: center; align-items: center;
-            font-size: 35px; cursor: pointer; user-select: none;
-        }
-        .dark { background-color: var(--sq-dark); }
-        .light { background-color: var(--sq-light); }
-        .highlight { background-color: var(--sq-highlight) !important; }
-        .piece { cursor: grab; text-shadow: 2px 2px 4px rgba(0,0,0,0.8); }
-
-        /* Lock Overlay */
-        #lockOverlay {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(10, 0, 0, 0.95); z-index: 10000;
-            display: none; flex-direction: column; justify-content: center; align-items: center;
-            color: red; text-transform: uppercase; font-family: monospace; user-select: none;
-        }
-        #lockOverlay h1 { font-size: 4em; margin: 0; text-shadow: 0 0 20px red; }
-        #lock-timer { font-size: 6em; font-weight: bold; margin-top: 20px; }
-        #lockOverlay .fallback-img {
-            width: 200px; height: 200px; background: url('image.png') center/cover;
-            border: 2px solid red; box-shadow: 0 0 30px red; margin-bottom: 30px;
-            display: flex; align-items: center; justify-content: center; color: rgba(255,0,0,0.3);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 2.5rem;
+            cursor: pointer;
+            position: relative;
+            user-select: none;
+            transition: all 0.2s;
         }
 
-        /* Notifications */
-        #toast-container { position: fixed; bottom: 20px; right: 20px; z-index: 2000; }
-        .toast {
-            background: rgba(255, 0, 60, 0.8); color: white; padding: 10px 20px; margin-top: 10px;
-            border-radius: 4px; font-weight: bold; box-shadow: 0 2px 10px rgba(0,0,0,0.5);
-            opacity: 1; transition: opacity 0.5s;
+        .square.dark { background-color: rgba(30, 41, 59, 0.8); }
+        .square.light { background-color: rgba(71, 85, 105, 0.8); }
+        .square.highlight { background-color: rgba(0, 255, 85, 0.4) !important; box-shadow: inset 0 0 10px var(--neon-green); }
+        .square.selected { background-color: rgba(0, 229, 255, 0.5) !important; }
+
+        .piece {
+            filter: drop-shadow(0 0 5px currentColor);
+            z-index: 10;
+        }
+        .piece.white { color: #f8fafc; text-shadow: 0 0 8px rgba(255,255,255,0.8); }
+        .piece.black { color: #0f172a; text-shadow: 0 0 8px rgba(255, 42, 42, 0.8); }
+
+        /* Penalty Overlay */
+        #penalty-overlay {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(10, 0, 0, 0.95);
+            z-index: 9999;
+            display: none;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            backdrop-filter: blur(20px);
+        }
+
+        .hacker-text {
+            color: var(--neon-red);
+            text-shadow: 0 0 10px var(--neon-red);
+            font-family: monospace;
+            font-size: 4rem;
+        }
+
+        /* Control Nodes */
+        .node-btn {
+            width: 50px; height: 50px;
+            border-radius: 50%;
+            border: 2px solid;
+            cursor: pointer;
+            transition: all 0.2s;
+            box-shadow: 0 0 10px currentColor;
+        }
+        .node-btn:hover { transform: scale(1.1); filter: brightness(1.3); }
+
+        /* Keyframes */
+        @keyframes shake {
+            10%, 90% { transform: translate3d(-2px, 2px, 0); }
+            20%, 80% { transform: translate3d(3px, -2px, 0); }
+            30%, 50%, 70% { transform: translate3d(-5px, 4px, 0); }
+            40%, 60% { transform: translate3d(5px, -4px, 0); }
+        }
+
+        @keyframes chromatic-aberration {
+            0% { text-shadow: 2px 0 0 red, -2px 0 0 blue; }
+            50% { text-shadow: -4px 0 0 red, 4px 0 0 blue; }
+            100% { text-shadow: 0 0 0 transparent; }
+        }
+
+        @keyframes blue-pulse {
+            0% { box-shadow: inset 0 0 0 0 rgba(0, 229, 255, 0); background-color: transparent; }
+            50% { box-shadow: inset 0 0 50px 10px rgba(0, 229, 255, 0.6); background-color: rgba(0, 229, 255, 0.1); }
+            100% { box-shadow: inset 0 0 0 0 rgba(0, 229, 255, 0); background-color: transparent; }
         }
     </style>
 </head>
-<body>
+<body id="app-body" class="antialiased">
 
-    <canvas id="particle-canvas"></canvas>
+    <!-- Particle Canvas -->
+    <canvas id="fx-canvas"></canvas>
 
-    <div id="control-bar">
-        <div class="btn-node" id="btn-red" onclick="triggerExplosion('#ff003c')"></div>
-        <div class="btn-node" id="btn-orange" onclick="triggerExplosion('#ff8c00')"></div>
-        <div class="btn-node" id="btn-yellow" onclick="triggerExplosion('#ffd700')"></div>
-        <div class="btn-node" id="btn-green" onclick="triggerExplosion('#00ff00')"></div>
-        <div class="btn-node" id="btn-blue" onclick="triggerBluePulse()"></div>
+    <!-- Penalty Lockout Overlay -->
+    <div id="penalty-overlay">
+        <i class="fas fa-skull hacker-text mb-6"></i>
+        <h1 class="cyber-font text-5xl text-red-500 mb-2 font-bold tracking-widest text-center" style="text-shadow: 0 0 15px red;">SYSTEM LOCKOUT</h1>
+        <p class="text-xl text-red-300 mb-8 font-mono">DEFEAT PENALTY ENFORCED</p>
+        <div id="lockout-timer" class="cyber-font text-7xl text-white font-bold tracking-widest text-center">120.00</div>
     </div>
 
-    <div id="main-dashboard" class="glass-panel">
+    <!-- Login Modal -->
+    <div id="login-modal" class="fixed inset-0 z-40 flex items-center justify-center bg-black/80 backdrop-blur-md hidden">
+        <div class="glass-panel p-8 rounded-xl max-w-md w-full border border-cyan-500/30">
+            <h2 class="cyber-font text-3xl mb-6 text-center text-cyan-400" style="text-shadow: 0 0 10px #00e5ff;">NEXUS LOGIN</h2>
+            <input type="text" id="username-input" class="w-full bg-slate-900/50 border border-cyan-500/50 text-white rounded p-3 mb-4 focus:outline-none focus:border-cyan-400 cyber-font placeholder-slate-500" placeholder="ENTER CODENAME" maxlength="15">
+            <button id="login-btn" class="w-full bg-cyan-600 hover:bg-cyan-500 text-white cyber-font p-3 rounded transition-colors font-bold tracking-wider">INITIALIZE</button>
+        </div>
+    </div>
+
+    <!-- Main Dashboard -->
+    <div id="dashboard" class="relative z-10 container mx-auto px-4 py-8 h-screen flex flex-col hidden">
         
-        <div id="login-view">
-            <h2>Initialize Identity</h2>
-            <input type="text" id="username-input" placeholder="Enter Call Sign..." autocomplete="off">
-            <br>
-            <button class="action-btn" onclick="authenticate()">Engage</button>
-        </div>
+        <!-- Header -->
+        <header class="flex justify-between items-center mb-8">
+            <h1 class="cyber-font text-4xl text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-blue-600" style="filter: drop-shadow(0 0 5px rgba(0,229,255,0.5));">NEXUS PROTOCOL</h1>
+            <div class="flex items-center gap-4">
+                <span id="user-display" class="cyber-font text-cyan-300"></span>
+            </div>
+        </header>
 
-        <div id="lobby-view" style="display:none;">
-            <h2 id="lobby-greeting"></h2>
-            <p>Global Matchmaking Status: <span id="pool-count">0</span> Agents Ready</p>
-            <button class="action-btn" id="join-queue-btn" onclick="joinQueue()">Enter Matchmaking</button>
-            <div id="queue-status" style="margin-top: 15px; color: #00bfff;"></div>
-        </div>
+        <div class="flex-1 grid grid-cols-1 lg:grid-cols-12 gap-6">
+            
+            <!-- Left: Interactive Nodes -->
+            <div class="lg:col-span-1 flex flex-col items-center justify-center gap-6 glass-panel rounded-xl p-4">
+                <div class="text-sm cyber-font text-slate-400 mb-2 rotate-180" style="writing-mode: vertical-rl;">SYSTEM NODES</div>
+                <button class="node-btn" style="color: var(--neon-red); border-color: var(--neon-red);" onclick="triggerFX('red')"></button>
+                <button class="node-btn" style="color: var(--neon-orange); border-color: var(--neon-orange);" onclick="triggerFX('orange')"></button>
+                <button class="node-btn" style="color: var(--neon-yellow); border-color: var(--neon-yellow);" onclick="triggerFX('yellow')"></button>
+                <button class="node-btn" style="color: var(--neon-green); border-color: var(--neon-green);" onclick="triggerFX('green')"></button>
+                <button class="node-btn" style="color: var(--neon-blue); border-color: var(--neon-blue);" onclick="triggerFX('blue')"></button>
+            </div>
 
-        <div id="match-view">
-            <div class="clock-container">
-                <div id="opponent-name">Opponent</div>
-                <div id="opponent-clock" style="color: #ff003c;">10:00.0</div>
+            <!-- Center: Main Arena -->
+            <div id="arena-container" class="lg:col-span-8 glass-panel rounded-xl p-6 flex flex-col items-center justify-center relative overflow-hidden">
+                
+                <!-- Lobby State -->
+                <div id="lobby-view" class="w-full h-full flex flex-col items-center justify-center text-center">
+                    <i class="fas fa-satellite-dish text-6xl text-cyan-500 mb-6 animate-pulse"></i>
+                    <h2 class="cyber-font text-3xl mb-2">MATCHMAKING LOBBY</h2>
+                    <p class="text-slate-400 mb-8">Awaiting combatants. Pairings are automated via the Nexus network.</p>
+                    <button id="join-queue-btn" class="border-2 border-cyan-500 text-cyan-400 hover:bg-cyan-500/20 px-8 py-3 rounded-full cyber-font text-xl transition-all shadow-[0_0_15px_rgba(0,229,255,0.4)]">ENTER QUEUE</button>
+                    <div id="queue-status" class="mt-6 text-yellow-400 cyber-font hidden">SEARCHING FOR OPPONENT...</div>
+                </div>
+
+                <!-- Match State (Hidden initially) -->
+                <div id="match-view" class="w-full h-full flex-col items-center hidden">
+                    
+                    <!-- Opponent Info & Clock -->
+                    <div class="w-full max-w-lg flex justify-between items-center mb-4 px-2">
+                        <div class="flex items-center gap-3">
+                            <div class="w-10 h-10 rounded-full bg-slate-800 flex items-center justify-center border border-slate-600"><i class="fas fa-user-secret"></i></div>
+                            <span id="opponent-name" class="font-bold">Opponent</span>
+                        </div>
+                        <div id="opponent-clock" class="cyber-font text-2xl font-bold bg-slate-900 px-4 py-1 rounded border border-slate-700">10:00</div>
+                    </div>
+
+                    <!-- The Board -->
+                    <div id="chess-board" class="chess-board rounded"></div>
+
+                    <!-- Player Info & Clock -->
+                    <div class="w-full max-w-lg flex justify-between items-center mt-4 px-2">
+                        <div class="flex items-center gap-3">
+                            <div class="w-10 h-10 rounded-full bg-cyan-900 flex items-center justify-center border border-cyan-500 text-cyan-300"><i class="fas fa-user"></i></div>
+                            <span id="player-name" class="font-bold text-cyan-300">You</span>
+                        </div>
+                        <div id="player-clock" class="cyber-font text-2xl font-bold bg-slate-900 px-4 py-1 rounded border border-cyan-500 text-cyan-400">10:00</div>
+                    </div>
+                    
+                    <div id="match-status-msg" class="mt-4 cyber-font text-xl text-yellow-400 text-center"></div>
+                    <button id="resign-btn" class="mt-4 border border-red-500 text-red-500 hover:bg-red-500/20 px-4 py-1 rounded cyber-font text-sm">ABORT MISSION (RESIGN)</button>
+                </div>
+
             </div>
-            <div id="board"></div>
-            <div class="clock-container">
-                <div id="player-name">You</div>
-                <div id="player-clock" style="color: #00ff00;">10:00.0</div>
+
+            <!-- Right: System Logs / Players -->
+            <div class="lg:col-span-3 glass-panel rounded-xl p-4 flex flex-col">
+                <h3 class="cyber-font text-xl mb-4 border-b border-slate-700 pb-2">ACTIVE AGENTS</h3>
+                <div id="active-users-list" class="flex-1 overflow-y-auto space-y-2">
+                    <!-- Populated by JS -->
+                </div>
             </div>
-            <div style="margin-top: 15px;">
-                <button class="action-btn" onclick="resignMatch()" style="border-color: #ff003c;">Resign</button>
-            </div>
+
         </div>
     </div>
 
-    <div id="lockOverlay">
-        <div class="fallback-img">image.png fallback</div>
-        <h1>System Lockout</h1>
-        <p>Defeat Acknowledged. Terminal access suspended.</p>
-        <div id="lock-timer">120.000</div>
-    </div>
+    <!-- Logic Layer -->
+    <script type="module">
+        // Firebase Config Setup (Compliant with constraints)
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, collection, doc, setDoc, getDoc, onSnapshot, runTransaction, serverTimestamp, deleteDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
-    <div id="toast-container"></div>
+        // Global State & Core Constants
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'nexus-chess';
+        const fbConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : {
+            apiKey: "AIzaSyDqx4yZKKhAS3F2CokTxiY0yKxNsQ21jVc", projectId: "my-project-1704840967568", databaseURL: "https://my-project-1704840967568-default-rtdb.firebaseio.com"
+        };
+        
+        const app = initializeApp(fbConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
 
-    <script>
-        /*******************************************************
-         * 1. SYSTEM CONFIGURATION & FIREBASE INIT
-         *******************************************************/
-        const firebaseConfig = {
-          apiKey: "AIzaSyDqx4yZKKhAS3F2CokTxiY0yKxNsQ21jVc",
-          authDomain: "my-project-1704840967568.firebaseapp.com",
-          databaseURL: "https://my-project-1704840967568-default-rtdb.firebaseio.com",
-          projectId: "my-project-1704840967568",
-          storageBucket: "my-project-1704840967568.firebasestorage.app",
-          messagingSenderId: "160430314341",
-          appId: "1:160430314341:web:40da9a21dd9e86adeb078c"
+        let user = null;
+        let userData = { username: '' };
+        
+        // Chess Engine Instance
+        const game = new Chess();
+        
+        // Match State
+        let currentMatchId = null;
+        let myColor = null; // 'w' or 'b'
+        let boardFlipped = false;
+        let selectedSquare = null;
+        let timerInterval = null;
+        let localTimers = { w: 600, b: 600 };
+        const START_TIME = 600; // 10 minutes
+        const INCREMENT = 1; // 1 second
+
+        // Paths (Strict Constraint Compliance)
+        const USERS_PATH = `artifacts/${appId}/public/data/users`;
+        const LOBBY_PATH = `artifacts/${appId}/public/data/lobby`;
+        const MATCHES_PATH = `artifacts/${appId}/public/data/matches`;
+
+        // DOM Elements
+        const UI = {
+            loginModal: document.getElementById('login-modal'),
+            usernameInput: document.getElementById('username-input'),
+            loginBtn: document.getElementById('login-btn'),
+            dashboard: document.getElementById('dashboard'),
+            userDisplay: document.getElementById('user-display'),
+            activeUsers: document.getElementById('active-users-list'),
+            lobbyView: document.getElementById('lobby-view'),
+            matchView: document.getElementById('match-view'),
+            joinQueueBtn: document.getElementById('join-queue-btn'),
+            queueStatus: document.getElementById('queue-status'),
+            chessBoard: document.getElementById('chess-board'),
+            opponentName: document.getElementById('opponent-name'),
+            playerName: document.getElementById('player-name'),
+            opponentClock: document.getElementById('opponent-clock'),
+            playerClock: document.getElementById('player-clock'),
+            matchStatusMsg: document.getElementById('match-status-msg'),
+            resignBtn: document.getElementById('resign-btn'),
+            penaltyOverlay: document.getElementById('penalty-overlay'),
+            lockoutTimer: document.getElementById('lockout-timer'),
+            body: document.getElementById('app-body'),
+            arenaContainer: document.getElementById('arena-container')
         };
 
-        // Initialize Firebase
-        if (!firebase.apps.length) {
-            firebase.initializeApp(firebaseConfig);
-        }
-        const db = firebase.database();
-        
-        /*******************************************************
-         * 2. STATE MANAGEMENT
-         *******************************************************/
-        let currentUser = sessionStorage.getItem('username');
-        let currentMatchId = null;
-        let isPlayerWhite = true;
-        let serverTimeOffset = 0;
-        let game = new Chess();
-        let selectedSquare = null;
-        let clockInterval = null;
-        let matchState = null;
-        let isQueued = false;
+        // --- AUTHENTICATION & INITIALIZATION ---
+        const initSystem = async () => {
+            // Restore username if exists to survive refresh
+            const storedName = sessionStorage.getItem('nexus_username');
+            if (storedName) {
+                userData.username = storedName;
+            } else {
+                UI.loginModal.classList.remove('hidden');
+            }
 
-        // Constants
-        const TIME_BASE_MS = 10 * 60 * 1000; // 10 minutes
-        const TIME_INC_MS = 1000; // 1 second
+            try {
+                if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+                    await signInWithCustomToken(auth, __initial_auth_token);
+                } else {
+                    await signInAnonymously(auth);
+                }
+            } catch (err) {
+                console.error("Auth init failed:", err);
+                alert("Network anomaly. Authentication failed.");
+            }
+        };
 
-        // Track Server Time Offset
-        db.ref('.info/serverTimeOffset').on('value', snap => {
-            serverTimeOffset = snap.val() || 0;
+        UI.loginBtn.addEventListener('click', () => {
+            const val = UI.usernameInput.value.trim().toUpperCase();
+            if (val.length >= 3) {
+                userData.username = val;
+                sessionStorage.setItem('nexus_username', val);
+                UI.loginModal.classList.add('hidden');
+                if (user) establishPresence();
+            }
         });
 
-        function getServerTime() {
-            return Date.now() + serverTimeOffset;
-        }
+        onAuthStateChanged(auth, (authUser) => {
+            user = authUser;
+            if (user && userData.username) {
+                UI.loginModal.classList.add('hidden');
+                UI.dashboard.classList.remove('hidden');
+                UI.userDisplay.innerText = `AGENT: ${userData.username}`;
+                establishPresence();
+                setupListeners();
+            }
+        });
 
-        /*******************************************************
-         * 3. UI NOTIFICATIONS & HELPERS
-         *******************************************************/
-        function showToast(message) {
-            const container = document.getElementById('toast-container');
-            const toast = document.createElement('div');
-            toast.className = 'toast';
-            toast.innerText = message;
-            container.appendChild(toast);
-            setTimeout(() => { toast.style.opacity = '0'; setTimeout(() => toast.remove(), 500); }, 3000);
-        }
+        // --- PRESENCE & GLOBAL DATA ---
+        const establishPresence = async () => {
+            if (!user) return;
+            const userRef = doc(db, USERS_PATH, user.uid);
+            await setDoc(userRef, {
+                username: userData.username,
+                lastSeen: serverTimestamp(),
+                status: 'online'
+            }, { merge: true });
 
-        function switchView(viewId) {
-            ['login-view', 'lobby-view', 'match-view'].forEach(id => {
-                document.getElementById(id).style.display = id === viewId ? (id === 'match-view' ? 'flex' : 'block') : 'none';
+            // Cleanup on unload
+            window.addEventListener('beforeunload', async () => {
+                await deleteDoc(doc(db, LOBBY_PATH, user.uid));
             });
-        }
+        };
 
-        /*******************************************************
-         * 4. PARTICLE ENGINE (HTML5 Canvas)
-         *******************************************************/
-        const canvas = document.getElementById('particle-canvas');
+        const setupListeners = () => {
+            if (!user) return;
+            
+            // Listen to Active Users
+            onSnapshot(collection(db, USERS_PATH), (snap) => {
+                UI.activeUsers.innerHTML = '';
+                snap.forEach(docSnap => {
+                    const d = docSnap.data();
+                    if (d.status === 'online') {
+                        const el = document.createElement('div');
+                        el.className = 'flex items-center gap-2 text-sm text-slate-300';
+                        el.innerHTML = `<span class="w-2 h-2 rounded-full bg-green-500 shadow-[0_0_5px_#00ff55]"></span> ${d.username}`;
+                        UI.activeUsers.appendChild(el);
+                    }
+                });
+            }, (err) => console.error(err));
+
+            // Listen to Lobby for Matchmaking Automation
+            onSnapshot(collection(db, LOBBY_PATH), (snap) => {
+                let lobbyPlayers = [];
+                snap.forEach(d => lobbyPlayers.push({ uid: d.id, ...d.data() }));
+                lobbyPlayers.sort((a, b) => a.joinedAt - b.joinedAt);
+
+                const myLobbyRecord = lobbyPlayers.find(p => p.uid === user.uid);
+                if (myLobbyRecord) {
+                    UI.joinQueueBtn.classList.add('hidden');
+                    UI.queueStatus.classList.remove('hidden');
+                } else {
+                    UI.joinQueueBtn.classList.remove('hidden');
+                    UI.queueStatus.classList.add('hidden');
+                }
+
+                // If I am the oldest in the queue, and there are >=2 players, orchestrate matchmaking
+                if (lobbyPlayers.length >= 2 && lobbyPlayers[0].uid === user.uid) {
+                    executeMatchmaking(lobbyPlayers[0], lobbyPlayers[1]);
+                }
+            }, (err) => console.error(err));
+
+            // Listen to My Matches
+            onSnapshot(collection(db, MATCHES_PATH), (snap) => {
+                let foundMatch = null;
+                snap.forEach(d => {
+                    const match = { id: d.id, ...d.data() };
+                    if ((match.playerWhite === user.uid || match.playerBlack === user.uid) && match.status !== 'completed') {
+                        foundMatch = match;
+                    }
+                    // Handle completed match penalty check
+                    if (match.status === 'completed' && match.loser === user.uid) {
+                        const now = Date.now();
+                        const endTime = match.endedAt || now;
+                        if (now - endTime < 120000) {
+                             triggerLockout(120000 - (now - endTime));
+                        }
+                    }
+                });
+
+                if (foundMatch && foundMatch.id !== currentMatchId) {
+                    loadMatch(foundMatch);
+                } else if (foundMatch) {
+                    updateMatchState(foundMatch);
+                } else if (currentMatchId && !foundMatch) {
+                    // Match ended and cleared
+                    leaveMatch();
+                }
+            }, (err) => console.error(err));
+        };
+
+        // --- MATCHMAKING TRANSACTIONS ---
+        UI.joinQueueBtn.addEventListener('click', async () => {
+            if (!user) return;
+            try {
+                await setDoc(doc(db, LOBBY_PATH, user.uid), {
+                    username: userData.username,
+                    joinedAt: Date.now()
+                });
+            } catch (err) { console.error("Queue join failed", err); }
+        });
+
+        const executeMatchmaking = async (p1, p2) => {
+            const matchId = `match_${Date.now()}_${Math.random().toString(36).substring(2,7)}`;
+            
+            try {
+                await runTransaction(db, async (t) => {
+                    const p1Ref = doc(db, LOBBY_PATH, p1.uid);
+                    const p2Ref = doc(db, LOBBY_PATH, p2.uid);
+                    
+                    const p1Snap = await t.get(p1Ref);
+                    const p2Snap = await t.get(p2Ref);
+                    
+                    if (!p1Snap.exists() || !p2Snap.exists()) return; // State changed
+                    
+                    t.delete(p1Ref);
+                    t.delete(p2Ref);
+                    
+                    const matchRef = doc(db, MATCHES_PATH, matchId);
+                    t.set(matchRef, {
+                        playerWhite: p1.uid,
+                        playerWhiteName: p1.username,
+                        playerBlack: p2.uid,
+                        playerBlackName: p2.username,
+                        fen: 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1',
+                        turn: 'w',
+                        status: 'active',
+                        whiteTime: START_TIME,
+                        blackTime: START_TIME,
+                        lastMoveTimestamp: Date.now()
+                    });
+                });
+            } catch(e) {
+                console.error("Matchmaking transaction failed", e);
+            }
+        };
+
+        // --- CHESS ENGINE & UI ---
+        const loadMatch = (matchData) => {
+            currentMatchId = matchData.id;
+            myColor = matchData.playerWhite === user.uid ? 'w' : 'b';
+            boardFlipped = myColor === 'b';
+            
+            UI.lobbyView.classList.add('hidden');
+            UI.matchView.classList.remove('hidden');
+            UI.matchView.classList.add('flex');
+            
+            UI.opponentName.innerText = myColor === 'w' ? matchData.playerBlackName : matchData.playerWhiteName;
+            UI.playerName.innerText = myColor === 'w' ? matchData.playerWhiteName : matchData.playerBlackName;
+            
+            updateMatchState(matchData);
+            startClocks();
+        };
+
+        const leaveMatch = () => {
+            currentMatchId = null;
+            UI.matchView.classList.add('hidden');
+            UI.matchView.classList.remove('flex');
+            UI.lobbyView.classList.remove('hidden');
+            clearInterval(timerInterval);
+        };
+
+        const formatTime = (seconds) => {
+            const s = Math.max(0, Math.floor(seconds));
+            const m = Math.floor(s / 60);
+            const remS = s % 60;
+            return `${m}:${remS < 10 ? '0' : ''}${remS}`;
+        };
+
+        const updateMatchState = (matchData) => {
+            game.load(matchData.fen);
+            localTimers = { w: matchData.whiteTime, b: matchData.blackTime };
+            renderBoard();
+            
+            // Check status
+            if (matchData.status !== 'active') {
+                clearInterval(timerInterval);
+                let msg = "MATCH OVER.";
+                if (matchData.winner === user.uid) msg = "VICTORY ACHIEVED.";
+                else if (matchData.loser === user.uid) msg = "CRITICAL FAILURE. DEFEAT.";
+                else msg = "DRAW.";
+                UI.matchStatusMsg.innerText = msg;
+            } else {
+                UI.matchStatusMsg.innerText = game.turn() === myColor ? "YOUR TURN" : "AWAITING OPPONENT";
+                UI.matchStatusMsg.className = game.turn() === myColor ? "mt-4 cyber-font text-xl text-green-400 text-center" : "mt-4 cyber-font text-xl text-slate-400 text-center";
+            }
+        };
+
+        const getIconForPiece = (p) => {
+            const map = {
+                'p': 'fa-chess-pawn', 'r': 'fa-chess-rook', 'n': 'fa-chess-knight',
+                'b': 'fa-chess-bishop', 'q': 'fa-chess-queen', 'k': 'fa-chess-king'
+            };
+            return map[p.type];
+        };
+
+        const renderBoard = () => {
+            UI.chessBoard.innerHTML = '';
+            const files = ['a','b','c','d','e','f','g','h'];
+            const ranks = ['8','7','6','5','4','3','2','1'];
+            
+            let displayRanks = boardFlipped ? [...ranks].reverse() : ranks;
+            let displayFiles = boardFlipped ? [...files].reverse() : files;
+
+            let isDark = false;
+            
+            for (let r = 0; r < 8; r++) {
+                for (let f = 0; f < 8; f++) {
+                    const rank = displayRanks[r];
+                    const file = displayFiles[f];
+                    const squareId = file + rank;
+                    
+                    isDark = (r + f) % 2 !== 0;
+
+                    const sqEl = document.createElement('div');
+                    sqEl.className = `square ${isDark ? 'dark' : 'light'}`;
+                    sqEl.dataset.square = squareId;
+
+                    const piece = game.get(squareId);
+                    if (piece) {
+                        const icon = document.createElement('i');
+                        icon.className = `fas ${getIconForPiece(piece)} piece ${piece.color === 'w' ? 'white' : 'black'}`;
+                        sqEl.appendChild(icon);
+                    }
+
+                    sqEl.addEventListener('click', () => handleSquareClick(squareId));
+                    UI.chessBoard.appendChild(sqEl);
+                }
+            }
+        };
+
+        const handleSquareClick = async (square) => {
+            if (!currentMatchId || game.turn() !== myColor) return; // Not my turn
+
+            if (selectedSquare) {
+                // Try move
+                const moves = game.moves({ square: selectedSquare, verbose: true });
+                const move = moves.find(m => m.to === square);
+                
+                if (move) {
+                    // It's a valid move, execute optimistically
+                    game.move(move.san);
+                    selectedSquare = null;
+                    renderBoard();
+                    await submitMove(move.san);
+                } else {
+                    // Reselect or deselect
+                    const piece = game.get(square);
+                    if (piece && piece.color === myColor) {
+                        selectedSquare = square;
+                        highlightMoves(square);
+                    } else {
+                        selectedSquare = null;
+                        renderBoard();
+                    }
+                }
+            } else {
+                const piece = game.get(square);
+                if (piece && piece.color === myColor) {
+                    selectedSquare = square;
+                    highlightMoves(square);
+                }
+            }
+        };
+
+        const highlightMoves = (square) => {
+            renderBoard(); // reset
+            const sqEls = document.querySelectorAll('.square');
+            sqEls.forEach(el => {
+                if (el.dataset.square === square) el.classList.add('selected');
+            });
+
+            const moves = game.moves({ square: square, verbose: true });
+            moves.forEach(m => {
+                const targetEl = document.querySelector(`.square[data-square="${m.to}"]`);
+                if (targetEl) targetEl.classList.add('highlight');
+            });
+        };
+
+        const submitMove = async (san) => {
+            try {
+                await runTransaction(db, async (t) => {
+                    const matchRef = doc(db, MATCHES_PATH, currentMatchId);
+                    const matchSnap = await t.get(matchRef);
+                    if (!matchSnap.exists()) return;
+                    
+                    const match = matchSnap.data();
+                    if (match.turn !== myColor || match.status !== 'active') throw "Invalid sync";
+
+                    // Reconstruct game logic for safety
+                    const serverGame = new Chess();
+                    serverGame.load(match.fen);
+                    const moveRes = serverGame.move(san);
+                    if (!moveRes) throw "Invalid move";
+
+                    // Time logic
+                    const now = Date.now();
+                    const elapsed = (now - match.lastMoveTimestamp) / 1000;
+                    let newWhiteTime = match.whiteTime;
+                    let newBlackTime = match.blackTime;
+                    
+                    if (myColor === 'w') newWhiteTime = Math.max(0, newWhiteTime - elapsed + INCREMENT);
+                    else newBlackTime = Math.max(0, newBlackTime - elapsed + INCREMENT);
+
+                    let status = 'active';
+                    let winner = null;
+                    let loser = null;
+
+                    if (serverGame.in_checkmate()) {
+                        status = 'completed';
+                        winner = myColor === 'w' ? match.playerWhite : match.playerBlack;
+                        loser = myColor === 'w' ? match.playerBlack : match.playerWhite;
+                    } else if (serverGame.in_draw() || serverGame.in_stalemate() || serverGame.in_threefold_repetition()) {
+                        status = 'completed';
+                    } else if (newWhiteTime <= 0) {
+                        status = 'completed';
+                        winner = match.playerBlack; loser = match.playerWhite;
+                    } else if (newBlackTime <= 0) {
+                        status = 'completed';
+                        winner = match.playerWhite; loser = match.playerBlack;
+                    }
+
+                    t.update(matchRef, {
+                        fen: serverGame.fen(),
+                        turn: serverGame.turn(),
+                        whiteTime: newWhiteTime,
+                        blackTime: newBlackTime,
+                        lastMoveTimestamp: now,
+                        status, winner, loser,
+                        endedAt: status === 'completed' ? now : null
+                    });
+                });
+            } catch (err) {
+                console.error("Move submission failed", err);
+            }
+        };
+
+        const startClocks = () => {
+            clearInterval(timerInterval);
+            timerInterval = setInterval(() => {
+                if (!currentMatchId) return;
+                
+                // Decrement local time for the player whose turn it is
+                if (game.turn() === 'w') {
+                    localTimers.w -= 0.1;
+                } else {
+                    localTimers.b -= 0.1;
+                }
+                
+                // Timeout logic client side (visual only, server validates)
+                if (localTimers.w <= 0 || localTimers.b <= 0) {
+                     clearInterval(timerInterval);
+                }
+
+                // Update UI
+                if (myColor === 'w') {
+                    UI.playerClock.innerText = formatTime(localTimers.w);
+                    UI.opponentClock.innerText = formatTime(localTimers.b);
+                } else {
+                    UI.playerClock.innerText = formatTime(localTimers.b);
+                    UI.opponentClock.innerText = formatTime(localTimers.w);
+                }
+
+            }, 100);
+        };
+
+        UI.resignBtn.addEventListener('click', async () => {
+            if (!currentMatchId) return;
+            try {
+                await runTransaction(db, async (t) => {
+                    const matchRef = doc(db, MATCHES_PATH, currentMatchId);
+                    const snap = await t.get(matchRef);
+                    if (!snap.exists()) return;
+                    const m = snap.data();
+                    t.update(matchRef, {
+                        status: 'completed',
+                        winner: myColor === 'w' ? m.playerBlack : m.playerWhite,
+                        loser: user.uid,
+                        endedAt: Date.now()
+                    });
+                });
+            } catch (err) { console.error("Resign fail", err); }
+        });
+
+
+        // --- PARTICLE PHYSICS & EFFECTS ---
+        const canvas = document.getElementById('fx-canvas');
         const ctx = canvas.getContext('2d');
         let particles = [];
-        let animationFrameId = null;
+        let animationFrameId;
 
-        function resizeCanvas() {
+        const resizeCanvas = () => {
             canvas.width = window.innerWidth;
             canvas.height = window.innerHeight;
-        }
+        };
         window.addEventListener('resize', resizeCanvas);
         resizeCanvas();
 
+        const colorMap = {
+            'red': '255, 42, 42',
+            'orange': '255, 123, 0',
+            'yellow': '252, 232, 3',
+            'green': '0, 255, 85',
+            'blue': '0, 229, 255'
+        };
+
         class Particle {
-            constructor(x, y, color) {
-                this.x = x; this.y = y;
+            constructor(x, y, colorStr) {
+                this.x = x;
+                this.y = y;
                 const angle = Math.random() * Math.PI * 2;
                 const speed = Math.random() * 15 + 5;
                 this.vx = Math.cos(angle) * speed;
                 this.vy = Math.sin(angle) * speed;
-                this.color = color;
+                this.friction = 0.96;
+                this.gravity = 0.2;
                 this.life = 1.0;
-                this.decay = Math.random() * 0.02 + 0.01;
-                this.gravity = 0.5;
-                this.friction = 0.98;
+                this.decay = Math.random() * 0.02 + 0.015;
+                this.color = colorStr;
                 this.size = Math.random() * 4 + 2;
             }
             update() {
@@ -296,416 +782,93 @@
                 this.life -= this.decay;
             }
             draw(ctx) {
-                ctx.globalAlpha = Math.max(0, this.life);
-                ctx.fillStyle = this.color;
                 ctx.beginPath();
                 ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+                ctx.fillStyle = `rgba(${this.color}, ${this.life})`;
+                ctx.shadowBlur = 10;
+                ctx.shadowColor = `rgb(${this.color})`;
                 ctx.fill();
-                ctx.globalAlpha = 1.0;
             }
         }
 
-        function animateParticles() {
+        const runParticles = () => {
             ctx.clearRect(0, 0, canvas.width, canvas.height);
-            particles = particles.filter(p => p.life > 0);
-            particles.forEach(p => { p.update(); p.draw(ctx); });
+            for (let i = particles.length - 1; i >= 0; i--) {
+                const p = particles[i];
+                p.update();
+                p.draw(ctx);
+                if (p.life <= 0) particles.splice(i, 1);
+            }
             if (particles.length > 0) {
-                animationFrameId = requestAnimationFrame(animateParticles);
-            }
-        }
-
-        function triggerExplosion(color) {
-            const centerX = window.innerWidth / 2;
-            const centerY = window.innerHeight / 2;
-            for(let i=0; i<150; i++) {
-                particles.push(new Particle(centerX, centerY, color));
-            }
-            if (!animationFrameId || particles.length === 150) {
-                animateParticles();
-            }
-            // Trigger Shake
-            document.body.classList.remove('shake');
-            void document.body.offsetWidth; // force reflow
-            document.body.classList.add('shake');
-        }
-
-        function triggerBluePulse() {
-            const panel = document.getElementById('main-dashboard');
-            panel.classList.remove('flash-blue');
-            void panel.offsetWidth;
-            panel.classList.add('flash-blue');
-        }
-
-        /*******************************************************
-         * 5. AUTHENTICATION & PRESENCE
-         *******************************************************/
-        function authenticate() {
-            const input = document.getElementById('username-input').value.trim();
-            if (!input || input.length < 3) return showToast('Invalid Call Sign (Min 3 chars)');
-            currentUser = input;
-            sessionStorage.setItem('username', currentUser);
-            initUserPresence();
-            switchView('lobby-view');
-            document.getElementById('lobby-greeting').innerText = `Welcome, Agent ${currentUser}`;
-        }
-
-        function initUserPresence() {
-            const userRef = db.ref(`users/${currentUser}`);
-            userRef.set({ online: true, lastActive: getServerTime() });
-            userRef.onDisconnect().remove();
-
-            // Listen to global pool
-            db.ref('queue').on('value', snap => {
-                const q = snap.val() || {};
-                document.getElementById('pool-count').innerText = Object.keys(q).length;
-                
-                // If we are in a match, ignore queue changes
-                if(currentMatchId) return;
-
-                // Check if we were pulled into a match
-                if (isQueued && !q[currentUser]) {
-                    db.ref(`users/${currentUser}/currentMatch`).once('value', matchSnap => {
-                        const mId = matchSnap.val();
-                        if (mId) initMatch(mId);
-                    });
-                }
-            });
-        }
-
-        window.onload = () => {
-            if (currentUser) {
-                initUserPresence();
-                switchView('lobby-view');
-                document.getElementById('lobby-greeting').innerText = `Welcome, Agent ${currentUser}`;
-                
-                // Recover match if exists
-                db.ref(`users/${currentUser}/currentMatch`).once('value', snap => {
-                    if(snap.val()) initMatch(snap.val());
-                });
+                animationFrameId = requestAnimationFrame(runParticles);
             }
         };
 
-        /*******************************************************
-         * 6. AUTOMATED MATCHMAKING ENGINE
-         *******************************************************/
-        async function joinQueue() {
-            if (isQueued) return;
-            isQueued = true;
-            document.getElementById('queue-status').innerText = "Awaiting suitable opponent...";
-            
-            try {
-                // Join queue
-                await db.ref(`queue/${currentUser}`).set(getServerTime());
-                
-                // Master orchestration transaction
-                const queueRef = db.ref('queue');
-                queueRef.transaction((currentQueue) => {
-                    if (!currentQueue) return currentQueue;
-                    const players = Object.keys(currentQueue).sort((a,b) => currentQueue[a] - currentQueue[b]);
-                    
-                    if (players.length >= 2) {
-                        const p1 = players[0];
-                        const p2 = players[1];
-                        
-                        // We construct a match object safely if transaction commits
-                        // Firebase transactions need pure functions, side effects handle in callback
-                        delete currentQueue[p1];
-                        delete currentQueue[p2];
-                        currentQueue['_new_match'] = { p1, p2 }; // Signal
-                    }
-                    return currentQueue;
-                }, (error, committed, snapshot) => {
-                    if (committed && snapshot.val() && snapshot.val()._new_match) {
-                        const {p1, p2} = snapshot.val()._new_match;
-                        db.ref('queue/_new_match').remove();
-                        createMatch(p1, p2);
-                    }
-                });
-            } catch (e) {
-                showToast("Matchmaking Error: " + e.message);
-                isQueued = false;
+        window.triggerFX = (color) => {
+            if (color === 'blue') {
+                // Blue pulse bypasses particles, flashes UI
+                UI.arenaContainer.classList.remove('pulse-flash');
+                void UI.arenaContainer.offsetWidth; // trigger reflow
+                UI.arenaContainer.classList.add('pulse-flash');
+                return;
             }
-        }
 
-        async function createMatch(p1, p2) {
-            const matchId = `match_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-            const matchData = {
-                white: p1,
-                black: p2,
-                fen: "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1",
-                turn: 'w',
-                status: 'active',
-                whiteTime: TIME_BASE_MS,
-                blackTime: TIME_BASE_MS,
-                lastMoveTime: getServerTime()
-            };
-
-            await db.ref(`matches/${matchId}`).set(matchData);
-            await db.ref(`users/${p1}/currentMatch`).set(matchId);
-            await db.ref(`users/${p2}/currentMatch`).set(matchId);
-        }
-
-        /*******************************************************
-         * 7. CHESS INTERFACE & ENGINE
-         *******************************************************/
-        function initMatch(matchId) {
-            isQueued = false;
-            currentMatchId = matchId;
-            switchView('match-view');
+            // Other colors trigger physics explosion & screen effects
+            const x = window.innerWidth / 2;
+            const y = window.innerHeight / 2;
+            const colorRgb = colorMap[color];
             
-            db.ref(`matches/${matchId}`).on('value', snap => {
-                const data = snap.val();
-                if (!data) return;
-                
-                matchState = data;
-                isPlayerWhite = data.white === currentUser;
-                document.getElementById('player-name').innerText = `You (${isPlayerWhite ? 'White' : 'Black'})`;
-                document.getElementById('opponent-name').innerText = isPlayerWhite ? data.black : data.white;
-                
-                game.load(data.fen);
-                renderBoard();
-                
-                if (data.status !== 'active') {
-                    handleMatchEnd(data);
-                } else {
-                    if(!clockInterval) clockInterval = setInterval(updateClocks, 100);
-                }
-            });
-        }
+            for(let i=0; i<80; i++) {
+                particles.push(new Particle(x, y, colorRgb));
+            }
+            if (particles.length <= 80) runParticles(); // start loop if not running
 
-        const piecesMap = {
-            'w': { 'p': '♙', 'n': '♘', 'b': '♗', 'r': '♖', 'q': '♕', 'k': '♔' },
-            'b': { 'p': '♟', 'n': '♞', 'b': '♝', 'r': '♜', 'q': '♛', 'k': '♚' }
+            // Screen Shake & Chromatic
+            UI.body.classList.remove('shake', 'chromatic');
+            void UI.body.offsetWidth; // reflow
+            UI.body.classList.add('shake', 'chromatic');
+            
+            setTimeout(() => {
+                UI.body.classList.remove('shake', 'chromatic');
+            }, 500);
         };
 
-        function renderBoard() {
-            const boardDiv = document.getElementById('board');
-            boardDiv.innerHTML = '';
+
+        // --- PENALTY LOCKOUT SANDBOX ---
+        let lockoutInterval;
+
+        const blockEvents = (e) => {
+            e.stopPropagation();
+            e.preventDefault();
+            return false;
+        };
+        const blockedEventTypes = ['contextmenu', 'selectstart', 'dragstart', 'keydown', 'keypress', 'keyup', 'mousedown', 'mouseup', 'click', 'dblclick'];
+
+        const triggerLockout = (durationMs) => {
+            UI.penaltyOverlay.style.display = 'flex';
+            let remaining = durationMs;
             
-            let boardLayout = game.board();
-            if (!isPlayerWhite) {
-                // Reverse board for black
-                boardLayout = [...boardLayout].reverse().map(row => [...row].reverse());
-            }
+            // Apply strict sandbox capture phase listeners
+            blockedEventTypes.forEach(ev => window.addEventListener(ev, blockEvents, { capture: true, passive: false }));
 
-            const validMoves = selectedSquare ? game.moves({ square: selectedSquare, verbose: true }).map(m => m.to) : [];
-
-            for (let r = 0; r < 8; r++) {
-                for (let c = 0; c < 8; c++) {
-                    const actualR = isPlayerWhite ? r : 7 - r;
-                    const actualC = isPlayerWhite ? c : 7 - c;
-                    const squareId = String.fromCharCode(97 + actualC) + (8 - actualR);
-                    const piece = boardLayout[r][c];
-
-                    const sqDiv = document.createElement('div');
-                    const isDark = (r + c) % 2 !== 0;
-                    sqDiv.className = `square ${isDark ? 'dark' : 'light'}`;
-                    if (validMoves.includes(squareId)) sqDiv.classList.add('highlight');
-                    
-                    if (selectedSquare === squareId) sqDiv.style.backgroundColor = '#ff8c00';
-
-                    if (piece) {
-                        const span = document.createElement('span');
-                        span.className = 'piece';
-                        span.style.color = piece.color === 'w' ? '#fff' : '#000';
-                        span.innerText = piecesMap[piece.color][piece.type];
-                        sqDiv.appendChild(span);
-                    }
-
-                    sqDiv.onclick = () => handleSquareClick(squareId);
-                    boardDiv.appendChild(sqDiv);
-                }
-            }
-        }
-
-        function handleSquareClick(sq) {
-            if (matchState.status !== 'active') return;
-            if ((game.turn() === 'w' && !isPlayerWhite) || (game.turn() === 'b' && isPlayerWhite)) return;
-
-            if (selectedSquare) {
-                const move = game.moves({ square: selectedSquare, verbose: true }).find(m => m.to === sq);
-                if (move) {
-                    executeMove(move);
-                    selectedSquare = null;
+            lockoutInterval = setInterval(() => {
+                remaining -= 10; // update 100fps for smooth ms counter
+                if (remaining <= 0) {
+                    endLockout();
                 } else {
-                    const piece = game.get(sq);
-                    selectedSquare = (piece && piece.color === game.turn()) ? sq : null;
+                    UI.lockoutTimer.innerText = (remaining / 1000).toFixed(2);
                 }
-            } else {
-                const piece = game.get(sq);
-                if (piece && piece.color === game.turn()) {
-                    selectedSquare = sq;
-                }
-            }
-            renderBoard();
-        }
+            }, 10);
+        };
 
-        async function executeMove(moveStr) {
-            try {
-                game.move(moveStr);
-                const now = getServerTime();
-                const elapsed = now - matchState.lastMoveTime;
-                
-                let newWhiteTime = matchState.whiteTime;
-                let newBlackTime = matchState.blackTime;
+        const endLockout = () => {
+            clearInterval(lockoutInterval);
+            UI.penaltyOverlay.style.display = 'none';
+            blockedEventTypes.forEach(ev => window.removeEventListener(ev, blockEvents, { capture: true, passive: false }));
+        };
 
-                if (matchState.turn === 'w') {
-                    newWhiteTime = Math.max(0, newWhiteTime - elapsed + TIME_INC_MS);
-                } else {
-                    newBlackTime = Math.max(0, newBlackTime - elapsed + TIME_INC_MS);
-                }
-
-                let status = 'active';
-                if (game.in_checkmate()) status = 'checkmate';
-                else if (game.in_draw() || game.in_stalemate() || game.in_threefold_repetition()) status = 'draw';
-                else if (newWhiteTime === 0) status = 'timeout_w';
-                else if (newBlackTime === 0) status = 'timeout_b';
-
-                await db.ref(`matches/${currentMatchId}`).update({
-                    fen: game.fen(),
-                    turn: game.turn(),
-                    lastMoveTime: now,
-                    whiteTime: newWhiteTime,
-                    blackTime: newBlackTime,
-                    status: status
-                });
-            } catch (e) {
-                showToast("Move Synchronization Failed");
-            }
-        }
-
-        async function resignMatch() {
-            if(!currentMatchId || matchState.status !== 'active') return;
-            const status = isPlayerWhite ? 'resign_w' : 'resign_b';
-            await db.ref(`matches/${currentMatchId}`).update({ status });
-        }
-
-        /*******************************************************
-         * 8. SYNCHRONIZED DUAL-CLOCK ENGINE
-         *******************************************************/
-        function updateClocks() {
-            if (!matchState || matchState.status !== 'active') return;
-
-            const now = getServerTime();
-            let wTime = matchState.whiteTime;
-            let bTime = matchState.blackTime;
-
-            if (matchState.turn === 'w') {
-                wTime = Math.max(0, wTime - (now - matchState.lastMoveTime));
-            } else {
-                bTime = Math.max(0, bTime - (now - matchState.lastMoveTime));
-            }
-
-            // Timeout Check Local
-            if (wTime === 0 || bTime === 0) {
-                const isMyTurn = (isPlayerWhite && matchState.turn === 'w') || (!isPlayerWhite && matchState.turn === 'b');
-                if (isMyTurn) { // Responsible client declares timeout
-                     db.ref(`matches/${currentMatchId}`).update({
-                        status: wTime === 0 ? 'timeout_w' : 'timeout_b'
-                    });
-                }
-            }
-
-            document.getElementById('player-clock').innerText = formatTime(isPlayerWhite ? wTime : bTime);
-            document.getElementById('opponent-clock').innerText = formatTime(isPlayerWhite ? bTime : wTime);
-        }
-
-        function formatTime(ms) {
-            const totalSec = Math.ceil(ms / 1000);
-            const m = Math.floor(totalSec / 60);
-            const s = totalSec % 60;
-            const ds = Math.floor((ms % 1000) / 100);
-            return `${m}:${s.toString().padStart(2, '0')}.${ds}`;
-        }
-
-        /*******************************************************
-         * 9. DEFEAT PENALTY & SECURITY INTERCEPTION
-         *******************************************************/
-        function handleMatchEnd(data) {
-            clearInterval(clockInterval);
-            clockInterval = null;
-            
-            // Cleanup references
-            db.ref(`matches/${currentMatchId}`).off();
-            db.ref(`users/${currentUser}/currentMatch`).remove();
-            
-            let didILose = false;
-            let reason = "Match Ended";
-
-            if (data.status === 'checkmate') {
-                didILose = (data.turn === 'w' && isPlayerWhite) || (data.turn === 'b' && !isPlayerWhite);
-                reason = "Checkmate";
-            } else if (data.status === 'resign_w') {
-                didILose = isPlayerWhite; reason = "Resignation";
-            } else if (data.status === 'resign_b') {
-                didILose = !isPlayerWhite; reason = "Resignation";
-            } else if (data.status === 'timeout_w') {
-                didILose = isPlayerWhite; reason = "Time Exhaustion";
-            } else if (data.status === 'timeout_b') {
-                didILose = !isPlayerWhite; reason = "Time Exhaustion";
-            } else if (data.status === 'draw') {
-                reason = "Draw";
-            }
-
-            currentMatchId = null;
-            document.getElementById('queue-status').innerText = "";
-
-            if (didILose) {
-                triggerPenaltyLockout(120);
-            } else {
-                showToast(`Match Concluded: ${reason}`);
-                setTimeout(() => switchView('lobby-view'), 3000);
-            }
-        }
-
-        function triggerPenaltyLockout(durationSec) {
-            const overlay = document.getElementById('lockOverlay');
-            const timerEl = document.getElementById('lock-timer');
-            overlay.style.display = 'flex';
-            
-            const endTime = Date.now() + durationSec * 1000;
-
-            // Security Event Interception Sandbox
-            const intercept = (e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                return false;
-            };
-
-            const keyIntercept = (e) => {
-                const blocked = ['Escape', 'F1', 'F2', 'F3', 'F4', 'F5', 'F6', 'F7', 'F8', 'F9', 'F10', 'F11', 'F12'];
-                if (blocked.includes(e.key) || (e.ctrlKey && ['r', 'R', 'c', 'C'].includes(e.key))) {
-                    e.preventDefault();
-                    e.stopPropagation();
-                }
-            };
-
-            window.addEventListener('contextmenu', intercept, { capture: true });
-            window.addEventListener('selectstart', intercept, { capture: true });
-            window.addEventListener('mousedown', (e) => {
-                if (overlay.contains(e.target) || e.target === overlay) return;
-                intercept(e);
-            }, { capture: true });
-            window.addEventListener('keydown', keyIntercept, { capture: true });
-
-            const countdownInterval = setInterval(() => {
-                const remain = endTime - Date.now();
-                if (remain <= 0) {
-                    clearInterval(countdownInterval);
-                    overlay.style.display = 'none';
-                    
-                    // Release Interceptions
-                    window.removeEventListener('contextmenu', intercept, { capture: true });
-                    window.removeEventListener('selectstart', intercept, { capture: true });
-                    window.removeEventListener('mousedown', intercept, { capture: true });
-                    window.removeEventListener('keydown', keyIntercept, { capture: true });
-                    
-                    switchView('lobby-view');
-                } else {
-                    timerEl.innerText = (remain / 1000).toFixed(3);
-                }
-            }, 11); // High precision updates
-        }
+        // Bootstrap App
+        initSystem();
 
     </script>
 </body>
