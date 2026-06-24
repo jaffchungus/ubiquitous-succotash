@@ -1,875 +1,2380 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Nexus: Cyber Chess</title>
-    
-    <!-- Dependencies -->
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/chess.js/0.10.3/chess.min.js"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;700;900&family=Rajdhani:wght@500;700&display=swap" rel="stylesheet">
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>NEXUS CHESS // Tournament Grid</title>
+<style>
+/* ============================================================
+   NEXUS CHESS — Premium dark cyber-futuristic theme
+   ============================================================ */
 
-    <style>
-        :root {
-            --bg-start: #0f0c29;
-            --bg-mid: #302b63;
-            --bg-end: #24243e;
-            --neon-red: #ff2a2a;
-            --neon-orange: #ff7b00;
-            --neon-yellow: #fce803;
-            --neon-green: #00ff55;
-            --neon-blue: #00e5ff;
-            --glass-bg: rgba(16, 18, 27, 0.6);
-            --glass-border: rgba(255, 255, 255, 0.1);
-        }
+:root {
+  --bg-1: #0f0c29;
+  --bg-2: #302b63;
+  --bg-3: #24243e;
+  --neon-cyan: #00f0ff;
+  --neon-pink: #ff006e;
+  --neon-purple: #b537f2;
+  --neon-yellow: #ffd60a;
+  --neon-green: #00ff88;
+  --neon-red: #ff3b3b;
+  --neon-orange: #ff8c00;
+  --neon-blue: #3b82f6;
+  --text: #e6e6ff;
+  --text-dim: #8a8aaa;
+  --glass-bg: rgba(20, 18, 45, 0.55);
+  --glass-bg-strong: rgba(20, 18, 45, 0.78);
+  --glass-border: rgba(255, 255, 255, 0.10);
+  --radius: 14px;
+  --shadow-deep: 0 18px 60px rgba(0, 0, 0, 0.55);
+}
 
-        body {
-            font-family: 'Rajdhani', sans-serif;
-            background: linear-gradient(135deg, var(--bg-start), var(--bg-mid), var(--bg-end));
-            background-attachment: fixed;
-            color: white;
-            overflow-x: hidden;
-            margin: 0;
-            min-height: 100vh;
-        }
+* { margin: 0; padding: 0; box-sizing: border-box; }
 
-        h1, h2, h3, .cyber-font {
-            font-family: 'Orbitron', sans-serif;
-        }
+html, body {
+  height: 100%;
+  width: 100%;
+  overflow-x: hidden;
+}
 
-        /* Glassmorphism */
-        .glass-panel {
-            background: var(--glass-bg);
-            backdrop-filter: blur(12px);
-            -webkit-backdrop-filter: blur(12px);
-            border: 1px solid var(--glass-border);
-            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
-        }
+body {
+  background: linear-gradient(135deg, var(--bg-1) 0%, var(--bg-2) 50%, var(--bg-3) 100%);
+  background-size: 200% 200%;
+  animation: gradientShift 24s ease infinite;
+  color: var(--text);
+  font-family: 'Segoe UI', 'Inter', 'Helvetica Neue', system-ui, sans-serif;
+  min-height: 100vh;
+  letter-spacing: 0.3px;
+  -webkit-font-smoothing: antialiased;
+}
 
-        /* Effects */
-        #fx-canvas {
-            position: fixed;
-            top: 0; left: 0; width: 100%; height: 100%;
-            pointer-events: none;
-            z-index: 50;
-        }
+@keyframes gradientShift {
+  0%, 100% { background-position: 0% 50%; }
+  50%      { background-position: 100% 50%; }
+}
 
-        .shake {
-            animation: shake 0.5s cubic-bezier(.36,.07,.19,.97) both;
-            transform: translate3d(0, 0, 0);
-        }
+.hidden { display: none !important; }
 
-        .chromatic {
-            animation: chromatic-aberration 0.4s ease-in-out;
-        }
+/* ============================================================
+   Particle Canvas — fixed overlay, no pointer events
+   ============================================================ */
+#particleCanvas {
+  position: fixed;
+  inset: 0;
+  width: 100vw;
+  height: 100vh;
+  pointer-events: none;
+  z-index: 9000;
+}
 
-        .pulse-flash {
-            animation: blue-pulse 0.8s ease-out;
-        }
+/* ============================================================
+   Login modal
+   ============================================================ */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: radial-gradient(circle at center, rgba(15, 12, 41, 0.75), rgba(0, 0, 0, 0.92));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 5000;
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  animation: fadeIn 0.4s ease;
+}
 
-        /* Chess Board */
-        .chess-board {
-            display: grid;
-            grid-template-columns: repeat(8, 1fr);
-            grid-template-rows: repeat(8, 1fr);
-            width: 100%;
-            max-width: 500px;
-            aspect-ratio: 1;
-            border: 2px solid var(--neon-blue);
-            box-shadow: 0 0 20px rgba(0, 229, 255, 0.3);
-        }
+@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
 
-        .square {
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            font-size: 2.5rem;
-            cursor: pointer;
-            position: relative;
-            user-select: none;
-            transition: all 0.2s;
-        }
+.modal {
+  background: var(--glass-bg-strong);
+  backdrop-filter: blur(22px);
+  -webkit-backdrop-filter: blur(22px);
+  border: 1px solid rgba(0, 240, 255, 0.4);
+  border-radius: 20px;
+  padding: 56px 48px;
+  text-align: center;
+  box-shadow: 0 0 60px rgba(0, 240, 255, 0.25), inset 0 0 30px rgba(181, 55, 242, 0.08);
+  width: min(440px, 92vw);
+  position: relative;
+  overflow: hidden;
+}
 
-        .square.dark { background-color: rgba(30, 41, 59, 0.8); }
-        .square.light { background-color: rgba(71, 85, 105, 0.8); }
-        .square.highlight { background-color: rgba(0, 255, 85, 0.4) !important; box-shadow: inset 0 0 10px var(--neon-green); }
-        .square.selected { background-color: rgba(0, 229, 255, 0.5) !important; }
+.modal::before {
+  content: '';
+  position: absolute;
+  inset: -2px;
+  background: linear-gradient(135deg, var(--neon-cyan), var(--neon-purple), var(--neon-pink));
+  z-index: -1;
+  border-radius: 22px;
+  opacity: 0.55;
+  filter: blur(14px);
+}
 
-        .piece {
-            filter: drop-shadow(0 0 5px currentColor);
-            z-index: 10;
-        }
-        .piece.white { color: #f8fafc; text-shadow: 0 0 8px rgba(255,255,255,0.8); }
-        .piece.black { color: #0f172a; text-shadow: 0 0 8px rgba(255, 42, 42, 0.8); }
+.modal h1 {
+  font-size: 42px;
+  font-weight: 800;
+  letter-spacing: 8px;
+  background: linear-gradient(90deg, var(--neon-cyan), var(--neon-purple), var(--neon-pink));
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  margin-bottom: 6px;
+  text-shadow: 0 0 30px rgba(0, 240, 255, 0.35);
+}
 
-        /* Penalty Overlay */
-        #penalty-overlay {
-            position: fixed;
-            top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(10, 0, 0, 0.95);
-            z-index: 9999;
-            display: none;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            backdrop-filter: blur(20px);
-        }
+.modal .tag {
+  color: var(--text-dim);
+  font-size: 12px;
+  letter-spacing: 5px;
+  text-transform: uppercase;
+  margin-bottom: 36px;
+}
 
-        .hacker-text {
-            color: var(--neon-red);
-            text-shadow: 0 0 10px var(--neon-red);
-            font-family: monospace;
-            font-size: 4rem;
-        }
+.modal input {
+  width: 100%;
+  padding: 14px 18px;
+  background: rgba(0, 0, 0, 0.35);
+  border: 1px solid var(--glass-border);
+  border-radius: 10px;
+  color: var(--text);
+  font-size: 16px;
+  letter-spacing: 2px;
+  margin-bottom: 18px;
+  outline: none;
+  transition: border-color 0.25s, box-shadow 0.25s;
+}
 
-        /* Control Nodes */
-        .node-btn {
-            width: 50px; height: 50px;
-            border-radius: 50%;
-            border: 2px solid;
-            cursor: pointer;
-            transition: all 0.2s;
-            box-shadow: 0 0 10px currentColor;
-        }
-        .node-btn:hover { transform: scale(1.1); filter: brightness(1.3); }
+.modal input:focus {
+  border-color: var(--neon-cyan);
+  box-shadow: 0 0 0 3px rgba(0, 240, 255, 0.15), 0 0 20px rgba(0, 240, 255, 0.25);
+}
 
-        /* Keyframes */
-        @keyframes shake {
-            10%, 90% { transform: translate3d(-2px, 2px, 0); }
-            20%, 80% { transform: translate3d(3px, -2px, 0); }
-            30%, 50%, 70% { transform: translate3d(-5px, 4px, 0); }
-            40%, 60% { transform: translate3d(5px, -4px, 0); }
-        }
+.btn-primary {
+  width: 100%;
+  padding: 14px;
+  background: linear-gradient(90deg, rgba(0, 240, 255, 0.18), rgba(181, 55, 242, 0.18));
+  border: 1px solid var(--neon-cyan);
+  border-radius: 10px;
+  color: var(--neon-cyan);
+  font-size: 14px;
+  letter-spacing: 4px;
+  font-weight: 700;
+  cursor: pointer;
+  text-transform: uppercase;
+  transition: all 0.25s;
+  position: relative;
+  overflow: hidden;
+}
 
-        @keyframes chromatic-aberration {
-            0% { text-shadow: 2px 0 0 red, -2px 0 0 blue; }
-            50% { text-shadow: -4px 0 0 red, 4px 0 0 blue; }
-            100% { text-shadow: 0 0 0 transparent; }
-        }
+.btn-primary:hover {
+  background: linear-gradient(90deg, rgba(0, 240, 255, 0.35), rgba(181, 55, 242, 0.35));
+  box-shadow: 0 0 24px rgba(0, 240, 255, 0.5);
+  transform: translateY(-1px);
+}
 
-        @keyframes blue-pulse {
-            0% { box-shadow: inset 0 0 0 0 rgba(0, 229, 255, 0); background-color: transparent; }
-            50% { box-shadow: inset 0 0 50px 10px rgba(0, 229, 255, 0.6); background-color: rgba(0, 229, 255, 0.1); }
-            100% { box-shadow: inset 0 0 0 0 rgba(0, 229, 255, 0); background-color: transparent; }
-        }
-    </style>
+.btn-primary:active { transform: translateY(0); }
+
+/* ============================================================
+   App shell
+   ============================================================ */
+#app { padding: 18px 22px 60px; }
+
+header.app-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 22px;
+  margin-bottom: 22px;
+  background: var(--glass-bg);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-deep);
+}
+
+.logo {
+  font-size: 22px;
+  font-weight: 800;
+  letter-spacing: 6px;
+  background: linear-gradient(90deg, var(--neon-cyan), var(--neon-purple));
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  text-shadow: 0 0 18px rgba(0, 240, 255, 0.3);
+}
+
+.user-info {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  font-size: 13px;
+  letter-spacing: 2px;
+}
+
+.user-info .label { color: var(--text-dim); }
+.user-info .name {
+  color: var(--neon-cyan);
+  font-weight: 700;
+  text-shadow: 0 0 8px rgba(0, 240, 255, 0.4);
+}
+
+.status-pill {
+  padding: 4px 12px;
+  border-radius: 20px;
+  background: rgba(0, 255, 136, 0.12);
+  border: 1px solid var(--neon-green);
+  color: var(--neon-green);
+  font-size: 11px;
+  letter-spacing: 2px;
+  font-weight: 700;
+}
+
+.status-pill.queue   { background: rgba(255, 214, 10, 0.12); border-color: var(--neon-yellow); color: var(--neon-yellow); }
+.status-pill.match   { background: rgba(255, 0, 110, 0.15);  border-color: var(--neon-pink);   color: var(--neon-pink);   }
+.status-pill.locked  { background: rgba(255, 59, 59, 0.15);  border-color: var(--neon-red);    color: var(--neon-red);    }
+.status-pill.idle    { background: rgba(138, 138, 170, 0.12); border-color: var(--text-dim);   color: var(--text-dim);    }
+
+/* ============================================================
+   Dashboard layout
+   ============================================================ */
+#dashboard {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 22px;
+  max-width: 1400px;
+  margin: 0 auto;
+}
+
+.panel {
+  background: var(--glass-bg);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius);
+  padding: 22px;
+  box-shadow: var(--shadow-deep);
+  position: relative;
+  overflow: hidden;
+}
+
+.panel::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0;
+  width: 100%;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, var(--neon-cyan), transparent);
+  opacity: 0.5;
+}
+
+.panel h2 {
+  font-size: 13px;
+  letter-spacing: 4px;
+  color: var(--neon-cyan);
+  margin-bottom: 18px;
+  text-transform: uppercase;
+  text-shadow: 0 0 10px rgba(0, 240, 255, 0.3);
+}
+
+/* ============================================================
+   Control panel — 5 nodes
+   ============================================================ */
+.control-panel { grid-column: 1 / -1; }
+
+.button-grid {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 14px;
+}
+
+.ctrl-btn {
+  position: relative;
+  padding: 22px 12px;
+  border: 2px solid;
+  border-radius: 12px;
+  background: rgba(0, 0, 0, 0.3);
+  color: var(--text);
+  font-size: 13px;
+  font-weight: 800;
+  letter-spacing: 4px;
+  cursor: pointer;
+  text-transform: uppercase;
+  transition: transform 0.18s, box-shadow 0.25s, background 0.25s;
+  overflow: hidden;
+}
+
+.ctrl-btn::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(circle at 50% 120%, currentColor, transparent 70%);
+  opacity: 0.18;
+  pointer-events: none;
+  transition: opacity 0.25s;
+}
+
+.ctrl-btn:hover { transform: translateY(-2px); }
+.ctrl-btn:hover::after { opacity: 0.35; }
+.ctrl-btn:active { transform: translateY(0); }
+
+.ctrl-btn[data-color="red"]    { color: var(--neon-red);    border-color: var(--neon-red);    box-shadow: 0 0 14px rgba(255, 59, 59, 0.25), inset 0 0 14px rgba(255, 59, 59, 0.08); }
+.ctrl-btn[data-color="orange"] { color: var(--neon-orange); border-color: var(--neon-orange); box-shadow: 0 0 14px rgba(255, 140, 0, 0.25), inset 0 0 14px rgba(255, 140, 0, 0.08); }
+.ctrl-btn[data-color="yellow"] { color: var(--neon-yellow); border-color: var(--neon-yellow); box-shadow: 0 0 14px rgba(255, 214, 10, 0.25), inset 0 0 14px rgba(255, 214, 10, 0.08); }
+.ctrl-btn[data-color="green"]  { color: var(--neon-green);  border-color: var(--neon-green);  box-shadow: 0 0 14px rgba(0, 255, 136, 0.25), inset 0 0 14px rgba(0, 255, 136, 0.08); }
+.ctrl-btn[data-color="blue"]   { color: var(--neon-blue);   border-color: var(--neon-blue);   box-shadow: 0 0 14px rgba(59, 130, 246, 0.25), inset 0 0 14px rgba(59, 130, 246, 0.08); }
+
+.ctrl-btn:hover { box-shadow: 0 0 32px currentColor, inset 0 0 22px rgba(255, 255, 255, 0.06); }
+
+/* ============================================================
+   Lobby panel
+   ============================================================ */
+.lobby-info {
+  display: flex;
+  gap: 18px;
+  margin-bottom: 16px;
+  font-size: 13px;
+  color: var(--text-dim);
+  letter-spacing: 1.5px;
+  flex-wrap: wrap;
+}
+
+.lobby-info span { color: var(--neon-cyan); font-weight: 700; }
+
+.lobby-info .countdown {
+  color: var(--neon-yellow);
+  font-weight: 800;
+  text-shadow: 0 0 10px rgba(255, 214, 10, 0.5);
+  animation: pulse 0.9s ease-in-out infinite;
+}
+
+@keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.55; } }
+
+#queueBtn {
+  width: 100%;
+  padding: 14px;
+  border: 1px solid var(--neon-green);
+  background: rgba(0, 255, 136, 0.1);
+  color: var(--neon-green);
+  border-radius: 10px;
+  font-size: 13px;
+  letter-spacing: 4px;
+  font-weight: 800;
+  cursor: pointer;
+  text-transform: uppercase;
+  transition: all 0.25s;
+  margin-bottom: 16px;
+}
+
+#queueBtn:hover { background: rgba(0, 255, 136, 0.22); box-shadow: 0 0 22px rgba(0, 255, 136, 0.45); }
+#queueBtn.in-queue { border-color: var(--neon-red); background: rgba(255, 59, 59, 0.12); color: var(--neon-red); }
+#queueBtn.in-queue:hover { background: rgba(255, 59, 59, 0.22); box-shadow: 0 0 22px rgba(255, 59, 59, 0.45); }
+
+.queue-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  max-height: 220px;
+  overflow-y: auto;
+}
+
+.queue-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 12px;
+  background: rgba(0, 0, 0, 0.3);
+  border-left: 3px solid var(--neon-cyan);
+  border-radius: 6px;
+  font-size: 13px;
+  letter-spacing: 1.5px;
+}
+
+.queue-item.me { border-left-color: var(--neon-green); color: var(--neon-green); }
+
+/* ============================================================
+   Tournament bracket
+   ============================================================ */
+.bracket-panel { grid-column: 1 / -1; }
+
+.bracket-scroll { overflow-x: auto; padding-bottom: 8px; }
+
+.bracket-rounds {
+  display: flex;
+  gap: 28px;
+  min-width: max-content;
+}
+
+.bracket-round {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-width: 220px;
+}
+
+.bracket-round-title {
+  font-size: 11px;
+  letter-spacing: 3px;
+  color: var(--neon-purple);
+  text-transform: uppercase;
+  margin-bottom: 4px;
+  text-shadow: 0 0 8px rgba(181, 55, 242, 0.4);
+}
+
+.bracket-match {
+  background: rgba(0, 0, 0, 0.35);
+  border: 1px solid var(--glass-border);
+  border-radius: 8px;
+  padding: 8px 12px;
+  font-size: 12px;
+}
+
+.bracket-match .player-row {
+  display: flex;
+  justify-content: space-between;
+  padding: 4px 0;
+  letter-spacing: 1px;
+}
+
+.bracket-match .player-row.winner { color: var(--neon-green); font-weight: 700; }
+.bracket-match .player-row.loser  { color: var(--text-dim); text-decoration: line-through; }
+.bracket-match .player-row.bye    { color: var(--neon-yellow); font-style: italic; }
+.bracket-match .player-row.pending { color: var(--text-dim); }
+.bracket-match .score { color: var(--neon-cyan); font-size: 11px; }
+
+.bracket-empty {
+  color: var(--text-dim);
+  font-style: italic;
+  text-align: center;
+  padding: 20px;
+  letter-spacing: 2px;
+}
+
+/* ============================================================
+   Match panel — chess board + clocks
+   ============================================================ */
+.match-panel { grid-column: 1 / -1; }
+
+.match-header {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+  gap: 18px;
+  margin-bottom: 18px;
+}
+
+.player-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 12px 18px;
+  background: rgba(0, 0, 0, 0.35);
+  border: 1px solid var(--glass-border);
+  border-radius: 10px;
+  transition: all 0.25s;
+}
+
+.player-card.active {
+  border-color: var(--neon-cyan);
+  box-shadow: 0 0 20px rgba(0, 240, 255, 0.35);
+}
+
+.player-card .pname {
+  font-size: 13px;
+  letter-spacing: 2px;
+  margin-bottom: 6px;
+  color: var(--text);
+}
+
+.player-card .clock {
+  font-family: 'Courier New', monospace;
+  font-size: 28px;
+  font-weight: 700;
+  letter-spacing: 2px;
+  color: var(--neon-cyan);
+  text-shadow: 0 0 12px rgba(0, 240, 255, 0.5);
+}
+
+.player-card .clock.low { color: var(--neon-red); text-shadow: 0 0 12px rgba(255, 59, 59, 0.6); animation: pulse 0.6s infinite; }
+.player-card .clock.zero { color: var(--neon-red); }
+
+.vs {
+  font-size: 14px;
+  letter-spacing: 4px;
+  color: var(--neon-pink);
+  font-weight: 800;
+  text-shadow: 0 0 12px rgba(255, 0, 110, 0.5);
+}
+
+.board-wrapper {
+  display: flex;
+  justify-content: center;
+  margin: 18px 0;
+}
+
+.chess-board {
+  display: grid;
+  grid-template-columns: repeat(8, 1fr);
+  grid-template-rows: repeat(8, 1fr);
+  width: min(560px, 92vw);
+  height: min(560px, 92vw);
+  border: 3px solid var(--neon-cyan);
+  border-radius: 6px;
+  box-shadow: 0 0 40px rgba(0, 240, 255, 0.35), inset 0 0 30px rgba(0, 0, 0, 0.5);
+  overflow: hidden;
+}
+
+.square {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  user-select: none;
+  transition: background 0.15s;
+}
+
+.square.light { background: #e8e8f5; }
+.square.dark  { background: #4a4768; }
+
+.square.selected { box-shadow: inset 0 0 0 3px var(--neon-yellow); }
+.square.legal-move::after {
+  content: '';
+  position: absolute;
+  width: 28%;
+  height: 28%;
+  border-radius: 50%;
+  background: rgba(0, 255, 136, 0.6);
+  box-shadow: 0 0 10px rgba(0, 255, 136, 0.8);
+}
+.square.legal-capture::after {
+  content: '';
+  position: absolute;
+  inset: 4%;
+  border: 3px solid rgba(255, 0, 110, 0.85);
+  border-radius: 50%;
+  box-shadow: 0 0 12px rgba(255, 0, 110, 0.6);
+}
+.square.last-move { background: rgba(255, 214, 10, 0.35) !important; }
+.square.in-check  { background: radial-gradient(circle, rgba(255, 59, 59, 0.75), transparent 70%) !important; }
+
+.piece {
+  font-size: min(48px, 7vw);
+  line-height: 1;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.6);
+  pointer-events: none;
+  transition: transform 0.15s;
+}
+
+.piece.white { color: #ffffff; text-shadow: 0 0 4px #000, 0 2px 5px rgba(0,0,0,0.7); }
+.piece.black { color: #1a1a2e; text-shadow: 0 0 4px #fff8, 0 2px 5px rgba(0,0,0,0.7); }
+
+.square:hover .piece { transform: scale(1.08); }
+
+.match-controls {
+  display: flex;
+  align-items: flex-start;
+  gap: 18px;
+  margin-top: 14px;
+}
+
+#resignBtn {
+  padding: 10px 18px;
+  border: 1px solid var(--neon-red);
+  background: rgba(255, 59, 59, 0.1);
+  color: var(--neon-red);
+  border-radius: 8px;
+  font-size: 12px;
+  letter-spacing: 3px;
+  font-weight: 700;
+  cursor: pointer;
+  text-transform: uppercase;
+  transition: all 0.25s;
+}
+
+#resignBtn:hover { background: rgba(255, 59, 59, 0.22); box-shadow: 0 0 18px rgba(255, 59, 59, 0.5); }
+
+.move-history {
+  flex: 1;
+  background: rgba(0, 0, 0, 0.35);
+  border: 1px solid var(--glass-border);
+  border-radius: 8px;
+  padding: 10px 14px;
+  font-family: 'Courier New', monospace;
+  font-size: 12px;
+  max-height: 120px;
+  overflow-y: auto;
+  letter-spacing: 1px;
+  color: var(--text-dim);
+  line-height: 1.7;
+}
+
+.move-history .move-num { color: var(--neon-purple); margin-right: 6px; }
+.move-history .move-san  { color: var(--text); margin-right: 10px; }
+
+/* ============================================================
+   Lockout overlay
+   ============================================================ */
+#lockOverlay {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background:
+    radial-gradient(circle at 30% 30%, rgba(255, 59, 59, 0.45), transparent 60%),
+    radial-gradient(circle at 70% 70%, rgba(181, 55, 242, 0.4), transparent 60%),
+    linear-gradient(135deg, #1a0000 0%, #0f0c29 50%, #1a002a 100%);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  animation: lockDrop 0.45s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* If you place an actual image.png alongside index.html, set:
+   background: url('image.png') center/cover no-repeat; */
+#lockOverlay::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background:
+    repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(255, 59, 59, 0.04) 2px, rgba(255, 59, 59, 0.04) 4px),
+    repeating-linear-gradient(90deg, transparent, transparent 3px, rgba(0, 240, 255, 0.03) 3px, rgba(0, 240, 255, 0.03) 6px);
+  pointer-events: none;
+  animation: scanlines 4s linear infinite;
+}
+
+@keyframes scanlines { from { background-position: 0 0; } to { background-position: 0 100px; } }
+
+@keyframes lockDrop {
+  from { transform: translateY(-100%); opacity: 0; }
+  to   { transform: translateY(0); opacity: 1; }
+}
+
+.lock-content {
+  text-align: center;
+  z-index: 2;
+  position: relative;
+  padding: 40px;
+}
+
+.lock-glyph {
+  width: 220px;
+  height: 220px;
+  margin: 0 auto 30px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(255, 59, 59, 0.3), transparent 70%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  animation: lockPulse 1.6s ease-in-out infinite;
+}
+
+.lock-glyph::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border: 2px dashed var(--neon-red);
+  border-radius: 50%;
+  animation: lockSpin 6s linear infinite;
+}
+
+.lock-glyph::after {
+  content: '⏻';
+  font-size: 96px;
+  color: var(--neon-red);
+  text-shadow: 0 0 30px rgba(255, 59, 59, 0.85), 0 0 60px rgba(255, 59, 59, 0.5);
+  font-weight: 200;
+}
+
+@keyframes lockPulse {
+  0%, 100% { transform: scale(1); filter: drop-shadow(0 0 20px rgba(255, 59, 59, 0.6)); }
+  50%      { transform: scale(1.05); filter: drop-shadow(0 0 40px rgba(255, 59, 59, 0.9)); }
+}
+
+@keyframes lockSpin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+
+.lock-content h1 {
+  font-size: 38px;
+  font-weight: 800;
+  letter-spacing: 10px;
+  color: var(--neon-red);
+  text-shadow: 0 0 24px rgba(255, 59, 59, 0.7);
+  margin-bottom: 12px;
+}
+
+.lock-sub {
+  color: var(--text-dim);
+  font-size: 12px;
+  letter-spacing: 4px;
+  text-transform: uppercase;
+  margin-bottom: 26px;
+}
+
+.lock-countdown {
+  font-family: 'Courier New', monospace;
+  font-size: 72px;
+  font-weight: 700;
+  letter-spacing: 6px;
+  color: var(--neon-cyan);
+  text-shadow: 0 0 24px rgba(0, 240, 255, 0.65), 0 0 60px rgba(0, 240, 255, 0.3);
+  background: rgba(0, 0, 0, 0.5);
+  padding: 14px 32px;
+  border: 1px solid rgba(0, 240, 255, 0.4);
+  border-radius: 12px;
+  display: inline-block;
+}
+
+.lock-countdown.urgent {
+  color: var(--neon-red);
+  text-shadow: 0 0 24px rgba(255, 59, 59, 0.85);
+  border-color: var(--neon-red);
+  animation: pulse 0.5s infinite;
+}
+
+.lock-message {
+  margin-top: 24px;
+  color: var(--text-dim);
+  font-size: 12px;
+  letter-spacing: 3px;
+  max-width: 480px;
+  line-height: 1.8;
+}
+
+/* ============================================================
+   Notifications
+   ============================================================ */
+#notifications {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  z-index: 8000;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  pointer-events: none;
+  max-width: 360px;
+}
+
+.notify {
+  background: var(--glass-bg-strong);
+  backdrop-filter: blur(14px);
+  border: 1px solid var(--glass-border);
+  border-left: 4px solid var(--neon-cyan);
+  border-radius: 8px;
+  padding: 12px 18px;
+  color: var(--text);
+  font-size: 13px;
+  letter-spacing: 1px;
+  box-shadow: var(--shadow-deep);
+  animation: notifyIn 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+  pointer-events: auto;
+}
+
+.notify.info    { border-left-color: var(--neon-cyan); }
+.notify.success { border-left-color: var(--neon-green); }
+.notify.warn    { border-left-color: var(--neon-yellow); }
+.notify.error   { border-left-color: var(--neon-red); }
+.notify.fading  { animation: notifyOut 0.35s forwards; }
+
+@keyframes notifyIn  { from { transform: translateX(120%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+@keyframes notifyOut { from { transform: translateX(0); opacity: 1; } to { transform: translateX(120%); opacity: 0; } }
+
+/* ============================================================
+   Shake + chromatic aberration (during particle explosions)
+   ============================================================ */
+body.shaking { animation: shakeChromatic 0.55s cubic-bezier(0.36, 0.07, 0.19, 0.97); }
+
+@keyframes shakeChromatic {
+  0%   { transform: translate(0, 0)    skewX(0deg);  filter: hue-rotate(0deg)   drop-shadow(0 0 0 transparent); }
+  10%  { transform: translate(-5px, 3px) skewX(-1deg); filter: hue-rotate(20deg)  drop-shadow(2px 0 0 rgba(255,0,110,0.6)) drop-shadow(-2px 0 0 rgba(0,240,255,0.6)); }
+  20%  { transform: translate(5px, -3px) skewX(1deg);  filter: hue-rotate(-18deg) drop-shadow(2px 0 0 rgba(255,0,110,0.6)) drop-shadow(-2px 0 0 rgba(0,240,255,0.6)); }
+  30%  { transform: translate(-4px, -3px) skewX(-0.5deg); filter: hue-rotate(12deg) drop-shadow(1px 0 0 rgba(255,0,110,0.4)) drop-shadow(-1px 0 0 rgba(0,240,255,0.4)); }
+  40%  { transform: translate(4px, 3px) skewX(0.5deg); filter: hue-rotate(-10deg) drop-shadow(1px 0 0 rgba(255,0,110,0.4)) drop-shadow(-1px 0 0 rgba(0,240,255,0.4)); }
+  50%  { transform: translate(-3px, 2px) skewX(0deg);  filter: hue-rotate(6deg)  drop-shadow(1px 0 0 rgba(255,0,110,0.3)) drop-shadow(-1px 0 0 rgba(0,240,255,0.3)); }
+  60%  { transform: translate(3px, -2px) skewX(0deg);  filter: hue-rotate(-6deg) drop-shadow(0 0 0 transparent); }
+  70%  { transform: translate(-2px, 1px) skewX(0deg);  filter: hue-rotate(3deg)  drop-shadow(0 0 0 transparent); }
+  80%  { transform: translate(2px, -1px) skewX(0deg);  filter: hue-rotate(-3deg) drop-shadow(0 0 0 transparent); }
+  90%  { transform: translate(-1px, 1px) skewX(0deg);  filter: hue-rotate(0deg)  drop-shadow(0 0 0 transparent); }
+  100% { transform: translate(0, 0)    skewX(0deg);  filter: hue-rotate(0deg)   drop-shadow(0 0 0 transparent); }
+}
+
+/* ============================================================
+   Blue flash (Blue button) — pulses the dashboard
+   ============================================================ */
+#dashboard.blue-flash { animation: blueFlash 1.2s ease-out; }
+
+@keyframes blueFlash {
+  0%   { box-shadow: 0 0 0   rgba(59, 130, 246, 0);   filter: brightness(1); }
+  15%  { box-shadow: 0 0 80px rgba(59, 130, 246, 0.9), 0 0 160px rgba(59, 130, 246, 0.5); filter: brightness(1.45) hue-rotate(-15deg); }
+  35%  { box-shadow: 0 0 50px rgba(59, 130, 246, 0.6); filter: brightness(1.2); }
+  60%  { box-shadow: 0 0 30px rgba(59, 130, 246, 0.35); filter: brightness(1.08); }
+  100% { box-shadow: 0 0 0   rgba(59, 130, 246, 0);   filter: brightness(1); }
+}
+
+#dashboard.blue-flash .panel {
+  border-color: rgba(59, 130, 246, 0.6);
+  animation: panelGlow 1.2s ease-out;
+}
+
+@keyframes panelGlow {
+  0%   { box-shadow: var(--shadow-deep); }
+  20%  { box-shadow: 0 0 40px rgba(59, 130, 246, 0.7), var(--shadow-deep); }
+  100% { box-shadow: var(--shadow-deep); }
+}
+
+/* ============================================================
+   Responsive
+   ============================================================ */
+@media (max-width: 900px) {
+  #dashboard { grid-template-columns: 1fr; }
+  .button-grid { grid-template-columns: repeat(2, 1fr); }
+  .modal h1 { font-size: 32px; letter-spacing: 5px; }
+  .lock-content h1 { font-size: 28px; letter-spacing: 6px; }
+  .lock-countdown { font-size: 52px; }
+}
+
+/* Scrollbars */
+::-webkit-scrollbar { width: 8px; height: 8px; }
+::-webkit-scrollbar-track { background: rgba(0, 0, 0, 0.3); }
+::-webkit-scrollbar-thumb { background: var(--neon-purple); border-radius: 4px; opacity: 0.5; }
+::-webkit-scrollbar-thumb:hover { background: var(--neon-cyan); }
+</style>
 </head>
-<body id="app-body" class="antialiased">
+<body>
 
-    <!-- Particle Canvas -->
-    <canvas id="fx-canvas"></canvas>
+<!-- Particle canvas overlay -->
+<canvas id="particleCanvas"></canvas>
 
-    <!-- Penalty Lockout Overlay -->
-    <div id="penalty-overlay">
-        <i class="fas fa-skull hacker-text mb-6"></i>
-        <h1 class="cyber-font text-5xl text-red-500 mb-2 font-bold tracking-widest text-center" style="text-shadow: 0 0 15px red;">SYSTEM LOCKOUT</h1>
-        <p class="text-xl text-red-300 mb-8 font-mono">DEFEAT PENALTY ENFORCED</p>
-        <div id="lockout-timer" class="cyber-font text-7xl text-white font-bold tracking-widest text-center">120.00</div>
+<!-- =================== LOGIN MODAL =================== -->
+<div id="loginModal" class="modal-overlay">
+  <div class="modal">
+    <h1>NEXUS CHESS</h1>
+    <div class="tag">Tournament Grid // v1.0</div>
+    <input id="usernameInput" type="text" placeholder="ENTER CALLSIGN" maxlength="16" autocomplete="off" />
+    <button id="loginBtn" class="btn-primary">Jack In</button>
+  </div>
+</div>
+
+<!-- =================== APP =================== -->
+<div id="app" class="hidden">
+  <header class="app-header">
+    <div class="logo">NEXUS CHESS</div>
+    <div class="user-info">
+      <span class="label">OPERATOR</span>
+      <span class="name" id="userLabel">—</span>
+      <span class="status-pill idle" id="statusLabel">IDLE</span>
     </div>
+  </header>
 
-    <!-- Login Modal -->
-    <div id="login-modal" class="fixed inset-0 z-40 flex items-center justify-center bg-black/80 backdrop-blur-md hidden">
-        <div class="glass-panel p-8 rounded-xl max-w-md w-full border border-cyan-500/30">
-            <h2 class="cyber-font text-3xl mb-6 text-center text-cyan-400" style="text-shadow: 0 0 10px #00e5ff;">NEXUS LOGIN</h2>
-            <input type="text" id="username-input" class="w-full bg-slate-900/50 border border-cyan-500/50 text-white rounded p-3 mb-4 focus:outline-none focus:border-cyan-400 cyber-font placeholder-slate-500" placeholder="ENTER CODENAME" maxlength="15">
-            <button id="login-btn" class="w-full bg-cyan-600 hover:bg-cyan-500 text-white cyber-font p-3 rounded transition-colors font-bold tracking-wider">INITIALIZE</button>
+  <main id="dashboard">
+
+    <!-- Control panel -->
+    <section class="panel control-panel">
+      <h2>// System Controls</h2>
+      <div class="button-grid">
+        <button class="ctrl-btn" data-color="red">RED</button>
+        <button class="ctrl-btn" data-color="orange">ORANGE</button>
+        <button class="ctrl-btn" data-color="yellow">YELLOW</button>
+        <button class="ctrl-btn" data-color="green">GREEN</button>
+        <button class="ctrl-btn" data-color="blue">BLUE</button>
+      </div>
+    </section>
+
+    <!-- Lobby -->
+    <section class="panel lobby-panel" id="lobbyPanel">
+      <h2>// Lobby &amp; Matchmaking</h2>
+      <div class="lobby-info">
+        <div>ONLINE: <span id="onlineCount">0</span></div>
+        <div>IN QUEUE: <span id="queueCount">0</span></div>
+        <div id="countdownWrap" class="hidden">START IN: <span class="countdown" id="countdownTimer">30s</span></div>
+      </div>
+      <button id="queueBtn">Join Queue</button>
+      <div class="queue-list" id="queueList"></div>
+    </section>
+
+    <!-- Tournament bracket -->
+    <section class="panel bracket-panel hidden" id="bracketPanel">
+      <h2>// Tournament Bracket</h2>
+      <div class="bracket-scroll">
+        <div id="bracketView" class="bracket-rounds">
+          <div class="bracket-empty">No active tournament. Join the queue to begin.</div>
         </div>
-    </div>
+      </div>
+    </section>
 
-    <!-- Main Dashboard -->
-    <div id="dashboard" class="relative z-10 container mx-auto px-4 py-8 h-screen flex flex-col hidden">
-        
-        <!-- Header -->
-        <header class="flex justify-between items-center mb-8">
-            <h1 class="cyber-font text-4xl text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-blue-600" style="filter: drop-shadow(0 0 5px rgba(0,229,255,0.5));">NEXUS PROTOCOL</h1>
-            <div class="flex items-center gap-4">
-                <span id="user-display" class="cyber-font text-cyan-300"></span>
-            </div>
-        </header>
-
-        <div class="flex-1 grid grid-cols-1 lg:grid-cols-12 gap-6">
-            
-            <!-- Left: Interactive Nodes -->
-            <div class="lg:col-span-1 flex flex-col items-center justify-center gap-6 glass-panel rounded-xl p-4">
-                <div class="text-sm cyber-font text-slate-400 mb-2 rotate-180" style="writing-mode: vertical-rl;">SYSTEM NODES</div>
-                <button class="node-btn" style="color: var(--neon-red); border-color: var(--neon-red);" onclick="triggerFX('red')"></button>
-                <button class="node-btn" style="color: var(--neon-orange); border-color: var(--neon-orange);" onclick="triggerFX('orange')"></button>
-                <button class="node-btn" style="color: var(--neon-yellow); border-color: var(--neon-yellow);" onclick="triggerFX('yellow')"></button>
-                <button class="node-btn" style="color: var(--neon-green); border-color: var(--neon-green);" onclick="triggerFX('green')"></button>
-                <button class="node-btn" style="color: var(--neon-blue); border-color: var(--neon-blue);" onclick="triggerFX('blue')"></button>
-            </div>
-
-            <!-- Center: Main Arena -->
-            <div id="arena-container" class="lg:col-span-8 glass-panel rounded-xl p-6 flex flex-col items-center justify-center relative overflow-hidden">
-                
-                <!-- Lobby State -->
-                <div id="lobby-view" class="w-full h-full flex flex-col items-center justify-center text-center">
-                    <i class="fas fa-satellite-dish text-6xl text-cyan-500 mb-6 animate-pulse"></i>
-                    <h2 class="cyber-font text-3xl mb-2">MATCHMAKING LOBBY</h2>
-                    <p class="text-slate-400 mb-8">Awaiting combatants. Pairings are automated via the Nexus network.</p>
-                    <button id="join-queue-btn" class="border-2 border-cyan-500 text-cyan-400 hover:bg-cyan-500/20 px-8 py-3 rounded-full cyber-font text-xl transition-all shadow-[0_0_15px_rgba(0,229,255,0.4)]">ENTER QUEUE</button>
-                    <div id="queue-status" class="mt-6 text-yellow-400 cyber-font hidden">SEARCHING FOR OPPONENT...</div>
-                </div>
-
-                <!-- Match State (Hidden initially) -->
-                <div id="match-view" class="w-full h-full flex-col items-center hidden">
-                    
-                    <!-- Opponent Info & Clock -->
-                    <div class="w-full max-w-lg flex justify-between items-center mb-4 px-2">
-                        <div class="flex items-center gap-3">
-                            <div class="w-10 h-10 rounded-full bg-slate-800 flex items-center justify-center border border-slate-600"><i class="fas fa-user-secret"></i></div>
-                            <span id="opponent-name" class="font-bold">Opponent</span>
-                        </div>
-                        <div id="opponent-clock" class="cyber-font text-2xl font-bold bg-slate-900 px-4 py-1 rounded border border-slate-700">10:00</div>
-                    </div>
-
-                    <!-- The Board -->
-                    <div id="chess-board" class="chess-board rounded"></div>
-
-                    <!-- Player Info & Clock -->
-                    <div class="w-full max-w-lg flex justify-between items-center mt-4 px-2">
-                        <div class="flex items-center gap-3">
-                            <div class="w-10 h-10 rounded-full bg-cyan-900 flex items-center justify-center border border-cyan-500 text-cyan-300"><i class="fas fa-user"></i></div>
-                            <span id="player-name" class="font-bold text-cyan-300">You</span>
-                        </div>
-                        <div id="player-clock" class="cyber-font text-2xl font-bold bg-slate-900 px-4 py-1 rounded border border-cyan-500 text-cyan-400">10:00</div>
-                    </div>
-                    
-                    <div id="match-status-msg" class="mt-4 cyber-font text-xl text-yellow-400 text-center"></div>
-                    <button id="resign-btn" class="mt-4 border border-red-500 text-red-500 hover:bg-red-500/20 px-4 py-1 rounded cyber-font text-sm">ABORT MISSION (RESIGN)</button>
-                </div>
-
-            </div>
-
-            <!-- Right: System Logs / Players -->
-            <div class="lg:col-span-3 glass-panel rounded-xl p-4 flex flex-col">
-                <h3 class="cyber-font text-xl mb-4 border-b border-slate-700 pb-2">ACTIVE AGENTS</h3>
-                <div id="active-users-list" class="flex-1 overflow-y-auto space-y-2">
-                    <!-- Populated by JS -->
-                </div>
-            </div>
-
+    <!-- Match panel -->
+    <section class="panel match-panel hidden" id="matchPanel">
+      <h2>// Active Match</h2>
+      <div class="match-header">
+        <div class="player-card" id="whiteCard">
+          <div class="pname" id="whiteName">—</div>
+          <div class="clock" id="whiteClock">10:00</div>
         </div>
+        <div class="vs">VS</div>
+        <div class="player-card" id="blackCard">
+          <div class="pname" id="blackName">—</div>
+          <div class="clock" id="blackClock">10:00</div>
+        </div>
+      </div>
+      <div class="board-wrapper">
+        <div id="chessBoard" class="chess-board"></div>
+      </div>
+      <div class="match-controls">
+        <button id="resignBtn">Resign</button>
+        <div class="move-history" id="moveHistory"></div>
+      </div>
+    </section>
+
+  </main>
+</div>
+
+<!-- =================== LOCKOUT OVERLAY =================== -->
+<div id="lockOverlay" class="hidden">
+  <div class="lock-content">
+    <div class="lock-glyph"></div>
+    <h1>DEFEAT LOCKOUT</h1>
+    <div class="lock-sub">Penalty Phase // Match Resolution</div>
+    <div class="lock-countdown" id="lockCountdown">120.000</div>
+    <div class="lock-message">
+      You have been defeated. All inputs are intercepted during this lockout phase.
+      The system will automatically restore lobby access when the countdown reaches zero.
     </div>
+  </div>
+</div>
 
-    <!-- Logic Layer -->
-    <script type="module">
-        // Firebase Config Setup (Compliant with constraints)
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, collection, doc, setDoc, getDoc, onSnapshot, runTransaction, serverTimestamp, deleteDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+<!-- =================== NOTIFICATIONS =================== -->
+<div id="notifications"></div>
 
-        // Global State & Core Constants
-        const appId = typeof __app_id !== 'undefined' ? __app_id : 'nexus-chess';
-        const fbConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : {
-            apiKey: "AIzaSyDqx4yZKKhAS3F2CokTxiY0yKxNsQ21jVc", projectId: "my-project-1704840967568", databaseURL: "https://my-project-1704840967568-default-rtdb.firebaseio.com"
-        };
-        
-        const app = initializeApp(fbConfig);
-        const auth = getAuth(app);
-        const db = getFirestore(app);
+<!-- =================== EXTERNAL DEPENDENCIES =================== -->
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database-compat.js"></script>
+<script src="https://unpkg.com/chess.js@0.13.4/dist/chess.js"></script>
 
-        let user = null;
-        let userData = { username: '' };
-        
-        // Chess Engine Instance
-        const game = new Chess();
-        
-        // Match State
-        let currentMatchId = null;
-        let myColor = null; // 'w' or 'b'
-        let boardFlipped = false;
-        let selectedSquare = null;
-        let timerInterval = null;
-        let localTimers = { w: 600, b: 600 };
-        const START_TIME = 600; // 10 minutes
-        const INCREMENT = 1; // 1 second
+<script>
+/* ============================================================
+   NEXUS CHESS — Application Logic
+   Single-file ES6+ application
+   ============================================================ */
+'use strict';
 
-        // Paths (Strict Constraint Compliance)
-        const USERS_PATH = `artifacts/${appId}/public/data/users`;
-        const LOBBY_PATH = `artifacts/${appId}/public/data/lobby`;
-        const MATCHES_PATH = `artifacts/${appId}/public/data/matches`;
+/* ============================================================
+   CONFIG — REPLACE WITH YOUR FIREBASE PROJECT CREDENTIALS
+   ============================================================ */
+    const firebaseConfig = {
+      apiKey: "AIzaSyDqx4yZKKhAS3F2CokTxiY0yKxNsQ21jVc",
+      authDomain: "my-project-1704840967568.firebaseapp.com",
+      databaseURL: "https://my-project-1704840967568-default-rtdb.firebaseio.com",
+      projectId: "my-project-1704840967568",
+      storageBucket: "my-project-1704840967568.firebasestorage.app",
+      messagingSenderId: "160430314341",
+      appId: "1:160430314341:web:40da9a21dd9e86adeb078c"
+    };
 
-        // DOM Elements
-        const UI = {
-            loginModal: document.getElementById('login-modal'),
-            usernameInput: document.getElementById('username-input'),
-            loginBtn: document.getElementById('login-btn'),
-            dashboard: document.getElementById('dashboard'),
-            userDisplay: document.getElementById('user-display'),
-            activeUsers: document.getElementById('active-users-list'),
-            lobbyView: document.getElementById('lobby-view'),
-            matchView: document.getElementById('match-view'),
-            joinQueueBtn: document.getElementById('join-queue-btn'),
-            queueStatus: document.getElementById('queue-status'),
-            chessBoard: document.getElementById('chess-board'),
-            opponentName: document.getElementById('opponent-name'),
-            playerName: document.getElementById('player-name'),
-            opponentClock: document.getElementById('opponent-clock'),
-            playerClock: document.getElementById('player-clock'),
-            matchStatusMsg: document.getElementById('match-status-msg'),
-            resignBtn: document.getElementById('resign-btn'),
-            penaltyOverlay: document.getElementById('penalty-overlay'),
-            lockoutTimer: document.getElementById('lockout-timer'),
-            body: document.getElementById('app-body'),
-            arenaContainer: document.getElementById('arena-container')
-        };
+/* ============================================================
+   CONSTANTS
+   ============================================================ */
+const TIME_CONTROL_MS = 10 * 60 * 1000;   // 10 minutes base
+const INCREMENT_MS    = 1 * 1000;          // 1 second increment per move
+const LOCKOUT_MS      = 120 * 1000;        // 120 seconds defeat penalty
+const MIN_PLAYERS      = 4;                 // Minimum to auto-start tournament
+const COUNTDOWN_MS     = 30 * 1000;        // Queue countdown when 2+ waiting
+const POLL_CLOCK_MS    = 100;              // Local clock tick interval
 
-        // --- AUTHENTICATION & INITIALIZATION ---
-        const initSystem = async () => {
-            // Restore username if exists to survive refresh
-            const storedName = sessionStorage.getItem('nexus_username');
-            if (storedName) {
-                userData.username = storedName;
-            } else {
-                UI.loginModal.classList.remove('hidden');
-            }
+const COLOR_PALETTES = {
+  red:    [[255, 60, 60], [255, 110, 70], [255, 160, 80], [255, 200, 110]],
+  orange: [[255, 140, 0], [255, 180, 50], [255, 220, 100], [255, 100, 50]],
+  yellow: [[255, 215, 10], [255, 240, 110], [255, 255, 210], [255, 200, 60]],
+  green:  [[0, 255, 136], [110, 255, 110], [50, 200, 80], [160, 255, 210]]
+};
 
-            try {
-                if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
-                    await signInWithCustomToken(auth, __initial_auth_token);
-                } else {
-                    await signInAnonymously(auth);
-                }
-            } catch (err) {
-                console.error("Auth init failed:", err);
-                alert("Network anomaly. Authentication failed.");
-            }
-        };
+const PIECE_UNICODE = {
+  'K': '\u2654', 'Q': '\u2655', 'R': '\u2656', 'B': '\u2657', 'N': '\u2658', 'P': '\u2659',
+  'k': '\u265A', 'q': '\u265B', 'r': '\u265C', 'b': '\u265D', 'n': '\u265E', 'p': '\u265F'
+};
 
-        UI.loginBtn.addEventListener('click', () => {
-            const val = UI.usernameInput.value.trim().toUpperCase();
-            if (val.length >= 3) {
-                userData.username = val;
-                sessionStorage.setItem('nexus_username', val);
-                UI.loginModal.classList.add('hidden');
-                if (user) establishPresence();
-            }
-        });
+/* ============================================================
+   STATE
+   ============================================================ */
+const state = {
+  uid: null,
+  username: null,
+  currentMatchId: null,
+  currentTournamentId: null,
+  color: null,                    // 'w' | 'b'
+  selectedSquare: null,
+  legalMoves: [],
+  chess: null,                    // local chess.js instance
+  serverTimeOffset: 0,            // serverTime - clientTime
+  inQueue: false,
+  isLockedOut: false,
+  isAuthenticating: false,
+  matchUnsubscribers: [],
+  tournamentUnsubscribers: [],
+  presenceRef: null,
+  queueBtnLabel: 'Join Queue'
+};
 
-        onAuthStateChanged(auth, (authUser) => {
-            user = authUser;
-            if (user && userData.username) {
-                UI.loginModal.classList.add('hidden');
-                UI.dashboard.classList.remove('hidden');
-                UI.userDisplay.innerText = `AGENT: ${userData.username}`;
-                establishPresence();
-                setupListeners();
-            }
-        });
+/* ============================================================
+   FIREBASE INIT
+   ============================================================ */
+let db;
+try {
+  firebase.initializeApp(FIREBASE_CONFIG);
+  db = firebase.database();
+} catch (err) {
+  console.error('Firebase init failed:', err);
+}
 
-        // --- PRESENCE & GLOBAL DATA ---
-        const establishPresence = async () => {
-            if (!user) return;
-            const userRef = doc(db, USERS_PATH, user.uid);
-            await setDoc(userRef, {
-                username: userData.username,
-                lastSeen: serverTimestamp(),
-                status: 'online'
-            }, { merge: true });
+/* ============================================================
+   UTILITIES
+   ============================================================ */
+const $ = (id) => document.getElementById(id);
 
-            // Cleanup on unload
-            window.addEventListener('beforeunload', async () => {
-                await deleteDoc(doc(db, LOBBY_PATH, user.uid));
-            });
-        };
+function notify(message, type = 'info', duration = 4000) {
+  const wrap = $('notifications');
+  const el = document.createElement('div');
+  el.className = `notify ${type}`;
+  el.textContent = message;
+  wrap.appendChild(el);
+  setTimeout(() => {
+    el.classList.add('fading');
+    setTimeout(() => el.remove(), 400);
+  }, duration);
+}
 
-        const setupListeners = () => {
-            if (!user) return;
-            
-            // Listen to Active Users
-            onSnapshot(collection(db, USERS_PATH), (snap) => {
-                UI.activeUsers.innerHTML = '';
-                snap.forEach(docSnap => {
-                    const d = docSnap.data();
-                    if (d.status === 'online') {
-                        const el = document.createElement('div');
-                        el.className = 'flex items-center gap-2 text-sm text-slate-300';
-                        el.innerHTML = `<span class="w-2 h-2 rounded-full bg-green-500 shadow-[0_0_5px_#00ff55]"></span> ${d.username}`;
-                        UI.activeUsers.appendChild(el);
-                    }
-                });
-            }, (err) => console.error(err));
+function fmtTime(ms) {
+  if (ms < 0) ms = 0;
+  const total = Math.floor(ms / 1000);
+  const m = Math.floor(total / 60);
+  const s = total % 60;
+  return `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
+}
 
-            // Listen to Lobby for Matchmaking Automation
-            onSnapshot(collection(db, LOBBY_PATH), (snap) => {
-                let lobbyPlayers = [];
-                snap.forEach(d => lobbyPlayers.push({ uid: d.id, ...d.data() }));
-                lobbyPlayers.sort((a, b) => a.joinedAt - b.joinedAt);
+function fmtTimeMs(ms) {
+  if (ms < 0) ms = 0;
+  const total = ms / 1000;
+  const m = Math.floor(total / 60);
+  const s = Math.floor(total % 60);
+  const msec = Math.floor((ms % 1000));
+  return `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}.${String(msec).padStart(3, '0')}`;
+}
 
-                const myLobbyRecord = lobbyPlayers.find(p => p.uid === user.uid);
-                if (myLobbyRecord) {
-                    UI.joinQueueBtn.classList.add('hidden');
-                    UI.queueStatus.classList.remove('hidden');
-                } else {
-                    UI.joinQueueBtn.classList.remove('hidden');
-                    UI.queueStatus.classList.add('hidden');
-                }
+function serverNow() {
+  return Date.now() + state.serverTimeOffset;
+}
 
-                // If I am the oldest in the queue, and there are >=2 players, orchestrate matchmaking
-                if (lobbyPlayers.length >= 2 && lobbyPlayers[0].uid === user.uid) {
-                    executeMatchmaking(lobbyPlayers[0], lobbyPlayers[1]);
-                }
-            }, (err) => console.error(err));
+function randomId(prefix = 'id') {
+  return `${prefix}_${Date.now().toString(36)}_${Math.random().toString(36).substr(2, 9)}`;
+}
 
-            // Listen to My Matches
-            onSnapshot(collection(db, MATCHES_PATH), (snap) => {
-                let foundMatch = null;
-                snap.forEach(d => {
-                    const match = { id: d.id, ...d.data() };
-                    if ((match.playerWhite === user.uid || match.playerBlack === user.uid) && match.status !== 'completed') {
-                        foundMatch = match;
-                    }
-                    // Handle completed match penalty check
-                    if (match.status === 'completed' && match.loser === user.uid) {
-                        const now = Date.now();
-                        const endTime = match.endedAt || now;
-                        if (now - endTime < 120000) {
-                             triggerLockout(120000 - (now - endTime));
-                        }
-                    }
-                });
+function setStatus(label, cls) {
+  const el = $('statusLabel');
+  el.textContent = label;
+  el.className = `status-pill ${cls}`;
+}
 
-                if (foundMatch && foundMatch.id !== currentMatchId) {
-                    loadMatch(foundMatch);
-                } else if (foundMatch) {
-                    updateMatchState(foundMatch);
-                } else if (currentMatchId && !foundMatch) {
-                    // Match ended and cleared
-                    leaveMatch();
-                }
-            }, (err) => console.error(err));
-        };
+/* ============================================================
+   SERVER TIME SYNC
+   ============================================================ */
+function initServerTimeSync() {
+  const offsetRef = db.ref('/.info/serverTimeOffset');
+  offsetRef.on('value', (snap) => {
+    state.serverTimeOffset = snap.val() || 0;
+  });
+}
 
-        // --- MATCHMAKING TRANSACTIONS ---
-        UI.joinQueueBtn.addEventListener('click', async () => {
-            if (!user) return;
-            try {
-                await setDoc(doc(db, LOBBY_PATH, user.uid), {
-                    username: userData.username,
-                    joinedAt: Date.now()
-                });
-            } catch (err) { console.error("Queue join failed", err); }
-        });
+/* ============================================================
+   AUTH / SESSION
+   ============================================================ */
+function tryRestoreSession() {
+  const saved = sessionStorage.getItem('nexus_uid');
+  const savedName = sessionStorage.getItem('nexus_username');
+  if (saved && savedName) {
+    state.uid = saved;
+    state.username = savedName;
+    return true;
+  }
+  return false;
+}
 
-        const executeMatchmaking = async (p1, p2) => {
-            const matchId = `match_${Date.now()}_${Math.random().toString(36).substring(2,7)}`;
-            
-            try {
-                await runTransaction(db, async (t) => {
-                    const p1Ref = doc(db, LOBBY_PATH, p1.uid);
-                    const p2Ref = doc(db, LOBBY_PATH, p2.uid);
-                    
-                    const p1Snap = await t.get(p1Ref);
-                    const p2Snap = await t.get(p2Ref);
-                    
-                    if (!p1Snap.exists() || !p2Snap.exists()) return; // State changed
-                    
-                    t.delete(p1Ref);
-                    t.delete(p2Ref);
-                    
-                    const matchRef = doc(db, MATCHES_PATH, matchId);
-                    t.set(matchRef, {
-                        playerWhite: p1.uid,
-                        playerWhiteName: p1.username,
-                        playerBlack: p2.uid,
-                        playerBlackName: p2.username,
-                        fen: 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1',
-                        turn: 'w',
-                        status: 'active',
-                        whiteTime: START_TIME,
-                        blackTime: START_TIME,
-                        lastMoveTimestamp: Date.now()
-                    });
-                });
-            } catch(e) {
-                console.error("Matchmaking transaction failed", e);
-            }
-        };
+function beginLogin() {
+  $('loginModal').classList.remove('hidden');
+  $('loginModal').style.display = 'flex';
+  $('usernameInput').focus();
+}
 
-        // --- CHESS ENGINE & UI ---
-        const loadMatch = (matchData) => {
-            currentMatchId = matchData.id;
-            myColor = matchData.playerWhite === user.uid ? 'w' : 'b';
-            boardFlipped = myColor === 'b';
-            
-            UI.lobbyView.classList.add('hidden');
-            UI.matchView.classList.remove('hidden');
-            UI.matchView.classList.add('flex');
-            
-            UI.opponentName.innerText = myColor === 'w' ? matchData.playerBlackName : matchData.playerWhiteName;
-            UI.playerName.innerText = myColor === 'w' ? matchData.playerWhiteName : matchData.playerBlackName;
-            
-            updateMatchState(matchData);
-            startClocks();
-        };
+function completeLogin(username) {
+  state.username = username;
+  if (!state.uid) state.uid = randomId('u');
+  sessionStorage.setItem('nexus_uid', state.uid);
+  sessionStorage.setItem('nexus_username', state.username);
 
-        const leaveMatch = () => {
-            currentMatchId = null;
-            UI.matchView.classList.add('hidden');
-            UI.matchView.classList.remove('flex');
-            UI.lobbyView.classList.remove('hidden');
-            clearInterval(timerInterval);
-        };
+  $('loginModal').classList.add('hidden');
+  $('loginModal').style.display = 'none';
+  $('app').classList.remove('hidden');
+  $('userLabel').textContent = state.username.toUpperCase();
 
-        const formatTime = (seconds) => {
-            const s = Math.max(0, Math.floor(seconds));
-            const m = Math.floor(s / 60);
-            const remS = s % 60;
-            return `${m}:${remS < 10 ? '0' : ''}${remS}`;
-        };
+  initPresence();
+  initQueueListener();
+  initTournamentGlobalListener();
+  initLockoutListener();
+  checkExistingSessionState();
+}
 
-        const updateMatchState = (matchData) => {
-            game.load(matchData.fen);
-            localTimers = { w: matchData.whiteTime, b: matchData.blackTime };
-            renderBoard();
-            
-            // Check status
-            if (matchData.status !== 'active') {
-                clearInterval(timerInterval);
-                let msg = "MATCH OVER.";
-                if (matchData.winner === user.uid) msg = "VICTORY ACHIEVED.";
-                else if (matchData.loser === user.uid) msg = "CRITICAL FAILURE. DEFEAT.";
-                else msg = "DRAW.";
-                UI.matchStatusMsg.innerText = msg;
-            } else {
-                UI.matchStatusMsg.innerText = game.turn() === myColor ? "YOUR TURN" : "AWAITING OPPONENT";
-                UI.matchStatusMsg.className = game.turn() === myColor ? "mt-4 cyber-font text-xl text-green-400 text-center" : "mt-4 cyber-font text-xl text-slate-400 text-center";
-            }
-        };
+function checkExistingSessionState() {
+  // Reattach to existing match/queue if session was refreshed
+  db.ref(`users/${state.uid}`).once('value').then((snap) => {
+    const u = snap.val();
+    if (!u) return;
+    if (u.inMatch) {
+      state.currentMatchId = u.inMatch;
+      attachToMatch(u.inMatch);
+    }
+    if (u.inQueue) {
+      state.inQueue = true;
+      updateQueueBtn();
+    }
+    if (u.inTournament) {
+      state.currentTournamentId = u.inTournament;
+      attachToTournament(u.inTournament);
+    }
+  }).catch((e) => console.warn('Session state check failed:', e));
+}
 
-        const getIconForPiece = (p) => {
-            const map = {
-                'p': 'fa-chess-pawn', 'r': 'fa-chess-rook', 'n': 'fa-chess-knight',
-                'b': 'fa-chess-bishop', 'q': 'fa-chess-queen', 'k': 'fa-chess-king'
-            };
-            return map[p.type];
-        };
+/* ============================================================
+   PRESENCE
+   ============================================================ */
+function initPresence() {
+  const userRef = db.ref(`users/${state.uid}`);
+  state.presenceRef = userRef;
 
-        const renderBoard = () => {
-            UI.chessBoard.innerHTML = '';
-            const files = ['a','b','c','d','e','f','g','h'];
-            const ranks = ['8','7','6','5','4','3','2','1'];
-            
-            let displayRanks = boardFlipped ? [...ranks].reverse() : ranks;
-            let displayFiles = boardFlipped ? [...files].reverse() : files;
+  const presenceData = {
+    username: state.username,
+    status: 'online',
+    lastSeen: firebase.database.ServerValue.TIMESTAMP,
+    inQueue: false,
+    inMatch: null,
+    inTournament: null
+  };
 
-            let isDark = false;
-            
-            for (let r = 0; r < 8; r++) {
-                for (let f = 0; f < 8; f++) {
-                    const rank = displayRanks[r];
-                    const file = displayFiles[f];
-                    const squareId = file + rank;
-                    
-                    isDark = (r + f) % 2 !== 0;
+  userRef.set(presenceData).then(() => {
+    // onDisconnect cleanup — flag user as offline, remove from queue
+    userRef.onDisconnect().update({
+      status: 'offline',
+      lastSeen: firebase.database.ServerValue.TIMESTAMP,
+      inQueue: false
+    });
+    // Also remove from queue node
+    db.ref(`queue/${state.uid}`).onDisconnect().remove();
+    // And clear active match participation (opponent will get win)
+    db.ref(`lockouts/${state.uid}`).onDisconnect().remove();
+  }).catch((e) => {
+    console.error('Presence write failed:', e);
+    notify('Failed to register presence. Check Firebase config.', 'error', 6000);
+  });
+}
 
-                    const sqEl = document.createElement('div');
-                    sqEl.className = `square ${isDark ? 'dark' : 'light'}`;
-                    sqEl.dataset.square = squareId;
+/* ============================================================
+   QUEUE / MATCHMAKING
+   ============================================================ */
+function initQueueListener() {
+  db.ref('queue').on('value', (snap) => {
+    const queue = snap.val() || {};
+    renderQueue(queue);
+    evaluateMatchmaking(queue);
+  }, (err) => console.error('Queue listener error:', err));
 
-                    const piece = game.get(squareId);
-                    if (piece) {
-                        const icon = document.createElement('i');
-                        icon.className = `fas ${getIconForPiece(piece)} piece ${piece.color === 'w' ? 'white' : 'black'}`;
-                        sqEl.appendChild(icon);
-                    }
+  db.ref('users').on('value', (snap) => {
+    const users = snap.val() || {};
+    let online = 0;
+    Object.values(users).forEach((u) => { if (u && u.status === 'online') online++; });
+    $('onlineCount').textContent = online;
+  }, (err) => console.error('Users listener error:', err));
 
-                    sqEl.addEventListener('click', () => handleSquareClick(squareId));
-                    UI.chessBoard.appendChild(sqEl);
-                }
-            }
-        };
+  // Meta countdown listener
+  db.ref('meta/queueCountdown').on('value', (snap) => {
+    const cd = snap.val();
+    if (cd && cd.expiresAt) {
+      $('countdownWrap').classList.remove('hidden');
+      tickCountdown(cd.expiresAt);
+    } else {
+      $('countdownWrap').classList.add('hidden');
+      if (window._countdownInterval) {
+        clearInterval(window._countdownInterval);
+        window._countdownInterval = null;
+      }
+    }
+  });
+}
 
-        const handleSquareClick = async (square) => {
-            if (!currentMatchId || game.turn() !== myColor) return; // Not my turn
+function renderQueue(queue) {
+  const list = $('queueList');
+  list.innerHTML = '';
+  const entries = Object.entries(queue).sort((a, b) => (a[1].joinedAt || 0) - (b[1].joinedAt || 0));
+  $('queueCount').textContent = entries.length;
+  entries.forEach(([uid, info]) => {
+    const div = document.createElement('div');
+    div.className = `queue-item ${uid === state.uid ? 'me' : ''}`;
+    div.innerHTML = `<span>${info.username}${uid === state.uid ? ' (YOU)' : ''}</span><span style="color:var(--text-dim);font-size:11px;">QUEUED</span>`;
+    list.appendChild(div);
+  });
+}
 
-            if (selectedSquare) {
-                // Try move
-                const moves = game.moves({ square: selectedSquare, verbose: true });
-                const move = moves.find(m => m.to === square);
-                
-                if (move) {
-                    // It's a valid move, execute optimistically
-                    game.move(move.san);
-                    selectedSquare = null;
-                    renderBoard();
-                    await submitMove(move.san);
-                } else {
-                    // Reselect or deselect
-                    const piece = game.get(square);
-                    if (piece && piece.color === myColor) {
-                        selectedSquare = square;
-                        highlightMoves(square);
-                    } else {
-                        selectedSquare = null;
-                        renderBoard();
-                    }
-                }
-            } else {
-                const piece = game.get(square);
-                if (piece && piece.color === myColor) {
-                    selectedSquare = square;
-                    highlightMoves(square);
-                }
-            }
-        };
+async function toggleQueue() {
+  if (state.isLockedOut) { notify('Cannot queue during lockout.', 'warn'); return; }
+  if (state.currentMatchId) { notify('Already in a match.', 'warn'); return; }
+  try {
+    if (state.inQueue) {
+      await db.ref(`queue/${state.uid}`).remove();
+      await db.ref(`users/${state.uid}/inQueue`).set(false);
+      state.inQueue = false;
+      setStatus('IDLE', 'idle');
+      notify('Left matchmaking queue.', 'info');
+    } else {
+      await db.ref(`queue/${state.uid}`).set({
+        username: state.username,
+        joinedAt: firebase.database.ServerValue.TIMESTAMP
+      });
+      await db.ref(`users/${state.uid}/inQueue`).set(true);
+      state.inQueue = true;
+      setStatus('IN QUEUE', 'queue');
+      notify('Joined matchmaking queue.', 'success');
+    }
+    updateQueueBtn();
+  } catch (e) {
+    console.error('Queue toggle failed:', e);
+    notify(`Queue action failed: ${e.message}`, 'error');
+  }
+}
 
-        const highlightMoves = (square) => {
-            renderBoard(); // reset
-            const sqEls = document.querySelectorAll('.square');
-            sqEls.forEach(el => {
-                if (el.dataset.square === square) el.classList.add('selected');
-            });
+function updateQueueBtn() {
+  const btn = $('queueBtn');
+  if (state.inQueue) {
+    btn.textContent = 'Leave Queue';
+    btn.classList.add('in-queue');
+  } else {
+    btn.textContent = 'Join Queue';
+    btn.classList.remove('in-queue');
+  }
+}
 
-            const moves = game.moves({ square: square, verbose: true });
-            moves.forEach(m => {
-                const targetEl = document.querySelector(`.square[data-square="${m.to}"]`);
-                if (targetEl) targetEl.classList.add('highlight');
-            });
-        };
+/* ============================================================
+   AUTOMATED MATCHMAKING ORCHESTRATION
+   ------------------------------------------------------------
+   - When queue size >= MIN_PLAYERS, immediately form tournament
+   - When queue size >= 2 (and < MIN_PLAYERS), start 30s countdown
+   - When countdown expires, form tournament with current queue
+   - The user with the smallest uid in the queue becomes the
+     orchestrator (deterministic election via transaction).
+   ============================================================ */
+function evaluateMatchmaking(queue) {
+  const uids = Object.keys(queue || {});
+  if (uids.length < 2) return;
+  if (uids.length >= MIN_PLAYERS) {
+    maybeFormTournament(uids);
+  } else {
+    // Start countdown if not already running
+    db.ref('meta/queueCountdown').transaction((cd) => {
+      if (!cd) {
+        return { expiresAt: serverNow() + COUNTDOWN_MS, startedBy: state.uid };
+      }
+      return cd;
+    }).catch((e) => console.warn('Countdown start tx failed:', e));
+  }
+}
 
-        const submitMove = async (san) => {
-            try {
-                await runTransaction(db, async (t) => {
-                    const matchRef = doc(db, MATCHES_PATH, currentMatchId);
-                    const matchSnap = await t.get(matchRef);
-                    if (!matchSnap.exists()) return;
-                    
-                    const match = matchSnap.data();
-                    if (match.turn !== myColor || match.status !== 'active') throw "Invalid sync";
+function tickCountdown(expiresAt) {
+  if (window._countdownInterval) clearInterval(window._countdownInterval);
+  window._countdownInterval = setInterval(() => {
+    const remaining = expiresAt - serverNow();
+    if (remaining <= 0) {
+      clearInterval(window._countdownInterval);
+      window._countdownInterval = null;
+      $('countdownWrap').classList.add('hidden');
+      // Attempt to form tournament (only orchestrator will succeed)
+      db.ref('queue').once('value').then((snap) => {
+        const q = snap.val() || {};
+        const uids = Object.keys(q);
+        if (uids.length >= 2) maybeFormTournament(uids);
+      });
+    } else {
+      $('countdownTimer').textContent = `${Math.ceil(remaining / 1000)}s`;
+    }
+  }, 250);
+}
 
-                    // Reconstruct game logic for safety
-                    const serverGame = new Chess();
-                    serverGame.load(match.fen);
-                    const moveRes = serverGame.move(san);
-                    if (!moveRes) throw "Invalid move";
+async function maybeFormTournament(uids) {
+  // Deterministic orchestrator election: smallest uid in queue
+  const orchestrator = uids.sort()[0];
+  if (orchestrator !== state.uid) return; // only orchestrator forms tournament
 
-                    // Time logic
-                    const now = Date.now();
-                    const elapsed = (now - match.lastMoveTimestamp) / 1000;
-                    let newWhiteTime = match.whiteTime;
-                    let newBlackTime = match.blackTime;
-                    
-                    if (myColor === 'w') newWhiteTime = Math.max(0, newWhiteTime - elapsed + INCREMENT);
-                    else newBlackTime = Math.max(0, newBlackTime - elapsed + INCREMENT);
+  // Clear countdown
+  try {
+    await db.ref('meta/queueCountdown').remove();
+  } catch (e) { /* ignore */ }
 
-                    let status = 'active';
-                    let winner = null;
-                    let loser = null;
+  // Atomically claim the queue into a new tournament via transaction
+  try {
+    await db.ref('meta/formingLock').transaction((lock) => {
+      if (lock) return; // someone else is forming
+      return { by: state.uid, at: firebase.database.ServerValue.TIMESTAMP };
+    }).then(async (res) => {
+      if (!res.committed) {
+        notify('Tournament formation in progress by another node.', 'info');
+        return;
+      }
 
-                    if (serverGame.in_checkmate()) {
-                        status = 'completed';
-                        winner = myColor === 'w' ? match.playerWhite : match.playerBlack;
-                        loser = myColor === 'w' ? match.playerBlack : match.playerWhite;
-                    } else if (serverGame.in_draw() || serverGame.in_stalemate() || serverGame.in_threefold_repetition()) {
-                        status = 'completed';
-                    } else if (newWhiteTime <= 0) {
-                        status = 'completed';
-                        winner = match.playerBlack; loser = match.playerWhite;
-                    } else if (newBlackTime <= 0) {
-                        status = 'completed';
-                        winner = match.playerWhite; loser = match.playerBlack;
-                    }
+      // Re-read queue (it may have changed)
+      const queueSnap = await db.ref('queue').once('value');
+      const queue = queueSnap.val() || {};
+      const playerUids = Object.keys(queue);
+      if (playerUids.length < 2) {
+        await db.ref('meta/formingLock').remove();
+        return;
+      }
 
-                    t.update(matchRef, {
-                        fen: serverGame.fen(),
-                        turn: serverGame.turn(),
-                        whiteTime: newWhiteTime,
-                        blackTime: newBlackTime,
-                        lastMoveTimestamp: now,
-                        status, winner, loser,
-                        endedAt: status === 'completed' ? now : null
-                    });
-                });
-            } catch (err) {
-                console.error("Move submission failed", err);
-            }
-        };
+      await createTournament(playerUids, queue);
+      await db.ref('meta/formingLock').remove();
+    });
+  } catch (e) {
+    console.error('Tournament formation failed:', e);
+    notify(`Tournament formation failed: ${e.message}`, 'error');
+    try { await db.ref('meta/formingLock').remove(); } catch (_) {}
+  }
+}
 
-        const startClocks = () => {
-            clearInterval(timerInterval);
-            timerInterval = setInterval(() => {
-                if (!currentMatchId) return;
-                
-                // Decrement local time for the player whose turn it is
-                if (game.turn() === 'w') {
-                    localTimers.w -= 0.1;
-                } else {
-                    localTimers.b -= 0.1;
-                }
-                
-                // Timeout logic client side (visual only, server validates)
-                if (localTimers.w <= 0 || localTimers.b <= 0) {
-                     clearInterval(timerInterval);
-                }
+async function createTournament(playerUids, queue) {
+  const tournamentId = randomId('t');
+  const players = {};
+  playerUids.forEach((uid) => {
+    players[uid] = {
+      username: queue[uid].username || 'Anonymous',
+      alive: true,
+      byes: 0
+    };
+  });
 
-                // Update UI
-                if (myColor === 'w') {
-                    UI.playerClock.innerText = formatTime(localTimers.w);
-                    UI.opponentClock.innerText = formatTime(localTimers.b);
-                } else {
-                    UI.playerClock.innerText = formatTime(localTimers.b);
-                    UI.opponentClock.innerText = formatTime(localTimers.w);
-                }
+  const tournament = {
+    id: tournamentId,
+    status: 'active',
+    type: 'single-elim',
+    createdAt: firebase.database.ServerValue.TIMESTAMP,
+    players,
+    rounds: {},
+    currentRound: 1
+  };
 
-            }, 100);
-        };
+  await db.ref(`tournaments/${tournamentId}`).set(tournament);
 
-        UI.resignBtn.addEventListener('click', async () => {
-            if (!currentMatchId) return;
-            try {
-                await runTransaction(db, async (t) => {
-                    const matchRef = doc(db, MATCHES_PATH, currentMatchId);
-                    const snap = await t.get(matchRef);
-                    if (!snap.exists()) return;
-                    const m = snap.data();
-                    t.update(matchRef, {
-                        status: 'completed',
-                        winner: myColor === 'w' ? m.playerBlack : m.playerWhite,
-                        loser: user.uid,
-                        endedAt: Date.now()
-                    });
-                });
-            } catch (err) { console.error("Resign fail", err); }
-        });
+  // Pair round 1
+  await orchestrateRound(tournamentId, 1);
 
+  // Notify all players
+  notify(`Tournament ${tournamentId} started with ${playerUids.length} players.`, 'success', 5000);
 
-        // --- PARTICLE PHYSICS & EFFECTS ---
-        const canvas = document.getElementById('fx-canvas');
-        const ctx = canvas.getContext('2d');
-        let particles = [];
-        let animationFrameId;
+  // Remove these players from queue
+  const updates = {};
+  playerUids.forEach((uid) => {
+    updates[`queue/${uid}`] = null;
+    updates[`users/${uid}/inQueue`] = false;
+    updates[`users/${uid}/inTournament`] = tournamentId;
+  });
+  await db.ref().update(updates);
+}
 
-        const resizeCanvas = () => {
-            canvas.width = window.innerWidth;
-            canvas.height = window.innerHeight;
-        };
-        window.addEventListener('resize', resizeCanvas);
-        resizeCanvas();
+/* ============================================================
+   ROUND ORCHESTRATION (Single-Elimination)
+   ------------------------------------------------------------
+   Called by the orchestrator (smallest alive uid) when:
+   - A new round needs to start
+   - A match completes and round may advance
+   ============================================================ */
+async function orchestrateRound(tournamentId, roundNum) {
+  const tSnap = await db.ref(`tournaments/${tournamentId}`).once('value');
+  const t = tSnap.val();
+  if (!t) return;
 
-        const colorMap = {
-            'red': '255, 42, 42',
-            'orange': '255, 123, 0',
-            'yellow': '252, 232, 3',
-            'green': '0, 255, 85',
-            'blue': '0, 229, 255'
-        };
+  // Election: smallest alive uid orchestrates
+  const aliveUids = Object.entries(t.players)
+    .filter(([_, p]) => p.alive)
+    .map(([uid]) => uid)
+    .sort();
+  if (aliveUids.length === 0) return;
+  if (aliveUids[0] !== state.uid) return; // not orchestrator
 
-        class Particle {
-            constructor(x, y, colorStr) {
-                this.x = x;
-                this.y = y;
-                const angle = Math.random() * Math.PI * 2;
-                const speed = Math.random() * 15 + 5;
-                this.vx = Math.cos(angle) * speed;
-                this.vy = Math.sin(angle) * speed;
-                this.friction = 0.96;
-                this.gravity = 0.2;
-                this.life = 1.0;
-                this.decay = Math.random() * 0.02 + 0.015;
-                this.color = colorStr;
-                this.size = Math.random() * 4 + 2;
-            }
-            update() {
-                this.vx *= this.friction;
-                this.vy *= this.friction;
-                this.vy += this.gravity;
-                this.x += this.vx;
-                this.y += this.vy;
-                this.life -= this.decay;
-            }
-            draw(ctx) {
-                ctx.beginPath();
-                ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
-                ctx.fillStyle = `rgba(${this.color}, ${this.life})`;
-                ctx.shadowBlur = 10;
-                ctx.shadowColor = `rgb(${this.color})`;
-                ctx.fill();
-            }
+  // Already paired this round?
+  if (t.rounds && t.rounds[roundNum] && t.rounds[roundNum].matches) {
+    return;
+  }
+
+  // Tournament complete?
+  if (aliveUids.length === 1) {
+    await db.ref(`tournaments/${tournamentId}/status`).set('complete');
+    await db.ref(`tournaments/${tournamentId}/winner`).set(aliveUids[0]);
+    notify(`Tournament complete! Winner: ${t.players[aliveUids[0]].username}`, 'success', 8000);
+    // Cleanup: remove tournament refs from users
+    const updates = {};
+    Object.keys(t.players).forEach((uid) => {
+      updates[`users/${uid}/inTournament`] = null;
+    });
+    await db.ref().update(updates);
+    return;
+  }
+
+  // Handle odd count: assign a bye to one random player
+  let pairingPool = [...aliveUids];
+  let byeUid = null;
+  if (pairingPool.length % 2 === 1) {
+    // Pick a random player to receive a bye
+    byeUid = pairingPool[Math.floor(Math.random() * pairingPool.length)];
+    pairingPool = pairingPool.filter((u) => u !== byeUid);
+  }
+
+  // Shuffle for fairness
+  for (let i = pairingPool.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [pairingPool[i], pairingPool[j]] = [pairingPool[j], pairingPool[i]];
+  }
+
+  // Create matches
+  const matches = {};
+  const matchUpdates = {};
+  for (let i = 0; i < pairingPool.length; i += 2) {
+    const w = pairingPool[i];
+    const b = pairingPool[i + 1];
+    const matchId = randomId('m');
+    matches[matchId] = {
+      white: w,
+      black: b,
+      whiteName: t.players[w].username,
+      blackName: t.players[b].username,
+      status: 'active',
+      fen: 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1',
+      turn: 'w',
+      whiteTime: TIME_CONTROL_MS,
+      blackTime: TIME_CONTROL_MS,
+      lastMoveAt: firebase.database.ServerValue.TIMESTAMP,
+      moves: [],
+      tournamentId,
+      round: roundNum,
+      createdAt: firebase.database.ServerValue.TIMESTAMP
+    };
+    matchUpdates[`matches/${matchId}`] = matches[matchId];
+    matchUpdates[`users/${w}/inMatch`] = matchId;
+    matchUpdates[`users/${b}/inMatch`] = matchId;
+  }
+
+  // Bye player advances automatically
+  if (byeUid) {
+    matchUpdates[`tournaments/${tournamentId}/players/${byeUid}/byes`] = (t.players[byeUid].byes || 0) + 1;
+    matchUpdates[`tournaments/${tournamentId}/rounds/${roundNum}/bye`] = byeUid;
+  }
+
+  matchUpdates[`tournaments/${tournamentId}/rounds/${roundNum}/matches`] = matches;
+  matchUpdates[`tournaments/${tournamentId}/rounds/${roundNum}/status`] = 'active';
+
+  await db.ref().update(matchUpdates);
+}
+
+/* ============================================================
+   TOURNAMENT GLOBAL LISTENER
+   ============================================================ */
+function initTournamentGlobalListener() {
+  // Listen to all tournaments to render active bracket
+  db.ref('tournaments').on('value', (snap) => {
+    const tournaments = snap.val() || {};
+    renderTournaments(tournaments);
+  }, (err) => console.error('Tournament listener error:', err));
+}
+
+function renderTournaments(tournaments) {
+  const view = $('bracketView');
+  view.innerHTML = '';
+
+  const active = Object.entries(tournaments)
+    .filter(([_, t]) => t.status !== 'archived')
+    .sort((a, b) => (b[1].createdAt || 0) - (a[1].createdAt || 0));
+
+  if (active.length === 0) {
+    view.innerHTML = '<div class="bracket-empty">No active tournament. Join the queue to begin.</div>';
+    $('bracketPanel').classList.add('hidden');
+    return;
+  }
+
+  $('bracketPanel').classList.remove('hidden');
+
+  active.forEach(([tid, t]) => {
+    const rounds = t.rounds || {};
+    const roundKeys = Object.keys(rounds).sort((a, b) => Number(a) - Number(b));
+
+    roundKeys.forEach((rk) => {
+      const round = rounds[rk];
+      const roundDiv = document.createElement('div');
+      roundDiv.className = 'bracket-round';
+      roundDiv.innerHTML = `<div class="bracket-round-title">Round ${rk}</div>`;
+
+      if (round.bye) {
+        const byeDiv = document.createElement('div');
+        byeDiv.className = 'bracket-match';
+        const byeName = (t.players[round.bye] || {}).username || '—';
+        byeDiv.innerHTML = `
+          <div class="player-row bye"><span>${byeName}</span><span class="score">BYE</span></div>
+          <div class="player-row pending"><span>—</span><span class="score">—</span></div>
+        `;
+        roundDiv.appendChild(byeDiv);
+      }
+
+      const matches = round.matches || {};
+      Object.entries(matches).forEach(([mid, m]) => {
+        const mDiv = document.createElement('div');
+        mDiv.className = 'bracket-match';
+        const wName = m.whiteName || '—';
+        const bName = m.blackName || '—';
+        const wClass = m.status === 'complete'
+          ? (m.winner === m.white ? 'winner' : (m.winner === null ? '' : 'loser'))
+          : '';
+        const bClass = m.status === 'complete'
+          ? (m.winner === m.black ? 'winner' : (m.winner === null ? '' : 'loser'))
+          : '';
+        const wScore = m.status === 'complete' ? (m.winner === m.white ? '1' : (m.winner === null ? '½' : '0')) : '—';
+        const bScore = m.status === 'complete' ? (m.winner === m.black ? '1' : (m.winner === null ? '½' : '0')) : '—';
+        mDiv.innerHTML = `
+          <div class="player-row ${wClass}"><span>${wName}</span><span class="score">${wScore}</span></div>
+          <div class="player-row ${bClass}"><span>${bName}</span><span class="score">${bScore}</span></div>
+        `;
+        roundDiv.appendChild(mDiv);
+      });
+
+      view.appendChild(roundDiv);
+    });
+  });
+}
+
+function attachToTournament(tid) {
+  state.currentTournamentId = tid;
+  // Detach previous
+  state.tournamentUnsubscribers.forEach((fn) => fn());
+  state.tournamentUnsubscribers = [];
+
+  const ref = db.ref(`tournaments/${tid}`);
+  const handler = (snap) => {
+    const t = snap.val();
+    if (!t) return;
+    if (t.status === 'complete' && state.currentTournamentId === tid) {
+      const winner = t.winner;
+      const winnerName = (t.players[winner] || {}).username || 'Unknown';
+      if (winner !== state.uid) {
+        notify(`Tournament ended. Winner: ${winnerName}`, 'info', 6000);
+      } else {
+        notify('You won the tournament!', 'success', 8000);
+      }
+      state.currentTournamentId = null;
+    }
+  };
+  ref.on('value', handler);
+  state.tournamentUnsubscribers.push(() => ref.off('value', handler));
+}
+
+/* ============================================================
+   MATCH ATTACHMENT
+   ============================================================ */
+function attachToMatch(matchId) {
+  // Detach previous
+  state.matchUnsubscribers.forEach((fn) => fn());
+  state.matchUnsubscribers = [];
+
+  state.currentMatchId = matchId;
+  state.chess = new Chess();
+  state.selectedSquare = null;
+  state.legalMoves = [];
+
+  $('matchPanel').classList.remove('hidden');
+  $('bracketPanel').classList.remove('hidden');
+  setStatus('IN MATCH', 'match');
+
+  const ref = db.ref(`matches/${matchId}`);
+  const handler = (snap) => {
+    const m = snap.val();
+    if (!m) {
+      // Match deleted
+      detachFromMatch();
+      return;
+    }
+    onMatchUpdate(m);
+  };
+  ref.on('value', handler);
+  state.matchUnsubscribers.push(() => ref.off('value', handler));
+
+  // Start local clock ticker
+  startClockTicker();
+}
+
+function detachFromMatch() {
+  state.matchUnsubscribers.forEach((fn) => fn());
+  state.matchUnsubscribers = [];
+  state.currentMatchId = null;
+  state.color = null;
+  state.chess = null;
+  state.selectedSquare = null;
+  stopClockTicker();
+  $('matchPanel').classList.add('hidden');
+  if (!state.isLockedOut) setStatus('IDLE', 'idle');
+}
+
+function onMatchUpdate(m) {
+  // Cache snapshot for clock ticker
+  _lastMatchSnapshot = m;
+  // Determine our color
+  if (m.white === state.uid) state.color = 'w';
+  else if (m.black === state.uid) state.color = 'b';
+  else state.color = null;
+
+  // Sync local chess.js
+  state.chess = new Chess(m.fen);
+
+  // Update header
+  $('whiteName').textContent = m.whiteName || 'White';
+  $('blackName').textContent = m.blackName || 'Black';
+
+  // Active card
+  $('whiteCard').classList.toggle('active', m.turn === 'w' && m.status === 'active');
+  $('blackCard').classList.toggle('active', m.turn === 'b' && m.status === 'active');
+
+  // Render board
+  renderBoard(m);
+
+  // Render move history
+  renderMoveHistory(m.moves || []);
+
+  // If match complete, handle end
+  if (m.status === 'complete') {
+    handleMatchEnd(m);
+  }
+}
+
+function renderBoard(m) {
+  const board = $('chessBoard');
+  board.innerHTML = '';
+
+  // Board orientation: if player is black, flip
+  const flip = state.color === 'b';
+  const rows = flip ? [...Array(8).keys()].reverse() : [...Array(8).keys()];
+  const cols = flip ? [...Array(8).keys()].reverse() : [...Array(8).keys()];
+
+  const fenRows = m.fen.split(' ')[0].split('/');
+  const lastMove = m.lastMove || null;
+
+  // Check if current side to move is in check
+  let checkSquare = null;
+  if (state.chess && state.chess.in_check()) {
+    const turn = state.chess.turn();
+    const board2d = state.chess.board();
+    for (let r = 0; r < 8; r++) {
+      for (let c = 0; c < 8; c++) {
+        const piece = board2d[r][c];
+        if (piece && piece.type === 'k' && piece.color === turn) {
+          checkSquare = String.fromCharCode(97 + c) + (8 - r);
         }
+      }
+    }
+  }
 
-        const runParticles = () => {
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
-            for (let i = particles.length - 1; i >= 0; i--) {
-                const p = particles[i];
-                p.update();
-                p.draw(ctx);
-                if (p.life <= 0) particles.splice(i, 1);
-            }
-            if (particles.length > 0) {
-                animationFrameId = requestAnimationFrame(runParticles);
-            }
-        };
+  for (const r of rows) {
+    for (const c of cols) {
+      const sq = String.fromCharCode(97 + c) + (8 - r);
+      const div = document.createElement('div');
+      div.className = `square ${(r + c) % 2 === 0 ? 'light' : 'dark'}`;
+      div.dataset.square = sq;
 
-        window.triggerFX = (color) => {
-            if (color === 'blue') {
-                // Blue pulse bypasses particles, flashes UI
-                UI.arenaContainer.classList.remove('pulse-flash');
-                void UI.arenaContainer.offsetWidth; // trigger reflow
-                UI.arenaContainer.classList.add('pulse-flash');
-                return;
-            }
+      if (state.selectedSquare === sq) div.classList.add('selected');
+      if (state.legalMoves.some((mv) => mv.to === sq)) {
+        const targetPiece = fenPieceAt(m.fen, sq);
+        if (targetPiece) div.classList.add('legal-capture');
+        else div.classList.add('legal-move');
+      }
+      if (lastMove && (lastMove.from === sq || lastMove.to === sq)) div.classList.add('last-move');
+      if (checkSquare === sq) div.classList.add('in-check');
 
-            // Other colors trigger physics explosion & screen effects
-            const x = window.innerWidth / 2;
-            const y = window.innerHeight / 2;
-            const colorRgb = colorMap[color];
-            
-            for(let i=0; i<80; i++) {
-                particles.push(new Particle(x, y, colorRgb));
-            }
-            if (particles.length <= 80) runParticles(); // start loop if not running
+      const piece = fenPieceAt(m.fen, sq);
+      if (piece) {
+        const span = document.createElement('span');
+        span.className = `piece ${piece === piece.toUpperCase() ? 'white' : 'black'}`;
+        span.textContent = PIECE_UNICODE[piece];
+        div.appendChild(span);
+      }
 
-            // Screen Shake & Chromatic
-            UI.body.classList.remove('shake', 'chromatic');
-            void UI.body.offsetWidth; // reflow
-            UI.body.classList.add('shake', 'chromatic');
-            
-            setTimeout(() => {
-                UI.body.classList.remove('shake', 'chromatic');
-            }, 500);
-        };
+      div.addEventListener('click', () => onSquareClick(sq));
+      board.appendChild(div);
+    }
+  }
+}
 
+function fenPieceAt(fen, square) {
+  const file = square.charCodeAt(0) - 97; // 0..7
+  const rank = parseInt(square[1], 10);   // 1..8
+  const row = 8 - rank;
+  const col = file;
+  const fenRow = fen.split(' ')[0].split('/')[row];
+  let c = 0;
+  for (const ch of fenRow) {
+    if (/\d/.test(ch)) {
+      c += parseInt(ch, 10);
+    } else {
+      if (c === col) return ch;
+      c++;
+    }
+  }
+  return null;
+}
 
-        // --- PENALTY LOCKOUT SANDBOX ---
-        let lockoutInterval;
+function onSquareClick(square) {
+  if (!state.chess || !state.currentMatchId) return;
+  if (state.color !== state.chess.turn()) {
+    notify('Not your turn.', 'warn', 1800);
+    return;
+  }
 
-        const blockEvents = (e) => {
-            e.stopPropagation();
-            e.preventDefault();
-            return false;
-        };
-        const blockedEventTypes = ['contextmenu', 'selectstart', 'dragstart', 'keydown', 'keypress', 'keyup', 'mousedown', 'mouseup', 'click', 'dblclick'];
+  const piece = fenPieceAt(state.chess.fen(), square);
+  const pieceColor = piece ? (piece === piece.toUpperCase() ? 'w' : 'b') : null;
 
-        const triggerLockout = (durationMs) => {
-            UI.penaltyOverlay.style.display = 'flex';
-            let remaining = durationMs;
-            
-            // Apply strict sandbox capture phase listeners
-            blockedEventTypes.forEach(ev => window.addEventListener(ev, blockEvents, { capture: true, passive: false }));
+  if (state.selectedSquare) {
+    // Attempt move
+    const moveAttempt = state.legalMoves.find((mv) => mv.to === square);
+    if (moveAttempt) {
+      makeMove(state.selectedSquare, square, moveAttempt.promotion || 'q');
+      state.selectedSquare = null;
+      state.legalMoves = [];
+      return;
+    }
+    // If clicked own piece, reselect
+    if (pieceColor === state.color) {
+      selectSquare(square);
+      return;
+    }
+    // Otherwise deselect
+    state.selectedSquare = null;
+    state.legalMoves = [];
+    renderBoard(currentMatchSnapshot());
+    return;
+  } else {
+    if (pieceColor === state.color) {
+      selectSquare(square);
+    }
+  }
+}
 
-            lockoutInterval = setInterval(() => {
-                remaining -= 10; // update 100fps for smooth ms counter
-                if (remaining <= 0) {
-                    endLockout();
-                } else {
-                    UI.lockoutTimer.innerText = (remaining / 1000).toFixed(2);
-                }
-            }, 10);
-        };
+function selectSquare(square) {
+  state.selectedSquare = square;
+  try {
+    state.legalMoves = state.chess.moves({ square, verbose: true });
+  } catch (e) {
+    state.legalMoves = [];
+  }
+  renderBoard(currentMatchSnapshot());
+}
 
-        const endLockout = () => {
-            clearInterval(lockoutInterval);
-            UI.penaltyOverlay.style.display = 'none';
-            blockedEventTypes.forEach(ev => window.removeEventListener(ev, blockEvents, { capture: true, passive: false }));
-        };
+let _lastMatchSnapshot = null;
+function currentMatchSnapshot() {
+  return _lastMatchSnapshot || { fen: state.chess ? state.chess.fen() : 'start', moves: [] };
+}
 
-        // Bootstrap App
-        initSystem();
+function renderMoveHistory(moves) {
+  const el = $('moveHistory');
+  el.innerHTML = '';
+  if (!moves || moves.length === 0) {
+    el.innerHTML = '<span style="color:var(--text-dim);">// no moves yet</span>';
+    return;
+  }
+  for (let i = 0; i < moves.length; i += 2) {
+    const num = Math.floor(i / 2) + 1;
+    const w = moves[i] ? moves[i].san : '';
+    const b = moves[i + 1] ? moves[i + 1].san : '';
+    const row = document.createElement('div');
+    row.innerHTML = `<span class="move-num">${num}.</span><span class="move-san">${w}</span>${b ? `<span class="move-san">${b}</span>` : ''}`;
+    el.appendChild(row);
+  }
+  el.scrollTop = el.scrollHeight;
+}
 
-    </script>
+/* ============================================================
+   MOVE SUBMISSION (transactional)
+   ============================================================ */
+async function makeMove(from, to, promotion = 'q') {
+  if (!state.currentMatchId) return;
+  const matchRef = db.ref(`matches/${state.currentMatchId}`);
+
+  try {
+    const result = await matchRef.transaction((m) => {
+      if (!m) return m;
+      if (m.status !== 'active') return m;
+
+      // Verify it's our turn
+      const myColor = (m.white === state.uid) ? 'w' : (m.black === state.uid) ? 'b' : null;
+      if (!myColor || myColor !== m.turn) return m;
+
+      // Validate via chess.js
+      const chess = new Chess(m.fen);
+      let move;
+      try {
+        move = chess.move({ from, to, promotion });
+      } catch (e) {
+        return m; // invalid
+      }
+      if (!move) return m;
+
+      // Compute clock
+      const now = Date.now() + state.serverTimeOffset;
+      const elapsed = now - (m.lastMoveAt || now);
+      const moverKey = myColor === 'w' ? 'whiteTime' : 'blackTime';
+      let moverTime = (m[moverKey] || 0) - elapsed + INCREMENT_MS;
+
+      let endState = null;
+      if (chess.in_checkmate()) {
+        endState = { status: 'complete', result: 'checkmate', winner: myColor === 'w' ? m.white : m.black, winnerColor: myColor, loser: myColor === 'w' ? m.black : m.white, endTime: now };
+      } else if (chess.in_stalemate()) {
+        endState = { status: 'complete', result: 'stalemate', winner: null, endTime: now };
+      } else if (chess.insufficient_material()) {
+        endState = { status: 'complete', result: 'insufficient_material', winner: null, endTime: now };
+      } else if (chess.in_threefold_repetition()) {
+        endState = { status: 'complete', result: 'threefold', winner: null, endTime: now };
+      } else if (chess.in_draw()) {
+        endState = { status: 'complete', result: 'draw', winner: null, endTime: now };
+      }
+
+      m.fen = chess.fen();
+      m.turn = chess.turn();
+      m[moverKey] = Math.max(0, moverTime);
+      m.lastMoveAt = now;
+      m.lastMove = { from, to, promotion, san: move.san, by: state.uid, color: myColor, at: now };
+
+      // Push move to history
+      const moves = m.moves || [];
+      moves.push({ from, to, promotion, san: move.san, by: state.uid, color: myColor, at: now });
+      m.moves = moves;
+
+      if (endState) {
+        m.status = endState.status;
+        m.result = endState.result;
+        m.winner = endState.winner;
+        m.winnerColor = endState.winnerColor || null;
+        m.loser = endState.loser || null;
+        m.endTime = endState.endTime;
+      }
+
+      return m;
+    });
+
+    if (!result.committed) {
+      notify('Move rejected by server.', 'warn');
+    }
+  } catch (e) {
+    console.error('Move transaction failed:', e);
+    notify(`Move failed: ${e.message}`, 'error');
+  }
+}
+
+/* ============================================================
+   RESIGNATION
+   ============================================================ */
+async function resignMatch() {
+  if (!state.currentMatchId) return;
+  if (!confirm('Resign current match? This will trigger a 120-second lockout.')) return;
+
+  const matchRef = db.ref(`matches/${state.currentMatchId}`);
+  try {
+    const result = await matchRef.transaction((m) => {
+      if (!m || m.status !== 'active') return m;
+      const myColor = (m.white === state.uid) ? 'w' : (m.black === state.uid) ? 'b' : null;
+      if (!myColor) return m;
+      m.status = 'complete';
+      m.result = 'resignation';
+      m.winner = myColor === 'w' ? m.black : m.white;
+      m.winnerColor = myColor === 'w' ? 'b' : 'w';
+      m.loser = state.uid;
+      m.endTime = Date.now() + state.serverTimeOffset;
+      return m;
+    });
+    if (!result.committed) notify('Resignation failed.', 'warn');
+  } catch (e) {
+    console.error('Resign failed:', e);
+    notify(`Resign failed: ${e.message}`, 'error');
+  }
+}
+
+/* ============================================================
+   MATCH END HANDLER
+   ============================================================ */
+function handleMatchEnd(m) {
+  // Update users: clear inMatch
+  db.ref(`users/${state.uid}/inMatch`).set(null).catch(() => {});
+
+  // Apply lockout to loser (if there is one and it's us)
+  if (m.loser && m.loser === state.uid && !state.isLockedOut) {
+    applyLockout(state.uid);
+  }
+
+  // If winner is us, notify
+  if (m.winner === state.uid) {
+    notify(`Victory! ${m.result}.`, 'success', 5000);
+  } else if (m.loser === state.uid) {
+    notify(`Defeat — ${m.result}. Lockout engaged.`, 'error', 5000);
+  } else if (m.winner === null) {
+    notify(`Draw — ${m.result}.`, 'info', 5000);
+  }
+
+  // Detach from match (but keep tournament attached for bracket updates)
+  setTimeout(() => {
+    if (state.currentMatchId === m.id || state.currentMatchId === null) {
+      // If we were the orchestrator, advance the round
+      maybeAdvanceRound(m);
+      detachFromMatch();
+    }
+  }, 1500);
+}
+
+async function maybeAdvanceRound(completedMatch) {
+  if (!completedMatch.tournamentId) return;
+  try {
+    const tSnap = await db.ref(`tournaments/${completedMatch.tournamentId}`).once('value');
+    const t = tSnap.val();
+    if (!t) return;
+
+    const round = t.rounds && t.rounds[completedMatch.round];
+    if (!round || !round.matches) return;
+
+    // Check all matches in this round are complete
+    const allMatches = Object.values(round.matches);
+    const allDone = allMatches.every((mm) => mm.status === 'complete');
+    if (!allDone) return;
+
+    // Mark round complete
+    await db.ref(`tournaments/${completedMatch.tournamentId}/rounds/${completedMatch.round}/status`).set('complete');
+
+    // Update alive status: losers die, winners stay alive, draw => both alive
+    const updates = {};
+    allMatches.forEach((mm) => {
+      if (mm.winner) {
+        const loserUid = mm.winner === mm.white ? mm.black : mm.white;
+        updates[`tournaments/${completedMatch.tournamentId}/players/${loserUid}/alive`] = false;
+      }
+    });
+    // Bye player already alive
+    await db.ref().update(updates);
+
+    // Advance to next round
+    await orchestrateRound(completedMatch.tournamentId, completedMatch.round + 1);
+  } catch (e) {
+    console.error('Advance round failed:', e);
+  }
+}
+
+/* ============================================================
+   CLOCK ENGINE
+   ============================================================ */
+let _clockInterval = null;
+function startClockTicker() {
+  stopClockTicker();
+  _clockInterval = setInterval(tickClocks, POLL_CLOCK_MS);
+}
+
+function stopClockTicker() {
+  if (_clockInterval) {
+    clearInterval(_clockInterval);
+    _clockInterval = null;
+  }
+}
+
+function tickClocks() {
+  if (!state.currentMatchId || !state.chess) return;
+  const m = _lastMatchSnapshot;
+  if (!m || m.status !== 'active') {
+    // Still render base times
+    if (m) {
+      $('whiteClock').textContent = fmtTime(m.whiteTime || 0);
+      $('blackClock').textContent = fmtTime(m.blackTime || 0);
+    }
+    return;
+  }
+
+  const now = serverNow();
+  const elapsed = now - (m.lastMoveAt || now);
+  const turn = m.turn;
+  const wTime = turn === 'w' ? Math.max(0, (m.whiteTime || 0) - elapsed) : (m.whiteTime || 0);
+  const bTime = turn === 'b' ? Math.max(0, (m.blackTime || 0) - elapsed) : (m.blackTime || 0);
+
+  $('whiteClock').textContent = fmtTime(wTime);
+  $('blackClock').textContent = fmtTime(bTime);
+
+  $('whiteClock').classList.toggle('low', wTime < 30000);
+  $('blackClock').classList.toggle('low', bTime < 30000);
+  $('whiteClock').classList.toggle('zero', wTime <= 0);
+  $('blackClock').classList.toggle('zero', bTime <= 0);
+
+  // Detect timeout — only the side to move's opponent (or the player to move themselves) can flag
+  if (turn === 'w' && wTime <= 0) {
+    flagTimeout('w');
+  } else if (turn === 'b' && bTime <= 0) {
+    flagTimeout('b');
+  }
+}
+
+function flagTimeout(timedOutColor) {
+  // Use transaction to set complete; only one client will commit
+  const matchRef = db.ref(`matches/${state.currentMatchId}`);
+  matchRef.transaction((m) => {
+    if (!m || m.status !== 'active') return m;
+    if (m.turn !== timedOutColor) return m;
+    m.status = 'complete';
+    m.result = 'timeout';
+    m.winner = timedOutColor === 'w' ? m.black : m.white;
+    m.winnerColor = timedOutColor === 'w' ? 'b' : 'w';
+    m.loser = timedOutColor === 'w' ? m.white : m.black;
+    m.endTime = Date.now() + state.serverTimeOffset;
+    if (timedOutColor === 'w') m.whiteTime = 0; else m.blackTime = 0;
+    return m;
+  }).catch((e) => console.error('Flag timeout tx failed:', e));
+}
+
+/* ============================================================
+   LOCKOUT OVERLAY
+   ============================================================ */
+function initLockoutListener() {
+  db.ref(`lockouts/${state.uid}`).on('value', (snap) => {
+    const lock = snap.val();
+    if (lock && lock.startedAt) {
+      const expiresAt = lock.startedAt + (lock.duration || LOCKOUT_MS);
+      showLockout(expiresAt);
+    } else {
+      hideLockout();
+    }
+  });
+}
+
+async function applyLockout(loserUid) {
+  try {
+    await db.ref(`lockouts/${loserUid}`).set({
+      startedAt: firebase.database.ServerValue.TIMESTAMP,
+      duration: LOCKOUT_MS,
+      reason: 'match_defeat'
+    });
+    // onDisconnect cleanup
+    db.ref(`lockouts/${loserUid}`).onDisconnect().remove();
+  } catch (e) {
+    console.error('Failed to apply lockout:', e);
+  }
+}
+
+function showLockout(expiresAt) {
+  if (state.isLockedOut) return; // already shown
+  state.isLockedOut = true;
+  setStatus('LOCKED', 'locked');
+
+  const overlay = $('lockOverlay');
+  overlay.classList.remove('hidden');
+  overlay.style.display = 'flex';
+
+  installLockoutBlockers();
+  tickLockoutCountdown(expiresAt);
+}
+
+function hideLockout() {
+  if (!state.isLockedOut) return;
+  state.isLockedOut = false;
+  const overlay = $('lockOverlay');
+  overlay.classList.add('hidden');
+  overlay.style.display = 'none';
+  removeLockoutBlockers();
+  if (window._lockInterval) {
+    clearInterval(window._lockInterval);
+    window._lockInterval = null;
+  }
+  setStatus(state.inQueue ? 'IN QUEUE' : 'IDLE', state.inQueue ? 'queue' : 'idle');
+  notify('Lockout ended. Lobby access restored.', 'success');
+}
+
+function tickLockoutCountdown(expiresAt) {
+  const cdEl = $('lockCountdown');
+  if (window._lockInterval) clearInterval(window._lockInterval);
+  window._lockInterval = setInterval(() => {
+    const remaining = expiresAt - serverNow();
+    if (remaining <= 0) {
+      clearInterval(window._lockInterval);
+      window._lockInterval = null;
+      cdEl.textContent = '0.000';
+      // Delete lockout ref — listener will hide overlay
+      db.ref(`lockouts/${state.uid}`).remove().catch(() => {});
+      return;
+    }
+    cdEl.textContent = (remaining / 1000).toFixed(3);
+    cdEl.classList.toggle('urgent', remaining < 10000);
+  }, 50);
+}
+
+/* ============================================================
+   LOCKOUT EVENT BLOCKERS (capture: true)
+   ============================================================ */
+const _lockoutBlock = (e) => {
+  // Block all standard interactions inside the viewport
+  if (e.type === 'keydown' || e.type === 'keyup' || e.type === 'keypress') {
+    // Always block Escape, F1-F12, and all other keys during lockout
+    e.preventDefault();
+    e.stopPropagation();
+    return false;
+  }
+  if (e.type === 'contextmenu' || e.type === 'selectstart' || e.type === 'mousedown' || e.type === 'click' || e.type === 'dblclick' || e.type === 'touchstart' || e.type === 'touchmove') {
+    e.preventDefault();
+    e.stopPropagation();
+    return false;
+  }
+};
+
+const _lockoutKeyBlock = (e) => {
+  // Explicitly block Escape and F1-F12
+  const key = e.key || '';
+  if (key === 'Escape' || /^F([1-9]|1[0-2])$/.test(key)) {
+    e.preventDefault();
+    e.stopPropagation();
+    return false;
+  }
+  // Block all keys during lockout
+  e.preventDefault();
+  e.stopPropagation();
+  return false;
+};
+
+function installLockoutBlockers() {
+  const opts = { capture: true, passive: false };
+  window.addEventListener('contextmenu', _lockoutBlock, opts);
+  window.addEventListener('selectstart', _lockoutBlock, opts);
+  window.addEventListener('click', _lockoutBlock, opts);
+  window.addEventListener('dblclick', _lockoutBlock, opts);
+  window.addEventListener('mousedown', _lockoutBlock, opts);
+  window.addEventListener('mouseup', _lockoutBlock, opts);
+  window.addEventListener('touchstart', _lockoutBlock, opts);
+  window.addEventListener('touchmove', _lockoutBlock, opts);
+  window.addEventListener('keydown', _lockoutKeyBlock, opts);
+  window.addEventListener('keyup', _lockoutKeyBlock, opts);
+  window.addEventListener('keypress', _lockoutKeyBlock, opts);
+  document.addEventListener('contextmenu', _lockoutBlock, opts);
+  document.addEventListener('selectstart', _lockoutBlock, opts);
+}
+
+function removeLockoutBlockers() {
+  const opts = { capture: true, passive: false };
+  window.removeEventListener('contextmenu', _lockoutBlock, opts);
+  window.removeEventListener('selectstart', _lockoutBlock, opts);
+  window.removeEventListener('click', _lockoutBlock, opts);
+  window.removeEventListener('dblclick', _lockoutBlock, opts);
+  window.removeEventListener('mousedown', _lockoutBlock, opts);
+  window.removeEventListener('mouseup', _lockoutBlock, opts);
+  window.removeEventListener('touchstart', _lockoutBlock, opts);
+  window.removeEventListener('touchmove', _lockoutBlock, opts);
+  window.removeEventListener('keydown', _lockoutKeyBlock, opts);
+  window.removeEventListener('keyup', _lockoutKeyBlock, opts);
+  window.removeEventListener('keypress', _lockoutKeyBlock, opts);
+  document.removeEventListener('contextmenu', _lockoutBlock, opts);
+  document.removeEventListener('selectstart', _lockoutBlock, opts);
+}
+
+/* ============================================================
+   PARTICLE ENGINE
+   ============================================================ */
+const canvas = $('particleCanvas');
+const ctx = canvas.getContext('2d');
+let particles = [];
+let rafId = null;
+
+function resizeCanvas() {
+  const dpr = Math.min(window.devicePixelRatio || 1, 2);
+  canvas.width = window.innerWidth * dpr;
+  canvas.height = window.innerHeight * dpr;
+  canvas.style.width = window.innerWidth + 'px';
+  canvas.style.height = window.innerHeight + 'px';
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+}
+window.addEventListener('resize', resizeCanvas);
+resizeCanvas();
+
+class Particle {
+  constructor(x, y, colorRgb) {
+    this.x = x;
+    this.y = y;
+    const angle = Math.random() * Math.PI * 2;
+    const speed = Math.random() * 11 + 4;
+    this.vx = Math.cos(angle) * speed;
+    this.vy = Math.sin(angle) * speed - Math.random() * 5;
+    this.size = Math.random() * 3.5 + 1.5;
+    this.life = 1.0;
+    this.decay = Math.random() * 0.018 + 0.012;
+    this.color = colorRgb;
+    this.gravity = 0.32;
+    this.friction = 0.965;
+  }
+  update() {
+    this.vx *= this.friction;
+    this.vy *= this.friction;
+    this.vy += this.gravity;
+    this.x += this.vx;
+    this.y += this.vy;
+    this.life -= this.decay;
+    return this.life > 0;
+  }
+  draw(ctx) {
+    const alpha = Math.max(0, this.life);
+    const size = Math.max(0.1, this.size * this.life);
+    const [r, g, b] = this.color;
+    ctx.save();
+    ctx.globalCompositeOperation = 'lighter';
+    const grad = ctx.createRadialGradient(this.x, this.y, 0, this.x, this.y, size * 3.5);
+    grad.addColorStop(0,   `rgba(${r}, ${g}, ${b}, ${alpha})`);
+    grad.addColorStop(0.4, `rgba(${r}, ${g}, ${b}, ${alpha * 0.5})`);
+    grad.addColorStop(1,   `rgba(${r}, ${g}, ${b}, 0)`);
+    ctx.fillStyle = grad;
+    ctx.beginPath();
+    ctx.arc(this.x, this.y, size * 3.5, 0, Math.PI * 2);
+    ctx.fill();
+    // bright core
+    ctx.fillStyle = `rgba(255, 255, 255, ${alpha * 0.7})`;
+    ctx.beginPath();
+    ctx.arc(this.x, this.y, Math.max(0.1, size * 0.5), 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
+  }
+}
+
+function explode(x, y, paletteKey) {
+  const palette = COLOR_PALETTES[paletteKey];
+  if (!palette) return;
+  const count = 180;
+  for (let i = 0; i < count; i++) {
+    const color = palette[Math.floor(Math.random() * palette.length)];
+    particles.push(new Particle(x, y, color));
+  }
+  // Additional spark burst
+  for (let i = 0; i < 40; i++) {
+    const p = new Particle(x, y, palette[0]);
+    p.size *= 0.5;
+    p.decay *= 1.6;
+    particles.push(p);
+  }
+  if (!rafId) startParticleLoop();
+
+  // Viewport shake + chromatic aberration
+  document.body.classList.add('shaking');
+  setTimeout(() => document.body.classList.remove('shaking'), 550);
+}
+
+function startParticleLoop() {
+  const loop = () => {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    particles = particles.filter((p) => {
+      const alive = p.update();
+      if (alive) p.draw(ctx);
+      return alive;
+    });
+    if (particles.length > 0) {
+      rafId = requestAnimationFrame(loop);
+    } else {
+      rafId = null;
+    }
+  };
+  rafId = requestAnimationFrame(loop);
+}
+
+function triggerBlueFlash() {
+  const dash = $('dashboard');
+  dash.classList.remove('blue-flash');
+  // Force reflow to restart animation
+  void dash.offsetWidth;
+  dash.classList.add('blue-flash');
+  setTimeout(() => dash.classList.remove('blue-flash'), 1300);
+  notify('System pulse engaged.', 'info', 2000);
+}
+
+/* ============================================================
+   CONTROL BUTTON HANDLERS
+   ============================================================ */
+document.querySelectorAll('.ctrl-btn').forEach((btn) => {
+  btn.addEventListener('click', (e) => {
+    const color = btn.dataset.color;
+    const rect = btn.getBoundingClientRect();
+    const x = rect.left + rect.width / 2;
+    const y = rect.top + rect.height / 2;
+    if (color === 'blue') {
+      triggerBlueFlash();
+    } else {
+      explode(x, y, color);
+    }
+  });
+});
+
+/* ============================================================
+   QUEUE / RESIGN BUTTONS
+   ============================================================ */
+$('queueBtn').addEventListener('click', toggleQueue);
+$('resignBtn').addEventListener('click', resignMatch);
+
+/* ============================================================
+   LOGIN HANDLER
+   ============================================================ */
+$('loginBtn').addEventListener('click', () => {
+  const name = $('usernameInput').value.trim();
+  if (name.length < 2) {
+    notify('Callsign must be at least 2 characters.', 'warn');
+    return;
+  }
+  completeLogin(name);
+});
+
+$('usernameInput').addEventListener('keydown', (e) => {
+  if (e.key === 'Enter') $('loginBtn').click();
+});
+
+/* ============================================================
+   BOOT
+   ============================================================ */
+function boot() {
+  if (!db) {
+    notify('Firebase failed to initialize. Please set FIREBASE_CONFIG at top of script.', 'error', 10000);
+    return;
+  }
+  initServerTimeSync();
+  if (tryRestoreSession()) {
+    completeLogin(state.username);
+  } else {
+    beginLogin();
+  }
+}
+
+// Ensure DOM is ready
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', boot);
+} else {
+  boot();
+}
+
+// Page lifecycle: refresh presence on visibility change
+document.addEventListener('visibilitychange', () => {
+  if (state.uid && state.presenceRef && document.visibilityState === 'visible') {
+    state.presenceRef.update({
+      status: 'online',
+      lastSeen: firebase.database.ServerValue.TIMESTAMP
+    }).catch(() => {});
+  }
+});
+
+window.addEventListener('beforeunload', () => {
+  if (state.presenceRef) {
+    state.presenceRef.update({
+      status: 'offline',
+      lastSeen: firebase.database.ServerValue.TIMESTAMP
+    }).catch(() => {});
+  }
+});
+
+</script>
 </body>
 </html>
