@@ -5,12 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Color Changer</title>
     <style>
-        * {
-            box-sizing: border-box;
-            margin: 0;
-            padding: 0;
-        }
-
+        * { box-sizing: border-box; margin: 0; padding: 0; }
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             height: 100vh;
@@ -23,23 +18,15 @@
             user-select: none;
             overflow: hidden;
         }
-
-        /* Username screen */
         #usernameScreen {
             text-align: center;
-            background: rgba(255, 255, 255, 0.95);
+            background: rgba(255,255,255,0.95);
             padding: 2.5rem;
             border-radius: 20px;
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.15);
             z-index: 100;
         }
-
-        #usernameScreen h2 {
-            margin-bottom: 1.5rem;
-            color: #333;
-            font-size: 1.5rem;
-        }
-
+        #usernameScreen h2 { margin-bottom: 1.5rem; color: #333; }
         #usernameScreen input {
             padding: 12px 20px;
             font-size: 1rem;
@@ -47,14 +34,8 @@
             border-radius: 50px;
             margin-right: 10px;
             outline: none;
-            transition: border-color 0.3s;
             min-width: 200px;
         }
-
-        #usernameScreen input:focus {
-            border-color: #3498db;
-        }
-
         #usernameScreen button {
             padding: 12px 30px;
             background: linear-gradient(135deg, #2ecc71, #27ae60);
@@ -63,69 +44,30 @@
             border-radius: 50px;
             cursor: pointer;
             font-weight: bold;
-            font-size: 1rem;
-            transition: transform 0.2s, box-shadow 0.2s;
         }
-
-        #usernameScreen button:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 5px 15px rgba(46, 204, 113, 0.4);
-        }
-
-        /* Main app */
-        #mainApp {
-            display: none;
-            text-align: center;
-            width: 100%;
-            max-width: 500px;
-        }
-
+        #mainApp { display: none; text-align: center; width: 100%; max-width: 500px; }
         .amongus-link {
-            margin: 1rem 0;
             display: inline-block;
+            margin: 1rem 0;
             background: linear-gradient(135deg, #9b59b6, #8e44ad);
             color: white;
             padding: 14px 28px;
             border-radius: 50px;
             text-decoration: none;
             font-weight: bold;
-            font-size: 1.1rem;
-            transition: transform 0.2s, box-shadow 0.2s;
-            box-shadow: 0 4px 10px rgba(155, 89, 182, 0.3);
         }
-
-        .amongus-link:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 6px 20px rgba(155, 89, 182, 0.5);
-        }
-
         .container {
-            background: rgba(255, 255, 255, 0.85);
+            background: rgba(255,255,255,0.85);
             padding: 2.5rem;
             border-radius: 20px;
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
             backdrop-filter: blur(10px);
             max-width: 90%;
             width: 400px;
             margin: 1rem auto;
         }
-
-        h3 {
-            color: #333;
-            margin-bottom: 2rem;
-            font-weight: 600;
-            font-size: 1.2rem;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-        }
-
-        .button-group {
-            display: flex;
-            flex-wrap: wrap;
-            justify-content: center;
-            gap: 12px;
-        }
-
+        h3 { color: #333; margin-bottom: 2rem; text-transform: uppercase; letter-spacing: 1px; }
+        .button-group { display: flex; flex-wrap: wrap; justify-content: center; gap: 12px; }
         .btn {
             border: none;
             padding: 12px 24px;
@@ -134,78 +76,28 @@
             color: white;
             border-radius: 50px;
             cursor: pointer;
-            transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            transition: all 0.3s;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
             min-width: 100px;
-            position: relative;
-            overflow: hidden;
         }
-
-        .btn::after {
-            content: '';
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            width: 0;
-            height: 0;
-            border-radius: 50%;
-            background: rgba(255, 255, 255, 0.3);
-            transform: translate(-50%, -50%);
-            transition: width 0.6s, height 0.6s;
-        }
-
-        .btn:active::after {
-            width: 300px;
-            height: 300px;
-        }
-
         .btn-red { background: linear-gradient(135deg, #ff6b6b, #ee5253); }
         .btn-orange { background: linear-gradient(135deg, #ffa502, #ff7f50); }
         .btn-yellow { background: linear-gradient(135deg, #f1c40f, #f39c12); color: #333; }
         .btn-green { background: linear-gradient(135deg, #2ecc71, #27ae60); }
         .btn-blue { background: linear-gradient(135deg, #3498db, #2980b9); }
-
-        .btn:hover {
-            transform: translateY(-3px);
-            box-shadow: 0 7px 14px rgba(0, 0, 0, 0.2);
-            filter: brightness(1.1);
-        }
-
-        .btn:active {
-            transform: translateY(1px);
-            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-        }
-
-        .btn:focus {
-            outline: 3px solid rgba(0, 0, 0, 0.2);
-            outline-offset: 2px;
-        }
-
-        /* Admin panel */
+        .btn:hover { transform: translateY(-3px); filter: brightness(1.1); }
         #adminPanel {
             display: none;
             margin-top: 1rem;
             background: white;
             padding: 1.5rem;
             border-radius: 20px;
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
             max-width: 400px;
             width: 100%;
         }
-
-        #adminPanel h4 {
-            margin-bottom: 1rem;
-            color: #e74c3c;
-            font-size: 1.2rem;
-        }
-
-        #userList {
-            list-style: none;
-            padding: 0;
-            max-height: 300px;
-            overflow-y: auto;
-        }
-
+        #adminPanel h4 { margin-bottom: 1rem; color: #e74c3c; }
+        #userList { list-style: none; max-height: 300px; overflow-y: auto; }
         #userList li {
             padding: 0.7rem;
             margin: 0.3rem 0;
@@ -216,132 +108,43 @@
             align-items: center;
             border-left: 3px solid #3498db;
         }
-
         .sabotage-btn, .release-btn {
             border: none;
             padding: 6px 16px;
             border-radius: 20px;
             cursor: pointer;
             font-weight: bold;
-            font-size: 0.85rem;
-            transition: transform 0.2s;
         }
-
-        .sabotage-btn {
-            background: #e74c3c;
-            color: white;
-        }
-
-        .sabotage-btn:hover {
-            background: #c0392b;
-            transform: scale(1.05);
-        }
-
-        .release-btn {
-            background: #2ecc71;
-            color: white;
-        }
-
-        .release-btn:hover {
-            background: #27ae60;
-            transform: scale(1.05);
-        }
-
-        .status-badge {
-            font-size: 0.8rem;
-            padding: 4px 10px;
-            border-radius: 12px;
-            font-weight: bold;
-        }
-
-        .status-safe {
-            background: #d5f5e3;
-            color: #27ae60;
-        }
-
-        .status-sabotaged {
-            background: #fadbd8;
-            color: #e74c3c;
-            animation: pulse 1s infinite;
-        }
-
-        @keyframes pulse {
-            0%, 100% { opacity: 1; }
-            50% { opacity: 0.6; }
-        }
-
-        /* Lock overlay (sabotage) */
+        .sabotage-btn { background: #e74c3c; color: white; }
+        .release-btn { background: #2ecc71; color: white; }
+        .status-badge { font-size: 0.8rem; padding: 4px 10px; border-radius: 12px; font-weight: bold; }
+        .status-safe { background: #d5f5e3; color: #27ae60; }
+        .status-sabotaged { background: #fadbd8; color: #e74c3c; animation: pulse 1s infinite; }
+        @keyframes pulse { 0%,100%{opacity:1;} 50%{opacity:0.6;} }
         #lockOverlay {
             position: fixed;
-            top: 0;
-            left: 0;
-            width: 100vw;
-            height: 100vh;
+            top: 0; left: 0;
+            width: 100vw; height: 100vh;
             background: black url('image.png') center/cover no-repeat;
             z-index: 99999;
             display: none;
             pointer-events: all;
             cursor: none;
         }
-
-        #lockOverlay .lock-content {
-            position: absolute;
-            bottom: 30px;
-            left: 50%;
-            transform: translateX(-50%);
-            text-align: center;
-            color: white;
-        }
-
-        #lockOverlay .timer {
-            background: rgba(0, 0, 0, 0.7);
-            color: white;
-            padding: 12px 30px;
-            border-radius: 50px;
-            font-size: 2rem;
-            font-weight: bold;
-            font-family: 'Courier New', monospace;
-            letter-spacing: 3px;
-            box-shadow: 0 0 20px rgba(255, 0, 0, 0.5);
-            animation: glowPulse 1s infinite;
-        }
-
-        @keyframes glowPulse {
-            0%, 100% { box-shadow: 0 0 20px rgba(255, 0, 0, 0.5); }
-            50% { box-shadow: 0 0 40px rgba(255, 0, 0, 0.8); }
-        }
-
-        #lockOverlay .lock-text {
-            font-size: 1rem;
-            margin-top: 10px;
-            opacity: 0.8;
-        }
-
-        /* Explosion canvas */
-        #explosionCanvas {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            pointer-events: none;
-            z-index: 9998;
-        }
+        .lock-content { position: absolute; bottom: 30px; left: 50%; transform: translateX(-50%); text-align: center; color: white; }
+        .timer { background: rgba(0,0,0,0.7); padding: 12px 30px; border-radius: 50px; font-size: 2rem; font-weight: bold; font-family: 'Courier New', monospace; }
+        #explosionCanvas { position: fixed; top: 0; left: 0; pointer-events: none; z-index: 9998; }
     </style>
 </head>
 <body>
-
-    <!-- Username screen -->
     <div id="usernameScreen">
         <h2>🎨 Welcome to Color Changer</h2>
         <input type="text" id="usernameInput" placeholder="Enter your username" autofocus maxlength="20">
         <button id="startBtn">Enter</button>
     </div>
 
-    <!-- Main app (hidden until username entered) -->
     <div id="mainApp">
         <a href="amongus.html" class="amongus-link">🕹 Play Among Us</a>
-
         <div class="container">
             <h3>Choose Background</h3>
             <div class="button-group">
@@ -352,447 +155,284 @@
                 <button class="btn btn-blue" data-color="Blue">Blue 💙</button>
             </div>
         </div>
-
-        <!-- Admin panel (hidden) -->
         <div id="adminPanel">
             <h4>🔧 Admin Control Panel</h4>
             <ul id="userList"></ul>
-            <button id="closeAdmin" style="margin-top:10px; background:#7f8c8d; color:white; border:none; padding:10px 24px; border-radius:20px; cursor:pointer; font-weight:bold;">Close Panel</button>
+            <button id="closeAdmin" style="margin-top:10px; background:#7f8c8d; color:white; border:none; padding:10px 24px; border-radius:20px; cursor:pointer;">Close Panel</button>
         </div>
     </div>
 
-    <!-- Lock overlay (sabotage image) -->
     <div id="lockOverlay">
         <div class="lock-content">
             <div class="timer" id="lockTimer">02:00</div>
-            <div class="lock-text">⚠️ DEVICE LOCKED - WAIT FOR TIMER ⚠️</div>
+            <div style="margin-top:10px;">⚠️ DEVICE LOCKED - WAIT FOR TIMER ⚠️</div>
         </div>
     </div>
-
-    <!-- Explosion canvas -->
     <canvas id="explosionCanvas"></canvas>
 
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-database-compat.js"></script>
+
     <script>
-        (function() {
-            const usernameScreen = document.getElementById('usernameScreen');
-            const mainApp = document.getElementById('mainApp');
-            const usernameInput = document.getElementById('usernameInput');
-            const startBtn = document.getElementById('startBtn');
-            const lockOverlay = document.getElementById('lockOverlay');
-            const lockTimerDisplay = document.getElementById('lockTimer');
-            const explosionCanvas = document.getElementById('explosionCanvas');
-            const ctx = explosionCanvas.getContext('2d');
-            const adminPanel = document.getElementById('adminPanel');
-            const userList = document.getElementById('userList');
-            const closeAdmin = document.getElementById('closeAdmin');
+        // ========== FIREBASE CONFIG – REPLACE WITH YOUR OWN ==========
+        const firebaseConfig = {
+            apiKey: "YOUR_API_KEY",
+            authDomain: "YOUR_PROJECT.firebaseapp.com",
+            databaseURL: "https://YOUR_PROJECT-default-rtdb.firebaseio.com",
+            projectId: "YOUR_PROJECT",
+            storageBucket: "YOUR_PROJECT.appspot.com",
+            messagingSenderId: "YOUR_SENDER_ID",
+            appId: "YOUR_APP_ID"
+        };
 
-            let currentUser = null;
-            let lockActive = false;
-            let lockInterval = null;
-            let lockTimeout = null;
-            let lastClicks = [];
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.database();
 
-            // ============ USER LOGIN ============
-            function loginUser() {
-                const name = usernameInput.value.trim();
-                if (!name) return alert('Please enter a username.');
-                
-                currentUser = name;
-                sessionStorage.setItem('currentUser', name);
-                
-                // Add to global user list
-                let users = JSON.parse(localStorage.getItem('users') || '[]');
-                if (!users.includes(name)) {
-                    users.push(name);
-                    localStorage.setItem('users', JSON.stringify(users));
-                }
-                
-                usernameScreen.style.display = 'none';
-                mainApp.style.display = 'block';
-                initMainApp();
-            }
+        // ========== VARIABLES ==========
+        let currentUser = null;
+        let lockActive = false;
+        let lockInterval = null;
+        let lockTimeout = null;
+        let lastClicks = [];
+        const canvas = document.getElementById('explosionCanvas');
+        const ctx = canvas.getContext('2d');
+        const lockOverlay = document.getElementById('lockOverlay');
+        const lockTimerDisplay = document.getElementById('lockTimer');
+        const adminPanel = document.getElementById('adminPanel');
+        const userListEl = document.getElementById('userList');
 
-            startBtn.addEventListener('click', loginUser);
-            usernameInput.addEventListener('keypress', function(e) {
-                if (e.key === 'Enter') loginUser();
-            });
+        // ========== LOGIN ==========
+        document.getElementById('startBtn').addEventListener('click', () => {
+            const name = document.getElementById('usernameInput').value.trim();
+            if (!name) return alert('Enter a username');
+            currentUser = name;
+            sessionStorage.setItem('currentUser', name);
+            // Add user to list in Firebase
+            db.ref('users/' + name).set({ active: true });
+            document.getElementById('usernameScreen').style.display = 'none';
+            document.getElementById('mainApp').style.display = 'block';
+            initMainApp();
+        });
 
-            // Check if already logged in
-            const savedUser = sessionStorage.getItem('currentUser');
-            if (savedUser) {
-                currentUser = savedUser;
-                usernameScreen.style.display = 'none';
-                mainApp.style.display = 'block';
-                initMainApp();
-            }
+        // Resume session
+        const savedUser = sessionStorage.getItem('currentUser');
+        if (savedUser) {
+            currentUser = savedUser;
+            document.getElementById('usernameScreen').style.display = 'none';
+            document.getElementById('mainApp').style.display = 'block';
+            initMainApp();
+        }
 
-            // ============ EXPLOSION ANIMATION ============
-            function explode(colorName) {
-                explosionCanvas.width = window.innerWidth;
-                explosionCanvas.height = window.innerHeight;
-
-                const colors = {
-                    Red: ['#ff0000', '#ff4444', '#ff6b6b', '#ff9999', '#ffcccc', '#cc0000', '#ff3333'],
-                    Orange: ['#ff6b35', '#ff7f50', '#ffa500', '#ff8c00', '#ffb347', '#ff6347', '#ff4500'],
-                    Yellow: ['#ffd700', '#ffff00', '#ffed4a', '#ffe66d', '#fff176', '#ffeb3b', '#fdd835'],
-                    Green: ['#00ff00', '#2ecc71', '#27ae60', '#4caf50', '#8bc34a', '#00e676', '#69f0ae']
-                };
-
-                const palette = colors[colorName] || [colorName];
-                const particles = [];
-                const particleCount = 300;
-                const centerX = explosionCanvas.width / 2;
-                const centerY = explosionCanvas.height / 2;
-
-                // Create shockwave rings
-                const rings = [];
-                for (let i = 0; i < 5; i++) {
-                    rings.push({
-                        radius: 0,
-                        maxRadius: Math.max(explosionCanvas.width, explosionCanvas.height) * 0.8,
-                        alpha: 1,
-                        speed: 15 + i * 8,
-                        lineWidth: 8 - i
-                    });
-                }
-
-                // Create particles
-                for (let i = 0; i < particleCount; i++) {
-                    const angle = Math.random() * Math.PI * 2;
-                    const speed = 3 + Math.random() * 15;
-                    const color = palette[Math.floor(Math.random() * palette.length)];
-                    
-                    particles.push({
-                        x: centerX,
-                        y: centerY,
-                        vx: Math.cos(angle) * speed,
-                        vy: Math.sin(angle) * speed,
-                        radius: 1 + Math.random() * 8,
-                        alpha: 1,
-                        decay: 0.008 + Math.random() * 0.025,
-                        color: color,
-                        trail: []
-                    });
-                }
-
-                // Screen shake effect
-                let shakeAmount = 10;
-                const originalTransform = document.body.style.transform;
-
-                function screenShake() {
-                    if (shakeAmount > 0) {
-                        const dx = (Math.random() - 0.5) * shakeAmount * 2;
-                        const dy = (Math.random() - 0.5) * shakeAmount * 2;
-                        document.body.style.transform = `translate(${dx}px, ${dy}px)`;
-                        shakeAmount *= 0.9;
-                        requestAnimationFrame(() => {
-                            if (shakeAmount > 0.1) screenShake();
-                            else document.body.style.transform = originalTransform || '';
-                        });
-                    }
-                }
-                screenShake();
-
-                // Flash effect
-                document.body.style.backgroundColor = palette[0];
-                setTimeout(() => { 
-                    document.body.style.backgroundColor = '#f0f2f5'; 
-                }, 600);
-
-                function draw() {
-                    ctx.clearRect(0, 0, explosionCanvas.width, explosionCanvas.height);
-                    let alive = false;
-
-                    // Draw shockwave rings
-                    rings.forEach(ring => {
-                        if (ring.radius < ring.maxRadius) {
-                            alive = true;
-                            ring.radius += ring.speed;
-                            ring.alpha = Math.max(0, 1 - (ring.radius / ring.maxRadius));
-                            
-                            ctx.beginPath();
-                            ctx.arc(centerX, centerY, ring.radius, 0, Math.PI * 2);
-                            ctx.strokeStyle = palette[0];
-                            ctx.lineWidth = ring.lineWidth;
-                            ctx.globalAlpha = ring.alpha * 0.5;
-                            ctx.stroke();
-                        }
-                    });
-
-                    // Draw particles
-                    particles.forEach(p => {
-                        p.x += p.vx;
-                        p.y += p.vy;
-                        p.vy += 0.1; // gravity
-                        p.alpha -= p.decay;
-                        
-                        if (p.alpha > 0) {
-                            alive = true;
-                            
-                            // Add trail
-                            p.trail.push({ x: p.x, y: p.y, alpha: p.alpha });
-                            if (p.trail.length > 5) p.trail.shift();
-                            
-                            // Draw trail
-                            p.trail.forEach((t, i) => {
-                                ctx.beginPath();
-                                ctx.arc(t.x, t.y, p.radius * 0.5, 0, Math.PI * 2);
-                                ctx.fillStyle = p.color;
-                                ctx.globalAlpha = t.alpha * 0.3;
-                                ctx.fill();
-                            });
-                            
-                            // Draw main particle
-                            ctx.beginPath();
-                            ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
-                            ctx.fillStyle = p.color;
-                            ctx.globalAlpha = p.alpha;
-                            ctx.fill();
-                            
-                            // Glow effect
-                            ctx.beginPath();
-                            ctx.arc(p.x, p.y, p.radius * 2, 0, Math.PI * 2);
-                            ctx.fillStyle = p.color;
-                            ctx.globalAlpha = p.alpha * 0.2;
-                            ctx.fill();
-                        }
-                    });
-
-                    ctx.globalAlpha = 1;
-
-                    if (alive) {
-                        requestAnimationFrame(draw);
-                    } else {
-                        ctx.clearRect(0, 0, explosionCanvas.width, explosionCanvas.height);
-                    }
-                }
-
-                draw();
-            }
-
-            // ============ ADMIN COMBO DETECTION ============
-            function handleColorClick(color) {
-                lastClicks.push(color);
-                if (lastClicks.length > 4) lastClicks.shift();
-                
-                // Check admin combo: Red → Green → Blue → Orange
-                if (lastClicks.length === 4 &&
-                    lastClicks[0] === 'Red' &&
-                    lastClicks[1] === 'Green' &&
-                    lastClicks[2] === 'Blue' &&
-                    lastClicks[3] === 'Orange') {
-                    showAdminPanel();
-                    lastClicks = [];
-                }
-            }
-
-            function updateAdminPanel() {
-                const users = JSON.parse(localStorage.getItem('users') || '[]');
-                userList.innerHTML = '';
-                
-                users.forEach(user => {
-                    const li = document.createElement('li');
-                    const nameSpan = document.createElement('span');
-                    nameSpan.textContent = user;
-                    nameSpan.style.fontWeight = 'bold';
-                    
-                    const sabotageKey = 'sabotage_' + user;
-                    const expiry = localStorage.getItem(sabotageKey);
-                    const isSabotaged = expiry && Date.now() < parseInt(expiry);
-                    
-                    const statusSpan = document.createElement('span');
-                    statusSpan.className = 'status-badge ' + (isSabotaged ? 'status-sabotaged' : 'status-safe');
-                    statusSpan.textContent = isSabotaged ? '🔒 LOCKED' : '✅ Safe';
-                    
-                    const btnContainer = document.createElement('span');
-                    
-                    if (isSabotaged) {
-                        const releaseBtn = document.createElement('button');
-                        releaseBtn.className = 'release-btn';
-                        releaseBtn.textContent = 'Release';
-                        releaseBtn.addEventListener('click', () => {
-                            localStorage.removeItem(sabotageKey);
-                            updateAdminPanel();
-                        });
-                        btnContainer.appendChild(releaseBtn);
-                    } else {
-                        const sabotageBtn = document.createElement('button');
-                        sabotageBtn.className = 'sabotage-btn';
-                        sabotageBtn.textContent = '💣 Sabotage';
-                        sabotageBtn.addEventListener('click', () => {
-                            // Set sabotage with 2-minute expiry
-                            const expiryTime = Date.now() + (2 * 60 * 1000);
-                            localStorage.setItem(sabotageKey, expiryTime.toString());
-                            updateAdminPanel();
-                        });
-                        btnContainer.appendChild(sabotageBtn);
-                    }
-                    
-                    li.appendChild(nameSpan);
-                    li.appendChild(statusSpan);
-                    li.appendChild(btnContainer);
-                    userList.appendChild(li);
+        // ========== EXPLOSION (unchanged) ==========
+        function explode(colorName) {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+            const colors = {
+                Red: ['#ff0000','#ff4444','#ff6b6b','#ff9999','#cc0000','#ff3333'],
+                Orange: ['#ff6b35','#ff7f50','#ffa500','#ff8c00','#ffb347','#ff6347'],
+                Yellow: ['#ffd700','#ffff00','#ffed4a','#ffe66d','#fff176'],
+                Green: ['#00ff00','#2ecc71','#27ae60','#4caf50','#8bc34a']
+            };
+            const palette = colors[colorName] || [colorName];
+            const centerX = canvas.width/2, centerY = canvas.height/2;
+            const particles = [];
+            for (let i=0; i<300; i++) {
+                const angle = Math.random()*Math.PI*2;
+                const speed = 3+Math.random()*12;
+                particles.push({
+                    x: centerX, y: centerY,
+                    vx: Math.cos(angle)*speed,
+                    vy: Math.sin(angle)*speed,
+                    radius: 1+Math.random()*8,
+                    alpha: 1,
+                    decay: 0.01+Math.random()*0.02,
+                    color: palette[Math.floor(Math.random()*palette.length)]
                 });
             }
-
-            function showAdminPanel() {
-                adminPanel.style.display = 'block';
-                updateAdminPanel();
-                alert('🔧 Admin panel unlocked!');
-            }
-
-            closeAdmin.addEventListener('click', () => {
-                adminPanel.style.display = 'none';
-            });
-
-            // ============ SABOTAGE LOCK SYSTEM (DEVICE-WIDE) ============
-            function blockAllKeys(e) {
-                if (!lockActive) return;
-                e.preventDefault();
-                e.stopPropagation();
-                e.stopImmediatePropagation();
-                
-                // Block all function keys, escape, and shortcuts
-                const blockedKeys = ['Escape', 'F1', 'F2', 'F3', 'F4', 'F5', 'F6', 'F7', 'F8', 'F9', 'F10', 'F11', 'F12',
-                                     'PrintScreen', 'ScrollLock', 'Pause'];
-                if (blockedKeys.includes(e.key) || 
-                    (e.ctrlKey && ['w', 'W', 't', 'T', 'n', 'N', 'r', 'R'].includes(e.key)) ||
-                    (e.altKey && e.key === 'F4') ||
-                    (e.metaKey && ['q', 'Q', 'w', 'W'].includes(e.key))) {
-                    e.preventDefault();
-                    return false;
+            // Screen shake & flash
+            document.body.style.backgroundColor = palette[0];
+            setTimeout(()=>{ document.body.style.backgroundColor = '#f0f2f5'; }, 600);
+            let shake = 10;
+            function shakeIt() {
+                if (shake>0) {
+                    document.body.style.transform = `translate(${(Math.random()-0.5)*shake*2}px,${(Math.random()-0.5)*shake*2}px)`;
+                    shake*=0.9;
+                    requestAnimationFrame(()=> shake>0.1?shakeIt():document.body.style.transform='');
                 }
-                return false;
             }
-
-            function blockContextMenu(e) {
-                if (!lockActive) return;
-                e.preventDefault();
-                return false;
+            shakeIt();
+            function draw() {
+                ctx.clearRect(0,0,canvas.width,canvas.height);
+                let alive = false;
+                particles.forEach(p=>{
+                    p.x += p.vx;
+                    p.y += p.vy;
+                    p.vy += 0.1;
+                    p.alpha -= p.decay;
+                    if(p.alpha>0) {
+                        alive = true;
+                        ctx.beginPath();
+                        ctx.arc(p.x, p.y, p.radius, 0, Math.PI*2);
+                        ctx.fillStyle = p.color;
+                        ctx.globalAlpha = p.alpha;
+                        ctx.fill();
+                    }
+                });
+                ctx.globalAlpha = 1;
+                if(alive) requestAnimationFrame(draw);
+                else ctx.clearRect(0,0,canvas.width,canvas.height);
             }
+            draw();
+        }
 
-            function blockClicks(e) {
-                if (!lockActive) return;
-                e.preventDefault();
-                e.stopPropagation();
+        // ========== ADMIN COMBO ==========
+        function handleColorClick(color) {
+            lastClicks.push(color);
+            if (lastClicks.length > 4) lastClicks.shift();
+            if (lastClicks.join() === 'Red,Green,Blue,Orange') {
+                showAdminPanel();
+                lastClicks = [];
             }
+        }
 
-            function beforeUnloadNag(e) {
-                if (!lockActive) return;
-                e.preventDefault();
-                e.returnValue = '⚠️ YOUR DEVICE IS LOCKED! Wait for the timer to expire.';
-            }
-
-            function removeLock() {
-                lockActive = false;
-                if (lockInterval) clearInterval(lockInterval);
-                if (lockTimeout) clearTimeout(lockTimeout);
-                lockOverlay.style.display = 'none';
-                document.body.style.cursor = '';
-                
-                document.removeEventListener('keydown', blockAllKeys, true);
-                document.removeEventListener('contextmenu', blockContextMenu, true);
-                document.removeEventListener('click', blockClicks, true);
-                window.removeEventListener('beforeunload', beforeUnloadNag);
-                
-                if (document.pointerLockElement) document.exitPointerLock();
-            }
-
-            function startLock(remainingMs) {
-                if (lockActive) return;
-                lockActive = true;
-                
-                lockOverlay.style.display = 'block';
-                document.body.style.cursor = 'none';
-                
-                document.addEventListener('keydown', blockAllKeys, true);
-                document.addEventListener('contextmenu', blockContextMenu, true);
-                document.addEventListener('click', blockClicks, true);
-                window.addEventListener('beforeunload', beforeUnloadNag);
-                
-                document.body.requestPointerLock().catch(() => {});
-                
-                function updateTimer() {
-                    const now = Date.now();
-                    const expiryKey = 'sabotage_' + currentUser;
-                    const expiry = parseInt(localStorage.getItem(expiryKey));
+        // ========== ADMIN PANEL (realtime from Firebase) ==========
+        function showAdminPanel() {
+            adminPanel.style.display = 'block';
+            // Listen to all users
+            db.ref('users').on('value', snapshot => {
+                const users = snapshot.val() || {};
+                userListEl.innerHTML = '';
+                Object.keys(users).forEach(username => {
+                    const li = document.createElement('li');
+                    li.innerHTML = `<span style="font-weight:bold">${username}</span>`;
+                    const statusSpan = document.createElement('span');
+                    const sabotageRef = db.ref('sabotages/' + username);
                     
+                    sabotageRef.on('value', snap => {
+                        const expiry = snap.val();
+                        const isSabotaged = expiry && Date.now() < expiry;
+                        statusSpan.className = 'status-badge ' + (isSabotaged ? 'status-sabotaged' : 'status-safe');
+                        statusSpan.textContent = isSabotaged ? '🔒 LOCKED' : '✅ Safe';
+                        
+                        // Update button
+                        const existingBtn = li.querySelector('button');
+                        if (existingBtn) existingBtn.remove();
+                        const btn = document.createElement('button');
+                        if (isSabotaged) {
+                            btn.className = 'release-btn';
+                            btn.textContent = 'Release';
+                            btn.onclick = () => sabotageRef.remove();
+                        } else {
+                            btn.className = 'sabotage-btn';
+                            btn.textContent = '💣 Sabotage';
+                            btn.onclick = () => sabotageRef.set(Date.now() + 2*60*1000);
+                        }
+                        li.appendChild(statusSpan);
+                        li.appendChild(btn);
+                    });
+                    userListEl.appendChild(li);
+                });
+            });
+        }
+
+        document.getElementById('closeAdmin').addEventListener('click', ()=>{
+            adminPanel.style.display = 'none';
+        });
+
+        // ========== SABOTAGE LOCK (listens to Firebase) ==========
+        function blockAll(e) {
+            if (!lockActive) return;
+            e.preventDefault();
+            e.stopPropagation();
+            e.stopImmediatePropagation();
+            if (e.type === 'keydown') {
+                const blocked = ['Escape','F1','F2','F3','F4','F5','F6','F7','F8','F9','F10','F11','F12'];
+                if (blocked.includes(e.key) || (e.ctrlKey && ['w','W','t','T','n','N'].includes(e.key)) || (e.altKey && e.key==='F4')) return false;
+            }
+            return false;
+        }
+        function beforeUnloadNag(e) { if(lockActive) { e.preventDefault(); e.returnValue = 'Device locked!'; } }
+        function removeLock() {
+            lockActive = false;
+            clearInterval(lockInterval);
+            clearTimeout(lockTimeout);
+            lockOverlay.style.display = 'none';
+            document.body.style.cursor = '';
+            document.removeEventListener('keydown', blockAll, true);
+            document.removeEventListener('contextmenu', blockAll, true);
+            document.removeEventListener('click', blockAll, true);
+            window.removeEventListener('beforeunload', beforeUnloadNag);
+            if (document.pointerLockElement) document.exitPointerLock();
+        }
+        function startLock(remainingMs) {
+            if (lockActive) return;
+            lockActive = true;
+            lockOverlay.style.display = 'block';
+            document.body.style.cursor = 'none';
+            document.addEventListener('keydown', blockAll, true);
+            document.addEventListener('contextmenu', blockAll, true);
+            document.addEventListener('click', blockAll, true);
+            window.addEventListener('beforeunload', beforeUnloadNag);
+            document.body.requestPointerLock().catch(()=>{});
+            function updateTimer() {
+                const now = Date.now();
+                const expiryRef = db.ref('sabotages/' + currentUser);
+                expiryRef.once('value').then(snap => {
+                    const expiry = snap.val();
                     if (!expiry || now >= expiry) {
                         removeLock();
-                        localStorage.removeItem(expiryKey);
                         return;
                     }
-                    
                     const diff = expiry - now;
-                    const mins = Math.floor(diff / 60000);
-                    const secs = Math.floor((diff % 60000) / 1000);
-                    lockTimerDisplay.textContent = `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
-                }
-                
-                updateTimer();
-                lockInterval = setInterval(updateTimer, 200);
-                lockTimeout = setTimeout(() => {
-                    removeLock();
-                    localStorage.removeItem('sabotage_' + currentUser);
-                }, remainingMs + 1000);
+                    const mins = Math.floor(diff/60000);
+                    const secs = Math.floor((diff%60000)/1000);
+                    lockTimerDisplay.textContent = `${String(mins).padStart(2,'0')}:${String(secs).padStart(2,'0')}`;
+                });
             }
+            updateTimer();
+            lockInterval = setInterval(updateTimer, 200);
+            lockTimeout = setTimeout(() => {
+                removeLock();
+                db.ref('sabotages/' + currentUser).remove();
+            }, remainingMs + 1000);
+        }
 
-            function checkSabotage() {
-                if (!currentUser) return;
-                const expiryKey = 'sabotage_' + currentUser;
-                const expiry = localStorage.getItem(expiryKey);
-                
+        function checkSabotage() {
+            if (!currentUser) return;
+            db.ref('sabotages/' + currentUser).on('value', snap => {
+                const expiry = snap.val();
                 if (!expiry) {
                     if (lockActive) removeLock();
                     return;
                 }
-                
                 const now = Date.now();
-                if (now >= parseInt(expiry)) {
-                    localStorage.removeItem(expiryKey);
+                if (now >= expiry) {
+                    db.ref('sabotages/' + currentUser).remove();
                     if (lockActive) removeLock();
                 } else {
-                    if (!lockActive) startLock(parseInt(expiry) - now);
-                }
-            }
-
-            // Listen for localStorage changes from OTHER tabs
-            window.addEventListener('storage', function(e) {
-                if (e.key === 'sabotage_' + currentUser) {
-                    checkSabotage();
+                    if (!lockActive) startLock(expiry - now);
                 }
             });
+        }
 
-            // ============ INIT MAIN APP ============
-            function initMainApp() {
-                // Check for existing sabotage
-                checkSabotage();
-                
-                // Check periodically (every second)
-                setInterval(checkSabotage, 1000);
-                
-                // Set up color buttons
-                const buttons = document.querySelectorAll('.btn');
-                buttons.forEach(btn => {
-                    btn.addEventListener('click', function() {
-                        if (lockActive) return;
-                        
-                        const color = this.getAttribute('data-color');
-                        handleColorClick(color);
-                        
-                        if (['Red', 'Orange', 'Yellow', 'Green'].includes(color)) {
-                            explode(color);
-                        } else if (color === 'Blue') {
-                            // Simple blue flash
-                            document.body.style.backgroundColor = '#3498db';
-                            setTimeout(() => {
-                                document.body.style.backgroundColor = '#f0f2f5';
-                            }, 1000);
-                        }
-                    });
+        // ========== INIT ==========
+        function initMainApp() {
+            checkSabotage(); // start listening
+            // Color buttons
+            document.querySelectorAll('.btn').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    if (lockActive) return;
+                    const color = this.getAttribute('data-color');
+                    handleColorClick(color);
+                    if (['Red','Orange','Yellow','Green'].includes(color)) explode(color);
+                    else if (color === 'Blue') {
+                        document.body.style.backgroundColor = '#3498db';
+                        setTimeout(()=>{ document.body.style.backgroundColor = '#f0f2f5'; }, 1000);
+                    }
                 });
-            }
-        })();
+            });
+        }
     </script>
 </body>
 </html>
