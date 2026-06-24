@@ -3,43 +3,299 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Chess Tournament</title>
+    <title>🔥 Color Changer - Tournament Arena</title>
+    <!-- Chess.js -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/chess.js/0.12.0/chess.min.js"></script>
+    <!-- Firebase Compat SDKs -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-database-compat.js"></script>
     <style>
-        body { font-family: 'Segoe UI', sans-serif; background: #1e1e2f; color: white; display: flex; flex-direction: column; align-items: center; padding: 20px; }
-        #board { display: grid; grid-template-columns: repeat(8, 60px); grid-template-rows: repeat(8, 60px); border: 2px solid #b58863; margin: 20px 0; }
-        .square { width: 60px; height: 60px; display: flex; justify-content: center; align-items: center; font-size: 40px; cursor: pointer; user-select: none; }
-        .light { background-color: #f0d9b5; }
+        :root {
+            --bg-dark: #0f0c29;
+            --bg-mid: #302b63;
+            --bg-light: #24243e;
+            --neon: #00f2fe;
+            --neon2: #4facfe;
+            --glass: rgba(255,255,255,0.05);
+            --glass-border: rgba(255,255,255,0.1);
+            --text: #e0e0e0;
+            --danger: #ff4757;
+            --success: #2ed573;
+            --warning: #ffa502;
+            --radius: 20px;
+        }
+
+        * { margin:0; padding:0; box-sizing:border-box; }
+
+        body {
+            font-family: 'Segoe UI', system-ui, sans-serif;
+            background: linear-gradient(135deg, var(--bg-dark), var(--bg-mid), var(--bg-light));
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            color: var(--text);
+            user-select: none;
+            overflow-x: hidden;
+            transition: background-color 0.6s;
+        }
+
+        /* Glass card */
+        .glass {
+            background: var(--glass);
+            backdrop-filter: blur(20px);
+            border-radius: var(--radius);
+            border: 1px solid var(--glass-border);
+            box-shadow: 0 8px 32px rgba(0,0,0,0.3);
+            padding: 2rem;
+            max-width: 500px;
+            width: 95%;
+            margin: 1rem;
+            text-align: center;
+            transition: transform 0.3s ease;
+        }
+
+        .glass:hover { transform: translateY(-2px); }
+
+        /* Buttons */
+        .btn {
+            border: none;
+            padding: 12px 28px;
+            font-size: 1rem;
+            font-weight: 600;
+            border-radius: 50px;
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin: 6px;
+            position: relative;
+            overflow: hidden;
+            color: white;
+            background: linear-gradient(45deg, var(--neon2), var(--neon));
+            box-shadow: 0 4px 15px rgba(79,172,254,0.4);
+            z-index: 1;
+        }
+
+        .btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 25px rgba(0,242,254,0.6);
+        }
+
+        .btn:active { transform: translateY(1px); }
+
+        .btn-red { background: linear-gradient(45deg, #ff6b6b, #ee5253); box-shadow: 0 4px 15px rgba(238,82,83,0.5); }
+        .btn-orange { background: linear-gradient(45deg, #ffa502, #ff7f50); box-shadow: 0 4px 15px rgba(255,165,2,0.5); }
+        .btn-yellow { background: linear-gradient(45deg, #f1c40f, #f39c12); color: #333; box-shadow: 0 4px 15px rgba(241,196,15,0.5); }
+        .btn-green { background: linear-gradient(45deg, #2ecc71, #27ae60); box-shadow: 0 4px 15px rgba(46,204,113,0.5); }
+        .btn-blue { background: linear-gradient(45deg, #3498db, #2980b9); box-shadow: 0 4px 15px rgba(52,152,219,0.5); }
+
+        .amongus-btn {
+            background: linear-gradient(45deg, #9b59b6, #8e44ad);
+            display: inline-block;
+            padding: 14px 32px;
+            text-decoration: none;
+            margin: 1rem 0;
+            font-size: 1.1rem;
+        }
+
+        /* Input field */
+        .input-field {
+            padding: 12px 20px;
+            border-radius: 50px;
+            border: 2px solid rgba(255,255,255,0.2);
+            background: rgba(255,255,255,0.08);
+            color: white;
+            font-size: 1rem;
+            outline: none;
+            min-width: 220px;
+            margin: 0.5rem;
+            transition: 0.3s;
+        }
+
+        .input-field:focus { border-color: var(--neon); }
+
+        /* Lock overlay */
+        #lockOverlay {
+            position: fixed;
+            top:0; left:0;
+            width:100vw; height:100vh;
+            background: #000 url('image.png') center/cover no-repeat;
+            z-index: 99999;
+            display: none;
+            pointer-events: all;
+            cursor: none;
+        }
+
+        .lock-timer {
+            position: absolute;
+            bottom: 40px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0,0,0,0.8);
+            padding: 15px 35px;
+            border-radius: 50px;
+            font-size: 2.5rem;
+            font-weight: bold;
+            font-family: 'Courier New', monospace;
+            color: var(--danger);
+            text-shadow: 0 0 20px var(--danger);
+            animation: pulse 1s infinite;
+        }
+
+        @keyframes pulse { 0%,100%{ opacity:1; } 50%{ opacity:0.5; } }
+
+        /* Admin panel specific */
+        .user-list-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px 15px;
+            background: rgba(255,255,255,0.05);
+            margin: 8px 0;
+            border-radius: 10px;
+        }
+
+        .status-badge {
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: bold;
+        }
+
+        .status-safe { background: #2ed57333; color: #2ed573; }
+        .status-sabotaged { background: #ff475733; color: #ff4757; animation: pulse 1s infinite; }
+
+        /* Chess board */
+        #chessBoard {
+            display: grid;
+            grid-template-columns: repeat(8, 1fr);
+            aspect-ratio: 1;
+            max-width: 500px;
+            margin: 20px auto;
+            border: 2px solid var(--glass-border);
+            border-radius: 8px;
+            overflow: hidden;
+        }
+
+        .square {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 2.5rem;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .light { background-color: #e8d5b7; }
         .dark { background-color: #b58863; }
-        .selected { box-shadow: inset 0 0 10px #ff0; }
-        .legal-move { background: radial-gradient(circle, rgba(0,0,0,0.2) 20%, transparent 20%); }
-        .clock { font-size: 1.5rem; background: #333; padding: 8px 20px; border-radius: 8px; margin: 0 20px; }
-        .active-clock { background: #4caf50; }
-        .info { margin-bottom: 10px; }
-        #bracket { margin-top: 30px; width: 100%; max-width: 600px; }
-        .round { margin-bottom: 15px; }
-        .match { background: #2a2a3a; padding: 10px; border-radius: 8px; margin: 5px 0; }
+        .selected { box-shadow: inset 0 0 0 4px #ffff00; }
+        .legal-dot { background: radial-gradient(circle, #00000080 20%, transparent 20%); }
+
+        /* Tournament bracket */
+        .bracket-round {
+            background: rgba(255,255,255,0.05);
+            border-radius: 15px;
+            padding: 15px;
+            margin: 10px 0;
+        }
+
+        .match-entry {
+            display: flex;
+            justify-content: space-between;
+            padding: 8px 12px;
+            background: rgba(0,0,0,0.3);
+            border-radius: 8px;
+            margin: 5px 0;
+        }
+
+        /* Canvas for explosion */
+        #explosionCanvas {
+            position: fixed;
+            top:0; left:0;
+            pointer-events: none;
+            z-index: 9998;
+        }
+
+        /* Responsive adjustments */
+        @media (max-width:600px) {
+            .glass { padding: 1.5rem; }
+            .btn { padding: 10px 20px; }
+        }
     </style>
 </head>
 <body>
-    <h1>♟️ Chess Tournament</h1>
-    <div id="matchView" style="display:none;">
-        <div class="info">
-            <span id="whiteName"></span> <span id="whiteClock" class="clock">10:00</span>
-            vs
-            <span id="blackClock" class="clock">10:00</span> <span id="blackName"></span>
-        </div>
-        <div id="board"></div>
-        <div id="status"></div>
-        <button id="resignBtn" style="margin-top:10px; padding:8px 20px; background:#e74c3c; border:none; color:white; border-radius:20px; cursor:pointer;">Resign</button>
-    </div>
-    <div id="bracketView"></div>
-    <a href="index.html" style="margin-top:20px; color:#aaa;">← Back</a>
 
-    <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-database-compat.js"></script>
+    <!-- Explosion canvas -->
+    <canvas id="explosionCanvas"></canvas>
+
+    <!-- Login Screen -->
+    <div id="loginScreen" class="glass">
+        <h2 style="margin-bottom:1rem;">🎨 Enter Your Username</h2>
+        <input type="text" id="usernameInput" class="input-field" placeholder="Username" autofocus maxlength="20">
+        <button id="startBtn" class="btn">Enter</button>
+    </div>
+
+    <!-- Main App (hidden initially) -->
+    <div id="mainApp" style="display:none; flex-direction:column; align-items:center;">
+        <!-- Among Us link -->
+        <a href="amongus.html" class="btn amongus-btn">🕹️ Play Among Us</a>
+
+        <!-- Color Picker Card -->
+        <div class="glass">
+            <h3 style="margin-bottom:1.5rem;">Choose Background</h3>
+            <div style="display:flex; flex-wrap:wrap; justify-content:center; gap:10px;">
+                <button class="btn btn-red" data-color="Red">Red 💥</button>
+                <button class="btn btn-orange" data-color="Orange">Orange 🔥</button>
+                <button class="btn btn-yellow" data-color="Yellow">Yellow ⚡</button>
+                <button class="btn btn-green" data-color="Green">Green 💚</button>
+                <button class="btn btn-blue" data-color="Blue">Blue 💙</button>
+            </div>
+        </div>
+
+        <!-- Tournament Section -->
+        <div id="tournamentSection" class="glass" style="display:none;">
+            <h3>🏆 Tournament</h3>
+            <div id="tournamentStatus"></div>
+            <div style="display:flex; gap:10px; justify-content:center; flex-wrap:wrap;">
+                <button id="joinTournamentBtn" class="btn" style="display:none;">Join Tournament</button>
+                <button id="playMatchBtn" class="btn btn-green" style="display:none;">Play Your Match</button>
+                <button id="viewBracketBtn" class="btn" style="display:none;">View Bracket</button>
+            </div>
+            <div id="matchArea" style="display:none; margin-top:1.5rem;">
+                <!-- Chess board will be injected here -->
+                <div id="chessBoard"></div>
+                <div id="clockDisplay" style="display:flex; justify-content:space-around; margin:1rem 0;">
+                    <span id="whiteClock" class="clock">10:00</span>
+                    <span>VS</span>
+                    <span id="blackClock" class="clock">10:00</span>
+                </div>
+                <div id="gameStatus"></div>
+                <button id="resignBtn" class="btn btn-red" style="margin-top:10px;">Resign</button>
+            </div>
+        </div>
+
+        <!-- Admin Panel (hidden) -->
+        <div id="adminPanel" class="glass" style="display:none;">
+            <h4>🔧 Admin Control</h4>
+            <div id="userListContainer" style="max-height:200px; overflow-y:auto; margin:1rem 0;"></div>
+            <button id="createTournamentBtn" class="btn btn-yellow">Create Tournament</button>
+            <button id="startRoundBtn" class="btn btn-green" style="display:none;">Start Next Round</button>
+            <button id="closeAdminBtn" class="btn" style="background:#7f8c8d;">Close</button>
+        </div>
+    </div>
+
+    <!-- Lock Overlay -->
+    <div id="lockOverlay">
+        <div class="lock-timer" id="lockTimer">02:00</div>
+        <div style="position:absolute; bottom:100px; left:50%; transform:translateX(-50%); color:white; font-size:1.2rem;">
+            ⚠️ DEVICE LOCKED ⚠️
+        </div>
+    </div>
+
     <script>
-        // FIREBASE CONFIG (SAME AS INDEX)
+        // ==================== FIREBASE CONFIG ====================
+        // REPLACE WITH YOUR OWN CONFIG FROM FIREBASE CONSOLE
         const firebaseConfig = {
           apiKey: "AIzaSyDqx4yZKKhAS3F2CokTxiY0yKxNsQ21jVc",
           authDomain: "my-project-1704840967568.firebaseapp.com",
@@ -47,92 +303,352 @@
           projectId: "my-project-1704840967568",
           storageBucket: "my-project-1704840967568.firebasestorage.app",
           messagingSenderId: "160430314341",
-          appId: "1:160430314341:web:40da9a21dd9e86adeb078c"
+          appId: "1:160430314341:web:40da9a21dd9e86adeb078c",
+          measurementId: "G-872HP9E7KR"
         };
+        // Initialize Firebase
         firebase.initializeApp(firebaseConfig);
         const db = firebase.database();
 
-        const currentUser = sessionStorage.getItem('currentUser');
-        if (!currentUser) window.location.href = 'index.html';
-
-        const boardEl = document.getElementById('board');
-        const whiteClockEl = document.getElementById('whiteClock');
-        const blackClockEl = document.getElementById('blackClock');
-        const statusEl = document.getElementById('status');
-        const resignBtn = document.getElementById('resignBtn');
-        const matchView = document.getElementById('matchView');
-        const bracketView = document.getElementById('bracketView');
-
+        // ==================== GLOBAL STATE ====================
+        let currentUser = null;
+        let lockActive = false;
+        let lockInterval = null;
+        let lockTimeout = null;
+        let adminSequence = [];
         let game = new Chess();
         let matchId = null;
         let matchData = null;
         let myColor = null;
         let clockInterval = null;
+        let lastTimestamp = Date.now();
 
-        // Get the active tournament and find the user's match
-        function findMyMatch() {
-            db.ref('tournaments/active').once('value', snap => {
-                const tid = snap.val();
-                if (!tid) return alert('No active tournament');
-                db.ref(`tournaments/${tid}/rounds`).once('value', roundsSnap => {
-                    const rounds = roundsSnap.val();
-                    if (!rounds) return;
-                    for (let roundKey of Object.keys(rounds)) {
-                        const round = rounds[roundKey];
-                        if (round.matches) {
-                            for (let matchKey of Object.keys(round.matches)) {
-                                db.ref(`matches/${matchKey}`).once('value', mSnap => {
-                                    const m = mSnap.val();
-                                    if (m && (m.white === currentUser || m.black === currentUser) && m.status === 'active') {
-                                        matchId = matchKey;
-                                        matchData = m;
-                                        myColor = m.white === currentUser ? 'white' : 'black';
-                                        startGame();
-                                    }
-                                });
+        // ==================== UI ELEMENTS ====================
+        const loginScreen = document.getElementById('loginScreen');
+        const mainApp = document.getElementById('mainApp');
+        const tournamentSection = document.getElementById('tournamentSection');
+        const matchArea = document.getElementById('matchArea');
+        const chessBoardEl = document.getElementById('chessBoard');
+        const whiteClockEl = document.getElementById('whiteClock');
+        const blackClockEl = document.getElementById('blackClock');
+        const gameStatusEl = document.getElementById('gameStatus');
+        const adminPanel = document.getElementById('adminPanel');
+
+        // ==================== LOGIN ====================
+        document.getElementById('startBtn').addEventListener('click', () => {
+            const name = document.getElementById('usernameInput').value.trim();
+            if (!name) return alert('Enter a username');
+            currentUser = name;
+            sessionStorage.setItem('currentUser', name);
+            db.ref('users/' + name).set({ active: true });
+            loginScreen.style.display = 'none';
+            mainApp.style.display = 'flex';
+            initApp();
+        });
+
+        const savedUser = sessionStorage.getItem('currentUser');
+        if (savedUser) {
+            currentUser = savedUser;
+            loginScreen.style.display = 'none';
+            mainApp.style.display = 'flex';
+            initApp();
+        }
+
+        // ==================== EXPLOSION EFFECT ====================
+        function explode(colorName) {
+            const canvas = document.getElementById('explosionCanvas');
+            const ctx = canvas.getContext('2d');
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+
+            const palettes = {
+                Red: ['#ff0000','#ff4444','#ff6b6b','#cc0000'],
+                Orange: ['#ff6b35','#ff7f50','#ffa500','#ff8c00'],
+                Yellow: ['#ffd700','#ffff00','#ffed4a','#ffe66d'],
+                Green: ['#00ff00','#2ecc71','#27ae60','#4caf50']
+            };
+            const palette = palettes[colorName] || [colorName];
+            const particles = [];
+            for (let i=0; i<400; i++) {
+                const angle = Math.random()*Math.PI*2;
+                const speed = 4+Math.random()*14;
+                particles.push({
+                    x: canvas.width/2, y: canvas.height/2,
+                    vx: Math.cos(angle)*speed, vy: Math.sin(angle)*speed,
+                    radius: 2+Math.random()*10,
+                    alpha: 1,
+                    decay: 0.008+Math.random()*0.025,
+                    color: palette[Math.floor(Math.random()*palette.length)]
+                });
+            }
+            // Flash
+            document.body.style.backgroundColor = palette[0];
+            setTimeout(() => { document.body.style.backgroundColor = ''; }, 500);
+
+            // Screen shake
+            let shake = 8;
+            function shakeIt() {
+                if (shake>0) {
+                    document.body.style.transform = `translate(${(Math.random()-0.5)*shake*2}px,${(Math.random()-0.5)*shake*2}px)`;
+                    shake*=0.85;
+                    requestAnimationFrame(() => shake>0.1 ? shakeIt() : document.body.style.transform='');
+                }
+            }
+            shakeIt();
+
+            function draw() {
+                ctx.clearRect(0,0,canvas.width,canvas.height);
+                let alive = false;
+                particles.forEach(p => {
+                    p.x += p.vx;
+                    p.y += p.vy;
+                    p.vy += 0.15;
+                    p.alpha -= p.decay;
+                    if (p.alpha>0) {
+                        alive = true;
+                        ctx.beginPath();
+                        ctx.arc(p.x, p.y, p.radius, 0, Math.PI*2);
+                        ctx.fillStyle = p.color;
+                        ctx.globalAlpha = p.alpha;
+                        ctx.fill();
+                    }
+                });
+                ctx.globalAlpha = 1;
+                if (alive) requestAnimationFrame(draw);
+                else ctx.clearRect(0,0,canvas.width,canvas.height);
+            }
+            draw();
+        }
+
+        // ==================== COLOR BUTTONS & ADMIN COMBO ====================
+        document.querySelectorAll('.btn-red, .btn-orange, .btn-yellow, .btn-green, .btn-blue').forEach(btn => {
+            btn.addEventListener('click', function() {
+                if (lockActive) return;
+                const color = this.dataset.color;
+                adminSequence.push(color);
+                if (adminSequence.length>4) adminSequence.shift();
+                if (adminSequence.join() === 'Red,Green,Blue,Orange') {
+                    adminPanel.style.display = 'block';
+                    adminSequence = [];
+                    updateAdminPanel();
+                }
+                if (['Red','Orange','Yellow','Green'].includes(color)) {
+                    explode(color);
+                } else if (color === 'Blue') {
+                    document.body.style.backgroundColor = '#3498db';
+                    setTimeout(() => { document.body.style.backgroundColor = ''; }, 800);
+                }
+            });
+        });
+
+        // ==================== ADMIN PANEL ====================
+        function updateAdminPanel() {
+            const container = document.getElementById('userListContainer');
+            db.ref('users').on('value', snap => {
+                const users = snap.val() || {};
+                container.innerHTML = Object.keys(users).map(u => {
+                    const sabotageRef = db.ref('sabotages/' + u);
+                    return `<div class="user-list-item">
+                        <span><strong>${u}</strong></span>
+                        <span id="status-${u}"></span>
+                        <button class="btn sabotage-btn" data-user="${u}">Sabotage</button>
+                    </div>`;
+                }).join('');
+                // Add listeners for sabotage buttons
+                container.querySelectorAll('.sabotage-btn').forEach(btn => {
+                    btn.addEventListener('click', () => {
+                        const target = btn.dataset.user;
+                        db.ref('sabotages/' + target).set(Date.now() + 120000);
+                    });
+                });
+                // Update status badges
+                Object.keys(users).forEach(u => {
+                    db.ref('sabotages/' + u).on('value', snap => {
+                        const expiry = snap.val();
+                        const statusEl = document.getElementById('status-' + u);
+                        if (statusEl) {
+                            if (expiry && Date.now() < expiry) {
+                                statusEl.innerHTML = '<span class="status-badge status-sabotaged">LOCKED</span>';
+                            } else {
+                                statusEl.innerHTML = '<span class="status-badge status-safe">Safe</span>';
                             }
                         }
-                    }
-                    if (!matchId) {
-                        // maybe a bye? show bracket
-                        matchView.style.display = 'none';
-                        loadBracket(tid);
-                    }
+                    });
                 });
             });
         }
 
-        function startGame() {
-            matchView.style.display = 'block';
-            document.getElementById('whiteName').textContent = matchData.white;
-            document.getElementById('blackName').textContent = matchData.black;
-            // load moves
-            if (matchData.moves) {
-                matchData.moves.forEach(m => game.move(m));
+        document.getElementById('closeAdminBtn').addEventListener('click', ()=>{
+            adminPanel.style.display = 'none';
+        });
+
+        // ==================== SABOTAGE LOCK ====================
+        function blockAll(e) {
+            if (!lockActive) return;
+            e.preventDefault();
+            e.stopPropagation();
+            e.stopImmediatePropagation();
+            if (e.type === 'keydown') {
+                const blocked = ['Escape','F1','F2','F3','F4','F5','F6','F7','F8','F9','F10','F11','F12'];
+                if (blocked.includes(e.key) || (e.ctrlKey && ['w','W','t','T','n','N'].includes(e.key)) || (e.altKey && e.key==='F4')) return false;
             }
-            renderBoard();
-            updateClockDisplay();
-            startClock();
-            listenForUpdates();
-            resignBtn.addEventListener('click', resign);
+            return false;
+        }
+        function beforeUnloadNag(e) {
+            if (lockActive) { e.preventDefault(); e.returnValue = 'Device locked!'; }
+        }
+        function removeLock() {
+            lockActive = false;
+            clearInterval(lockInterval);
+            clearTimeout(lockTimeout);
+            document.getElementById('lockOverlay').style.display = 'none';
+            document.body.style.cursor = '';
+            document.removeEventListener('keydown', blockAll, true);
+            document.removeEventListener('contextmenu', blockAll, true);
+            document.removeEventListener('click', blockAll, true);
+            window.removeEventListener('beforeunload', beforeUnloadNag);
+            if (document.pointerLockElement) document.exitPointerLock();
+        }
+        function startLock(remainingMs) {
+            if (lockActive) return;
+            lockActive = true;
+            document.getElementById('lockOverlay').style.display = 'block';
+            document.body.style.cursor = 'none';
+            document.addEventListener('keydown', blockAll, true);
+            document.addEventListener('contextmenu', blockAll, true);
+            document.addEventListener('click', blockAll, true);
+            window.addEventListener('beforeunload', beforeUnloadNag);
+            document.body.requestPointerLock().catch(()=>{});
+            function updateTimer() {
+                const now = Date.now();
+                db.ref('sabotages/' + currentUser).once('value', snap => {
+                    const expiry = snap.val();
+                    if (!expiry || now >= expiry) { removeLock(); return; }
+                    const diff = expiry - now;
+                    const mins = Math.floor(diff/60000);
+                    const secs = Math.floor((diff%60000)/1000);
+                    document.getElementById('lockTimer').textContent = `${String(mins).padStart(2,'0')}:${String(secs).padStart(2,'0')}`;
+                });
+            }
+            updateTimer();
+            lockInterval = setInterval(updateTimer, 200);
+            lockTimeout = setTimeout(() => { removeLock(); db.ref('sabotages/' + currentUser).remove(); }, remainingMs + 1000);
+        }
+        function checkSabotage() {
+            db.ref('sabotages/' + currentUser).on('value', snap => {
+                const expiry = snap.val();
+                if (!expiry) { if (lockActive) removeLock(); return; }
+                const now = Date.now();
+                if (now >= expiry) {
+                    db.ref('sabotages/' + currentUser).remove();
+                    if (lockActive) removeLock();
+                } else {
+                    if (!lockActive) startLock(expiry - now);
+                }
+            });
         }
 
-        function renderBoard() {
-            boardEl.innerHTML = '';
-            const fen = game.fen();
-            const rows = fen.split(' ')[0].split('/');
+        // ==================== TOURNAMENT ====================
+        function initApp() {
+            checkSabotage();
+            // Listen for tournament updates
+            db.ref('tournaments/active').on('value', async snap => {
+                const tournamentId = snap.val();
+                if (!tournamentId) {
+                    tournamentSection.style.display = 'none';
+                    return;
+                }
+                tournamentSection.style.display = 'block';
+                // Check if user is in tournament
+                const tSnap = await db.ref('tournaments/' + tournamentId).once('value');
+                const tournament = tSnap.val();
+                const playerIds = tournament.players ? Object.keys(tournament.players) : [];
+                const isPlayer = playerIds.includes(currentUser);
+                document.getElementById('joinTournamentBtn').style.display = isPlayer ? 'none' : 'inline-block';
+                // Find user's match
+                matchId = null;
+                if (tournament.rounds) {
+                    for (let roundKey of Object.keys(tournament.rounds)) {
+                        const round = tournament.rounds[roundKey];
+                        if (round.matches) {
+                            for (let mId of Object.keys(round.matches)) {
+                                const mSnap = await db.ref('matches/' + mId).once('value');
+                                const m = mSnap.val();
+                                if (m && (m.white === currentUser || m.black === currentUser) && m.status === 'active') {
+                                    matchId = mId;
+                                    matchData = m;
+                                    myColor = m.white === currentUser ? 'white' : 'black';
+                                    break;
+                                }
+                            }
+                        }
+                    }
+                }
+                document.getElementById('playMatchBtn').style.display = matchId ? 'inline-block' : 'none';
+                document.getElementById('viewBracketBtn').style.display = 'inline-block';
+            });
+
+            // Join tournament
+            document.getElementById('joinTournamentBtn').addEventListener('click', async () => {
+                const activeSnap = await db.ref('tournaments/active').once('value');
+                const tid = activeSnap.val();
+                if (!tid) return;
+                db.ref('tournaments/' + tid + '/players/' + currentUser).set(true);
+            });
+
+            // Play match
+            document.getElementById('playMatchBtn').addEventListener('click', () => {
+                matchArea.style.display = 'block';
+                renderChessBoard();
+                startChessClock();
+            });
+
+            // View bracket
+            document.getElementById('viewBracketBtn').addEventListener('click', async () => {
+                const activeSnap = await db.ref('tournaments/active').once('value');
+                const tid = activeSnap.val();
+                if (!tid) return;
+                const tournamentSnap = await db.ref('tournaments/' + tid).once('value');
+                const tournament = tournamentSnap.val();
+                const bracketDiv = document.createElement('div');
+                bracketDiv.innerHTML = '<h3>🏆 Bracket</h3>';
+                const rounds = tournament.rounds || {};
+                for (let roundKey of Object.keys(rounds)) {
+                    const round = rounds[roundKey];
+                    const roundDiv = document.createElement('div');
+                    roundDiv.className = 'bracket-round';
+                    roundDiv.innerHTML = `<h4>${roundKey}</h4>`;
+                    if (round.bye) roundDiv.innerHTML += `<div class="match-entry">BYE: ${round.bye}</div>`;
+                    for (let mId of Object.keys(round.matches)) {
+                        const mSnap = await db.ref('matches/' + mId).once('value');
+                        const m = mSnap.val();
+                        const result = m.status === 'white_won' ? `${m.white} won` : (m.status === 'black_won' ? `${m.black} won` : 'in progress');
+                        roundDiv.innerHTML += `<div class="match-entry">${m.white} vs ${m.black} — ${result}</div>`;
+                    }
+                    bracketDiv.appendChild(roundDiv);
+                }
+                tournamentSection.appendChild(bracketDiv);
+                // Remove after some time? We'll just keep it.
+            });
+        }
+
+        // ==================== CHESS ====================
+        function renderChessBoard() {
+            const fen = game.fen().split(' ')[0];
+            const rows = fen.split('/');
+            chessBoardEl.innerHTML = '';
             for (let i=0; i<8; i++) {
                 let col = 0;
                 for (let char of rows[i]) {
                     if (isNaN(char)) {
                         const square = String.fromCharCode(97+col) + (8-i);
-                        const piece = getPieceUnicode(char);
+                        const pieceUnicode = getPieceUnicode(char);
                         const sqDiv = document.createElement('div');
                         sqDiv.className = `square ${(i+col)%2===0 ? 'light' : 'dark'}`;
                         sqDiv.dataset.square = square;
-                        sqDiv.textContent = piece;
+                        sqDiv.textContent = pieceUnicode;
                         sqDiv.addEventListener('click', onSquareClick);
-                        boardEl.appendChild(sqDiv);
+                        chessBoardEl.appendChild(sqDiv);
                         col++;
                     } else {
                         col += parseInt(char);
@@ -159,10 +675,9 @@
                     pushMove(move);
                     selectedSquare = null;
                     clearHighlights();
-                    renderBoard();
+                    renderChessBoard();
                 } else {
                     clearHighlights();
-                    // try to select another piece
                     selectPiece(square);
                 }
             } else {
@@ -184,11 +699,11 @@
             const sqDiv = document.querySelector(`[data-square="${square}"]`);
             if (!sqDiv) return;
             if (isSelected) sqDiv.classList.add('selected');
-            if (isLegal) sqDiv.classList.add('legal-move');
+            if (isLegal) sqDiv.classList.add('legal-dot');
         }
 
         function clearHighlights() {
-            document.querySelectorAll('.selected, .legal-move').forEach(el => el.classList.remove('selected', 'legal-move'));
+            document.querySelectorAll('.selected, .legal-dot').forEach(el => el.classList.remove('selected', 'legal-dot'));
             legalMoves = [];
             selectedSquare = null;
         }
@@ -196,66 +711,46 @@
         function pushMove(move) {
             const now = Date.now();
             const timeConsumed = now - lastTimestamp;
-            // update clocks
-            const myTimeKey = myColor === 'white' ? 'whiteTimeRemaining' : 'blackTimeRemaining';
-            const newTime = Math.max(0, matchData[myTimeKey] - timeConsumed + matchData.increment);
-            // transaction to update move and times
-            db.ref(`matches/${matchId}`).transaction(current => {
-                if (!current || current.status !== 'active') return; // abort
+            const timeKey = myColor === 'white' ? 'whiteTimeRemaining' : 'blackTimeRemaining';
+            db.ref('matches/' + matchId).transaction(current => {
+                if (!current || current.status !== 'active') return;
                 const moves = current.moves || [];
                 moves.push({ from: move.from, to: move.to, timestamp: firebase.database.ServerValue.TIMESTAMP });
                 current.moves = moves;
-                current[myTimeKey] = newTime;
-                // update last move timestamp
+                current[timeKey] = Math.max(0, current[timeKey] - timeConsumed + 1000); // +1s increment
                 current.lastMoveTimestamp = firebase.database.ServerValue.TIMESTAMP;
+                // Check for checkmate/stalemate
+                // (Will be handled by the client on next update)
                 return current;
             });
-            lastTimestamp = now; // optimistic local update
+            lastTimestamp = now;
         }
 
-        let lastTimestamp = Date.now();
-
-        function listenForUpdates() {
-            db.ref(`matches/${matchId}`).on('value', snap => {
-                const updated = snap.val();
-                if (!updated || updated.status !== 'active') {
-                    if (updated && (updated.status === 'white_won' || updated.status === 'black_won')) {
-                        endGame(updated);
-                    }
-                    return;
-                }
-                // sync moves
-                const oldMoves = matchData.moves || [];
-                const newMoves = updated.moves || [];
-                if (newMoves.length > oldMoves.length) {
-                    for (let i = oldMoves.length; i < newMoves.length; i++) {
-                        game.move(newMoves[i]);
-                    }
-                    renderBoard();
-                }
-                matchData = updated;
-                updateClockDisplay();
-            });
-        }
-
-        function updateClockDisplay() {
-            const wTime = matchData.whiteTimeRemaining || 600000;
-            const bTime = matchData.blackTimeRemaining || 600000;
-            whiteClockEl.textContent = formatTime(wTime);
-            blackClockEl.textContent = formatTime(bTime);
-            whiteClockEl.classList.toggle('active-clock', game.turn() === 'w');
-            blackClockEl.classList.toggle('active-clock', game.turn() === 'b');
-        }
-
-        function formatTime(ms) {
-            const totalSec = Math.floor(ms/1000);
-            const mins = Math.floor(totalSec/60);
-            const secs = totalSec % 60;
-            return `${mins}:${secs.toString().padStart(2,'0')}`;
-        }
-
-        function startClock() {
+        function startChessClock() {
             if (clockInterval) clearInterval(clockInterval);
+            lastTimestamp = Date.now();
+            // Listen for match updates
+            db.ref('matches/' + matchId).on('value', snap => {
+                const updated = snap.val();
+                if (!updated) return;
+                matchData = updated;
+                // Update game moves if needed
+                const oldMoves = matchData.moves ? matchData.moves.length : 0;
+                const newMoves = updated.moves ? updated.moves.length : 0;
+                if (newMoves > oldMoves) {
+                    for (let i = oldMoves; i < newMoves; i++) {
+                        game.move(updated.moves[i]);
+                    }
+                    renderChessBoard();
+                }
+                updateClockDisplay();
+                // Check game end
+                if (updated.status !== 'active') {
+                    endGame(updated);
+                }
+            });
+
+            // Local clock ticking
             clockInterval = setInterval(() => {
                 if (!matchData || matchData.status !== 'active') return;
                 const elapsed = Date.now() - lastTimestamp;
@@ -271,68 +766,143 @@
             }, 200);
         }
 
+        function updateClockDisplay() {
+            whiteClockEl.textContent = formatTime(matchData.whiteTimeRemaining || 600000);
+            blackClockEl.textContent = formatTime(matchData.blackTimeRemaining || 600000);
+            whiteClockEl.className = 'clock ' + (game.turn()==='w' ? 'active' : '');
+            blackClockEl.className = 'clock ' + (game.turn()==='b' ? 'active' : '');
+        }
+
+        function formatTime(ms) {
+            const secs = Math.floor(ms/1000);
+            const mins = Math.floor(secs/60);
+            const remainSecs = secs % 60;
+            return `${mins}:${remainSecs.toString().padStart(2,'0')}`;
+        }
+
         function handleTimeout(color) {
-            db.ref(`matches/${matchId}`).update({
+            db.ref('matches/' + matchId).update({
                 status: color === 'white' ? 'black_won' : 'white_won',
                 resultReason: 'timeout'
             });
         }
 
-        function resign() {
+        document.getElementById('resignBtn').addEventListener('click', () => {
             if (confirm('Resign?')) {
-                db.ref(`matches/${matchId}`).update({
+                db.ref('matches/' + matchId).update({
                     status: myColor === 'white' ? 'black_won' : 'white_won',
                     resultReason: 'resign'
                 });
             }
-        }
+        });
 
         function endGame(updated) {
             clearInterval(clockInterval);
-            statusEl.textContent = updated.resultReason === 'checkmate' ? 'Checkmate!' : updated.resultReason;
-            resignBtn.style.display = 'none';
-            // lock loser
+            gameStatusEl.textContent = updated.resultReason ? `Game over: ${updated.resultReason}` : 'Game over';
+            document.getElementById('resignBtn').style.display = 'none';
+            // Lock loser
             const loser = updated.status === 'white_won' ? matchData.black : matchData.white;
             db.ref('sabotages/' + loser).set(Date.now() + 120000);
-            // after a few seconds show bracket
+            // After a delay, hide board
             setTimeout(() => {
-                matchView.style.display = 'none';
-                loadBracket();
-            }, 3000);
+                matchArea.style.display = 'none';
+                game = new Chess();
+                matchId = null;
+                matchData = null;
+                renderChessBoard(); // clear board
+            }, 4000);
         }
 
-        function loadBracket(tid) {
-            if (!tid) db.ref('tournaments/active').once('value', snap => { loadBracket(snap.val()); });
-            else {
-                db.ref(`tournaments/${tid}`).on('value', snap => {
-                    const t = snap.val();
-                    if (!t) return;
-                    bracketView.innerHTML = '<h2>Tournament Bracket</h2>';
-                    // list rounds
-                    const rounds = t.rounds || {};
-                    Object.keys(rounds).forEach(rKey => {
-                        const roundDiv = document.createElement('div');
-                        roundDiv.className = 'round';
-                        roundDiv.innerHTML = `<h3>${rKey}</h3>`;
-                        const round = rounds[rKey];
-                        if (round.bye) roundDiv.innerHTML += `<div class="match">BYE: ${round.bye}</div>`;
-                        for (let mId of Object.keys(round.matches)) {
-                            db.ref(`matches/${mId}`).once('value', mSnap => {
-                                const m = mSnap.val();
-                                if (m) {
-                                    const result = m.status === 'white_won' ? `${m.white} won` : (m.status === 'black_won' ? `${m.black} won` : 'in progress');
-                                    roundDiv.innerHTML += `<div class="match">${m.white} vs ${m.black} - ${result}</div>`;
-                                }
-                            });
-                        }
-                        bracketView.appendChild(roundDiv);
-                    });
-                    bracketView.style.display = 'block';
+        // ==================== ADMIN TOURNAMENT CREATION ====================
+        document.getElementById('createTournamentBtn').addEventListener('click', () => {
+            const playersStr = prompt('Enter player usernames (comma separated):');
+            if (!playersStr) return;
+            const players = playersStr.split(',').map(s=>s.trim()).filter(Boolean);
+            if (players.length < 2) return alert('Need at least 2 players');
+            const tournamentId = db.ref('tournaments').push().key;
+            const updates = {};
+            updates['tournaments/' + tournamentId] = {
+                name: 'Chess Tournament',
+                players: players.reduce((acc, p) => ({...acc, [p]: true}), {}),
+                status: 'waiting',
+                createdAt: firebase.database.ServerValue.TIMESTAMP
+            };
+            updates['tournaments/active'] = tournamentId;
+            db.ref().update(updates);
+            alert('Tournament created!');
+        });
+
+        // ==================== START NEXT ROUND (ADMIN) ====================
+        document.getElementById('startRoundBtn').addEventListener('click', async () => {
+            const activeSnap = await db.ref('tournaments/active').once('value');
+            const tournamentId = activeSnap.val();
+            if (!tournamentId) return;
+            const tSnap = await db.ref('tournaments/' + tournamentId).once('value');
+            const tournament = tSnap.val();
+            const currentRoundNumber = tournament.rounds ? Object.keys(tournament.rounds).length + 1 : 1;
+            // Determine eligible players
+            let eligiblePlayers;
+            if (currentRoundNumber === 1) {
+                eligiblePlayers = Object.keys(tournament.players);
+            } else {
+                // Get winners from last round
+                const lastRoundKey = 'round' + (currentRoundNumber - 1);
+                const lastRound = tournament.rounds[lastRoundKey];
+                eligiblePlayers = [];
+                if (lastRound) {
+                    if (lastRound.bye) eligiblePlayers.push(lastRound.bye);
+                    for (let mId of Object.keys(lastRound.matches)) {
+                        const mSnap = await db.ref('matches/' + mId).once('value');
+                        const m = mSnap.val();
+                        if (m.status === 'white_won') eligiblePlayers.push(m.white);
+                        else if (m.status === 'black_won') eligiblePlayers.push(m.black);
+                    }
+                }
+                if (eligiblePlayers.length === 0) {
+                    alert('No winners found from last round.');
+                    return;
+                }
+            }
+
+            // Pair players
+            const shuffled = eligiblePlayers.sort(() => Math.random() - 0.5);
+            const matches = {};
+            let byePlayer = null;
+            if (shuffled.length % 2 !== 0) {
+                byePlayer = shuffled.pop(); // random bye
+            }
+            for (let i = 0; i < shuffled.length; i += 2) {
+                const matchId = db.ref('matches').push().key;
+                matches[matchId] = true;
+                await db.ref('matches/' + matchId).set({
+                    white: shuffled[i],
+                    black: shuffled[i+1],
+                    moves: [],
+                    whiteTimeRemaining: 600000, // 10 min
+                    blackTimeRemaining: 600000,
+                    increment: 1000, // 1 sec
+                    status: 'active',
+                    startTime: firebase.database.ServerValue.TIMESTAMP,
+                    lastMoveTimestamp: firebase.database.ServerValue.TIMESTAMP
                 });
             }
+
+            const roundData = { matches, bye: byePlayer, status: 'active' };
+            await db.ref('tournaments/' + tournamentId + '/rounds/round' + currentRoundNumber).set(roundData);
+            alert(`Round ${currentRoundNumber} started!`);
+        });
+
+        // ==================== INIT ====================
+        function initApp() {
+            checkSabotage();
+            // ... already defined above but called after login
         }
 
-        findMyMatch();
+        // Show admin start round button if admin panel open
+        db.ref('tournaments/active').on('value', snap => {
+            document.getElementById('startRoundBtn').style.display = snap.val() ? 'inline-block' : 'none';
+        });
+
     </script>
 </body>
 </html>
