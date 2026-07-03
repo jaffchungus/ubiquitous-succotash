@@ -232,7 +232,14 @@
 
                     const color = this.getAttribute('data-color');
                     num += 1;
-                    if (color == lst[num])
+                    if (color == lst[num]){
+                        prog += 1;
+                    }
+
+                    if (num > 3){
+                        num = 0;
+                        prog = 0;
+                    }
 
                     if (prog !== 3) {
                         document.body.style.backgroundImage = 'none';
