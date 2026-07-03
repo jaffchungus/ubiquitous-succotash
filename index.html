@@ -122,6 +122,9 @@
     </div>
 
     <script>
+        let num = 0;
+        let prog = 0;
+        let lst = ['Red', 'Blue', 'Orange'];
         (function() {
             const lockOverlay = document.getElementById('lockOverlay');
             const container = document.getElementById('colorPicker');
@@ -228,8 +231,10 @@
                     if (lockActive) return;
 
                     const color = this.getAttribute('data-color');
+                    num += 1;
+                    if (color == lst[num])
 
-                    if (color !== 'Orange') {
+                    if (prog !== 3) {
                         document.body.style.backgroundImage = 'none';
                         document.body.style.backgroundColor = color.toLowerCase();
                     } else {
