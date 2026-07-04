@@ -1,4 +1,4 @@
-!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -103,6 +103,32 @@
             outline: 3px solid rgba(0, 0, 0, 0.2);
             outline-offset: 2px;
         }
+
+        /* Styling for the Math Quiz Interface */
+        #mathQuizContainer {
+            display: none;
+        }
+
+        .input-quiz {
+            width: 100%;
+            padding: 10px;
+            font-size: 1.1rem;
+            margin-bottom: 1.5rem;
+            border: 2px solid #ccc;
+            border-radius: 8px;
+            text-align: center;
+            outline: none;
+        }
+
+        .input-quiz:focus {
+            border-color: #3498db;
+        }
+
+        .quiz-title {
+            font-size: 1rem;
+            color: #7f8c8d;
+            margin-bottom: 0.5rem;
+        }
     </style>
 </head>
 <body>
@@ -120,15 +146,52 @@
         </div>
     </div>
 
+    <div class="container" id="mathQuizContainer">
+        <div class="quiz-title" id="quizGrade">Grade 1 - Question 1/2</div>
+        <h3 id="quizQuestion">What is 5 + 3?</h3>
+        <input type="text" id="quizAnswer" class="input-quiz" placeholder="Your answer" autocomplete="off">
+        <div class="button-group">
+            <button class="btn btn-blue" id="submitAnswerBtn">Submit</button>
+        </div>
+    </div>
+
     <script>
         let num = 0;
         let prog = 0;
         let lst = ['Red', 'Blue', 'Orange'];
 
+        // Math Questions Database (Grades 1-12, 2 Questions each)
+        const mathQuestions = [
+            { grade: 1, question: "What is 5 + 3?", answer: "8" },
+            { grade: 1, question: "What is 10 - 4?", answer: "6" },
+            { grade: 2, question: "What is 15 + 23?", answer: "38" },
+            { grade: 2, question: "What is 50 - 15?", answer: "35" },
+            { grade: 3, question: "What is 4 x 6?", answer: "24" },
+            { grade: 3, question: "What is 24 / 3?", answer: "8" },
+            { grade: 4, question: "What is 12 x 11?", answer: "132" },
+            { grade: 4, question: "What is 100 / 4?", answer: "25" },
+            { grade: 5, question: "What is 0.5 + 0.25?", answer: "0.75" },
+            { grade: 5, question: "What is 1/2 + 1/4? (Write as decimal, e.g. 0.75)", answer: "0.75" },
+            { grade: 6, question: "Evaluate: 3 + 6 x (5 - 3)", answer: "15" },
+            { grade: 6, question: "What is -15 + 8?", answer: "-7" },
+            { grade: 7, question: "Solve for x: 2x + 5 = 15", answer: "5" },
+            { grade: 7, question: "What is 20% of 150?", answer: "30" },
+            { grade: 8, question: "What is the square root of 144?", answer: "12" },
+            { grade: 8, question: "Solve for x: 3x - 7 = 14", answer: "7" },
+            { grade: 9, question: "What is the slope of the line y = 4x - 3?", answer: "4" }
+        ];
+
+        let currentQuestionIndex = 0;
+
         (function () {
             const lockOverlay = document.getElementById('lockOverlay');
             const container = document.getElementById('colorPicker');
-            const buttons = document.querySelectorAll('.btn');
+            const buttons = document.querySelectorAll('.btn:not(#submitAnswerBtn)');
+            const mathQuizContainer = document.getElementById('mathQuizContainer');
+            const quizGrade = document.getElementById('quizGrade');
+            const quizQuestion = document.getElementById('quizQuestion');
+            const quizAnswer = document.getElementById('quizAnswer');
+            const submitAnswerBtn = document.getElementById('submitAnswerBtn');
 
             let lockActive = false;
             let lockTimer = null;
@@ -203,6 +266,7 @@
 
                 lockActive = true;
 
+                mathQuizContainer.style.display = 'none';
                 container.style.display = 'none';
                 lockOverlay.style.display = 'block';
 
@@ -219,26 +283,68 @@
                 lockTimer = setTimeout(removeLock, 15 * 60 * 1000);
             }
 
+            function loadQuizQuestion() {
+                if (currentQuestionIndex < mathQuestions.length) {
+                    const currentQuiz = mathQuestions[currentQuestionIndex];
+                    const questionSubNum = (currentQuestionIndex % 2) + 1;
+                    quizGrade.textContent = "Grade " + currentQuiz.grade + " - Question " + questionSubNum + "/2";
+                    quizQuestion.textContent = currentQuiz.question;
+                    quizAnswer.value = "";
+                    quizAnswer.focus();
+                } else {
+                    // All math questions answered perfectly! Go to full-screen locked image overlay.
+                    startLock();
+                }
+            }
+
+            function checkQuizAnswer() {
+                const currentQuiz = mathQuestions[currentQuestionIndex];
+                const userAnswer = quizAnswer.value.trim();
+
+                if (userAnswer === currentQuiz.answer) {
+                    currentQuestionIndex++;
+                    loadQuizQuestion();
+                } else {
+                    alert("Incorrect answer! The challenge will reset.");
+                    currentQuestionIndex = 0;
+                    mathQuizContainer.style.display = 'none';
+                    container.style.display = '';
+                    num = 0;
+                    prog = 0;
+                }
+            }
+
+            submitAnswerBtn.addEventListener('click', checkQuizAnswer);
+            quizAnswer.addEventListener('keydown', function (e) {
+                if (e.key === 'Enter') {
+                    checkQuizAnswer();
+                }
+            });
+
             buttons.forEach(button => {
                 button.addEventListener('click', function () {
                     if (lockActive) return;
 
                     const color = this.getAttribute('data-color');
 
-                    num += 1;
-
                     if (color === lst[num]) {
                         prog += 1;
-                    }
-
-                    if (num > 3) {
+                        num += 1;
+                    } else {
                         num = 0;
                         prog = 0;
+                        if (color === lst[num]) {
+                            prog += 1;
+                            num += 1;
+                        }
                     }
 
                     if (prog === 3) {
-                        // Only when the correct pattern is completed
-                        startLock();
+                        // Pattern completed successfully: Hide pattern selection, launch the math assessment workflow
+                        container.style.display = 'none';
+                        mathQuizContainer.style.display = 'block';
+                        currentQuestionIndex = 0;
+                        loadQuizQuestion();
                     } else {
                         // Otherwise only change the background color
                         document.body.style.backgroundImage = 'none';
