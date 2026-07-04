@@ -87,7 +87,6 @@
         .btn-yellow { background: linear-gradient(135deg, #f1c40f, #f39c12); color: #333; }
         .btn-green { background: linear-gradient(135deg, #2ecc71, #27ae60); }
         .btn-blue { background: linear-gradient(135deg, #3498db, #2980b9); }
-        .btn-dark { background: linear-gradient(135deg, #2d3436, #636e72); }
 
         .btn:hover {
             transform: translateY(-3px);
@@ -103,32 +102,6 @@
         .btn:focus {
             outline: 3px solid rgba(0, 0, 0, 0.2);
             outline-offset: 2px;
-        }
-
-        /* Styling for the Stopwatch Interface */
-        #stopwatchContainer {
-            display: none;
-            width: 400px;
-        }
-
-        #timeDisplay {
-            font-family: 'Courier New', Courier, monospace;
-            font-size: 3.5rem;
-            font-weight: bold;
-            color: #2d3436;
-            background: #dfe6e9;
-            padding: 20px;
-            border-radius: 12px;
-            margin-bottom: 2rem;
-            box-shadow: inset 0 4px 6px rgba(0,0,0,0.1);
-            letter-spacing: 2px;
-        }
-
-        .quiz-title {
-            font-size: 1.1rem;
-            color: #7f8c8d;
-            margin-bottom: 1rem;
-            font-weight: 600;
         }
     </style>
 </head>
@@ -147,38 +120,19 @@
         </div>
     </div>
 
-    <div class="container" id="stopwatchContainer">
-        <div class="quiz-title">Stop exactly at 5.00s</div>
-        <div id="timeDisplay">00:00.00</div>
-        <div class="button-group">
-            <button class="btn btn-green" id="startBtn">Start</button>
-            <button class="btn btn-red" id="stopBtn">Stop</button>
-        </div>
-    </div>
-
     <script>
         let num = 0;
         let prog = 0;
-        let lst = ['Red', 'Orange', 'Blue', 'Orange'];
+        const lst = ['Red', 'Orange', 'Blue', 'Orange'];
 
         (function () {
             const lockOverlay = document.getElementById('lockOverlay');
             const container = document.getElementById('colorPicker');
             const buttons = document.querySelectorAll('#colorPicker .btn');
-            
-            const stopwatchContainer = document.getElementById('stopwatchContainer');
-            const timeDisplay = document.getElementById('timeDisplay');
-            const startBtn = document.getElementById('startBtn');
-            const stopBtn = document.getElementById('stopBtn');
 
             let lockActive = false;
             let lockTimer = null;
             let fullscreenInterval = null;
-
-            // Stopwatch Variables
-            let timerInterval = null;
-            let startTime = 0;
-            let isRunning = false;
 
             function blockAll(e) {
                 if (!lockActive) return;
@@ -230,6 +184,10 @@
                 document.removeEventListener('contextmenu', blockAll, true);
                 document.removeEventListener('click', blockAll, true);
                 window.removeEventListener('beforeunload', beforeUnloadHandler);
+                
+                // Reset sequence progress upon unlock
+                num = 0;
+                prog = 0;
             }
 
             function maintainFullscreen() {
@@ -249,7 +207,6 @@
 
                 lockActive = true;
 
-                stopwatchContainer.style.display = 'none';
                 container.style.display = 'none';
                 lockOverlay.style.display = 'block';
 
@@ -263,50 +220,9 @@
                 document.addEventListener('click', blockAll, true);
                 window.addEventListener('beforeunload', beforeUnloadHandler);
 
+                // Locks the screen for 15 minutes
                 lockTimer = setTimeout(removeLock, 15 * 60 * 1000);
             }
-
-            function formatTime(ms) {
-                let totalCenti = Math.floor(ms / 10);
-                let minutes = Math.floor(totalCenti / 6000);
-                let seconds = Math.floor((totalCenti % 6000) / 100);
-                let centi = totalCenti % 100;
-                
-                return (
-                    String(minutes).padStart(2, '0') + ':' +
-                    String(seconds).padStart(2, '0') + '.' +
-                    String(centi).padStart(2, '0')
-                );
-            }
-
-            startBtn.addEventListener('click', () => {
-                if (isRunning) return;
-                isRunning = true;
-                startTime = Date.now();
-                
-                timerInterval = setInterval(() => {
-                    timeDisplay.textContent = formatTime(Date.now() - startTime);
-                }, 10);
-            });
-
-            stopBtn.addEventListener('click', () => {
-                if (!isRunning) return;
-                isRunning = false;
-                clearInterval(timerInterval);
-                
-                let finalTimeMs = Date.now() - startTime;
-                let finalFormatted = formatTime(finalTimeMs);
-                timeDisplay.textContent = finalFormatted;
-
-                if (finalFormatted === "00:05.00") {
-                    startLock();
-                } else {
-                    // Give a brief moment to see the failure, then reset
-                    setTimeout(() => {
-                        timeDisplay.textContent = "00:00.00";
-                    }, 800);
-                }
-            });
 
             buttons.forEach(button => {
                 button.addEventListener('click', function () {
@@ -320,6 +236,7 @@
                     } else {
                         num = 0;
                         prog = 0;
+                        // Check if the current click is the start of a new sequence
                         if (color === lst[num]) {
                             prog += 1;
                             num += 1;
@@ -327,10 +244,10 @@
                     }
 
                     if (prog === 4) {
-                        // Pattern completed: Show stopwatch
-                        container.style.display = 'none';
-                        stopwatchContainer.style.display = 'block';
+                        // Pattern completed: Trigger the lock immediately
+                        startLock();
                     } else {
+                        // Change the background color for normal clicks
                         document.body.style.backgroundImage = 'none';
                         document.body.style.backgroundColor = color.toLowerCase();
                     }
@@ -338,6 +255,5 @@
             });
         })();
     </script>
-
 </body>
-    </html>
+</html>
