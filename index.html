@@ -3,9 +3,14 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>3D Boss Unlocker</title>
+    <title>Color Changer</title>
     <style>
-        * { box-sizing: border-box; margin: 0; padding: 0; }
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             height: 100vh;
@@ -19,35 +24,62 @@
             overflow: hidden;
         }
 
-        /* Full-page lock overlay */
+        /* Full-page lock overlay – shows image only during lock */
         #lockOverlay {
-            position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
             background: black url('image.png') center/cover no-repeat;
-            z-index: 99999; display: none; pointer-events: all; cursor: none;
-        }
-
-        /* UI Containers */
-        .ui-layer {
-            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-            display: flex; flex-direction: column; justify-content: center; align-items: center;
-            z-index: 10; pointer-events: none;
+            z-index: 99999;
+            display: none;
+            pointer-events: all;
+            cursor: none;
         }
 
         .container {
-            background: rgba(255, 255, 255, 0.85); padding: 2.5rem; border-radius: 20px;
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1); text-align: center;
-            backdrop-filter: blur(10px); max-width: 90%; width: 400px;
-            pointer-events: all;
+            background: rgba(255, 255, 255, 0.85);
+            padding: 2.5rem;
+            border-radius: 20px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+            text-align: center;
+            backdrop-filter: blur(10px);
+            max-width: 90%;
+            width: 400px;
+            z-index: 1;
         }
 
-        h3 { color: #333; margin-bottom: 2rem; font-weight: 600; font-size: 1.2rem; text-transform: uppercase; letter-spacing: 1px; }
+        h3 {
+            color: #333;
+            margin-bottom: 2rem;
+            font-weight: 600;
+            font-size: 1.2rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
 
-        .button-group { display: flex; flex-wrap: wrap; justify-content: center; gap: 12px; }
+        .button-group {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 12px;
+        }
 
         .btn {
-            border: none; padding: 12px 24px; font-size: 1rem; font-weight: 600; color: white;
-            border-radius: 50px; cursor: pointer; transition: all 0.3s ease;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1); min-width: 100px;
+            border: none;
+            padding: 12px 24px;
+            font-size: 1rem;
+            font-weight: 600;
+            color: white;
+            border-radius: 50px;
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            position: relative;
+            overflow: hidden;
+            min-width: 100px;
+            user-select: none;
         }
 
         .btn-red { background: linear-gradient(135deg, #ff6b6b, #ee5253); }
@@ -55,274 +87,257 @@
         .btn-yellow { background: linear-gradient(135deg, #f1c40f, #f39c12); color: #333; }
         .btn-green { background: linear-gradient(135deg, #2ecc71, #27ae60); }
         .btn-blue { background: linear-gradient(135deg, #3498db, #2980b9); }
+        .btn-dark { background: linear-gradient(135deg, #2d3436, #636e72); }
 
-        .btn:hover { transform: translateY(-3px); box-shadow: 0 7px 14px rgba(0, 0, 0, 0.2); }
-        .btn:active { transform: translateY(1px); box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1); }
-
-        /* 3D Game Canvas */
-        #gameCanvas {
-            position: absolute; top: 0; left: 0; width: 100vw; height: 100vh;
-            display: none; z-index: 1;
+        .btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 7px 14px rgba(0, 0, 0, 0.2);
+            filter: brightness(1.1);
         }
 
-        /* FPS Crosshair and HUD */
-        #fpsHUD {
-            position: absolute; top: 0; left: 0; width: 100vw; height: 100vh;
-            display: none; z-index: 5; pointer-events: none;
-        }
-        
-        #crosshair {
-            position: absolute; top: 50%; left: 50%;
-            width: 20px; height: 20px;
-            border: 2px solid rgba(255,255,255,0.8);
-            border-radius: 50%;
-            transform: translate(-50%, -50%);
-        }
-        #crosshair::after {
-            content: ''; position: absolute; top: 50%; left: 50%;
-            width: 4px; height: 4px; background: red; border-radius: 50%;
-            transform: translate(-50%, -50%);
+        .btn:active {
+            transform: translateY(1px);
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
         }
 
-        #healthBarContainer {
-            position: absolute; top: 20px; left: 50%; transform: translateX(-50%);
-            width: 300px; background: rgba(0,0,0,0.5); padding: 10px; border-radius: 10px;
-            text-align: center; color: white; font-weight: bold;
+        .btn:focus {
+            outline: 3px solid rgba(0, 0, 0, 0.2);
+            outline-offset: 2px;
         }
-        #bossHealth { color: #ff6b6b; font-size: 1.2rem; }
-        
-        #instructions {
-            position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%);
-            color: white; background: rgba(0,0,0,0.5); padding: 10px 20px; border-radius: 10px;
+
+        /* Styling for the Stopwatch Interface */
+        #stopwatchContainer {
+            display: none;
+            width: 400px;
+        }
+
+        #timeDisplay {
+            font-family: 'Courier New', Courier, monospace;
+            font-size: 3.5rem;
+            font-weight: bold;
+            color: #2d3436;
+            background: #dfe6e9;
+            padding: 20px;
+            border-radius: 12px;
+            margin-bottom: 2rem;
+            box-shadow: inset 0 4px 6px rgba(0,0,0,0.1);
+            letter-spacing: 2px;
+        }
+
+        .quiz-title {
+            font-size: 1.1rem;
+            color: #7f8c8d;
+            margin-bottom: 1rem;
+            font-weight: 600;
         }
     </style>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/PointerLockControls.js"></script>
 </head>
 <body>
 
     <div id="lockOverlay"></div>
 
-    <div class="ui-layer" id="uiLayer">
-        <div class="container" id="colorPicker">
-            <h3>Enter Sequence to Unlock</h3>
-            <div class="button-group">
-                <button class="btn btn-red" data-color="Red">Red</button>
-                <button class="btn btn-orange" data-color="Orange">Orange</button>
-                <button class="btn btn-yellow" data-color="Yellow">Yellow</button>
-                <button class="btn btn-green" data-color="Green">Green</button>
-                <button class="btn btn-blue" data-color="Blue">Blue</button>
-            </div>
+    <div class="container" id="colorPicker">
+        <h3>Choose Background</h3>
+        <div class="button-group">
+            <button class="btn btn-red" data-color="Red">Red</button>
+            <button class="btn btn-orange" data-color="Orange">Orange</button>
+            <button class="btn btn-yellow" data-color="Yellow">Yellow</button>
+            <button class="btn btn-green" data-color="Green">Green</button>
+            <button class="btn btn-blue" data-color="Blue">Blue</button>
         </div>
     </div>
 
-    <div id="gameCanvas"></div>
-    
-    <div id="fpsHUD">
-        <div id="crosshair"></div>
-        <div id="healthBarContainer">
-            BOSS HP: <span id="bossHealth">1000</span>
+    <div class="container" id="stopwatchContainer">
+        <div class="quiz-title">Stop exactly at 5.00s</div>
+        <div id="timeDisplay">00:00.00</div>
+        <div class="button-group">
+            <button class="btn btn-green" id="startBtn">Start</button>
+            <button class="btn btn-red" id="stopBtn">Stop</button>
         </div>
-        <div id="instructions">WASD to Move | Mouse to Look | Click to Shoot</div>
     </div>
 
     <script>
-        // Color Sequence Logic
         let num = 0;
         let prog = 0;
-        const lst = ['Red', 'Orange', 'Blue', 'Orange']; 
-        
-        const uiLayer = document.getElementById('uiLayer');
-        const colorPicker = document.getElementById('colorPicker');
-        const buttons = document.querySelectorAll('.btn');
-        const lockOverlay = document.getElementById('lockOverlay');
-        const gameCanvas = document.getElementById('gameCanvas');
-        const fpsHUD = document.getElementById('fpsHUD');
-        const bossHealthText = document.getElementById('bossHealth');
+        let lst = ['Red', 'Orange', 'Blue', 'Orange'];
 
-        let lockActive = false;
+        (function () {
+            const lockOverlay = document.getElementById('lockOverlay');
+            const container = document.getElementById('colorPicker');
+            const buttons = document.querySelectorAll('#colorPicker .btn');
+            
+            const stopwatchContainer = document.getElementById('stopwatchContainer');
+            const timeDisplay = document.getElementById('timeDisplay');
+            const startBtn = document.getElementById('startBtn');
+            const stopBtn = document.getElementById('stopBtn');
 
-        buttons.forEach(button => {
-            button.addEventListener('click', function () {
-                const color = this.getAttribute('data-color');
+            let lockActive = false;
+            let lockTimer = null;
+            let fullscreenInterval = null;
 
-                if (color === lst[num]) {
-                    prog += 1;
-                    num += 1;
+            // Stopwatch Variables
+            let timerInterval = null;
+            let startTime = 0;
+            let isRunning = false;
+
+            function blockAll(e) {
+                if (!lockActive) return;
+
+                e.preventDefault();
+                e.stopPropagation();
+                e.stopImmediatePropagation();
+
+                if (e.type === 'keydown') {
+                    if (e.key === 'Escape' && !document.fullscreenElement) {
+                        document.documentElement.requestFullscreen().catch(() => {});
+                    }
+                    return false;
+                }
+
+                if (e.type === 'contextmenu') return false;
+            }
+
+            function beforeUnloadHandler(e) {
+                if (!lockActive) return;
+                e.preventDefault();
+                e.returnValue = 'Device is locked. Leave?';
+            }
+
+            function removeLock() {
+                lockActive = false;
+
+                if (lockTimer) clearTimeout(lockTimer);
+                if (fullscreenInterval) clearInterval(fullscreenInterval);
+
+                lockTimer = null;
+                fullscreenInterval = null;
+
+                if (document.fullscreenElement) {
+                    document.exitFullscreen().catch(() => {});
+                }
+
+                if (document.pointerLockElement) {
+                    document.exitPointerLock();
+                }
+
+                lockOverlay.style.display = 'none';
+                container.style.display = '';
+                document.body.style.backgroundImage = 'none';
+                document.body.style.backgroundColor = '#f0f2f5';
+                document.body.style.cursor = '';
+
+                document.removeEventListener('keydown', blockAll, true);
+                document.removeEventListener('contextmenu', blockAll, true);
+                document.removeEventListener('click', blockAll, true);
+                window.removeEventListener('beforeunload', beforeUnloadHandler);
+            }
+
+            function maintainFullscreen() {
+                if (!lockActive) return;
+
+                if (!document.fullscreenElement) {
+                    document.documentElement.requestFullscreen().catch(() => {});
+                }
+
+                if (!document.pointerLockElement) {
+                    document.body.requestPointerLock().catch(() => {});
+                }
+            }
+
+            function startLock() {
+                if (lockActive) return;
+
+                lockActive = true;
+
+                stopwatchContainer.style.display = 'none';
+                container.style.display = 'none';
+                lockOverlay.style.display = 'block';
+
+                document.documentElement.requestFullscreen().catch(() => {});
+                document.body.requestPointerLock().catch(() => {});
+
+                fullscreenInterval = setInterval(maintainFullscreen, 300);
+
+                document.addEventListener('keydown', blockAll, true);
+                document.addEventListener('contextmenu', blockAll, true);
+                document.addEventListener('click', blockAll, true);
+                window.addEventListener('beforeunload', beforeUnloadHandler);
+
+                lockTimer = setTimeout(removeLock, 15 * 60 * 1000);
+            }
+
+            function formatTime(ms) {
+                let totalCenti = Math.floor(ms / 10);
+                let minutes = Math.floor(totalCenti / 6000);
+                let seconds = Math.floor((totalCenti % 6000) / 100);
+                let centi = totalCenti % 100;
+                
+                return (
+                    String(minutes).padStart(2, '0') + ':' +
+                    String(seconds).padStart(2, '0') + '.' +
+                    String(centi).padStart(2, '0')
+                );
+            }
+
+            startBtn.addEventListener('click', () => {
+                if (isRunning) return;
+                isRunning = true;
+                startTime = Date.now();
+                
+                timerInterval = setInterval(() => {
+                    timeDisplay.textContent = formatTime(Date.now() - startTime);
+                }, 10);
+            });
+
+            stopBtn.addEventListener('click', () => {
+                if (!isRunning) return;
+                isRunning = false;
+                clearInterval(timerInterval);
+                
+                let finalTimeMs = Date.now() - startTime;
+                let finalFormatted = formatTime(finalTimeMs);
+                timeDisplay.textContent = finalFormatted;
+
+                if (finalFormatted === "00:05.00") {
+                    startLock();
                 } else {
-                    num = 0;
-                    prog = 0;
+                    // Give a brief moment to see the failure, then reset
+                    setTimeout(() => {
+                        timeDisplay.textContent = "00:00.00";
+                    }, 800);
+                }
+            });
+
+            buttons.forEach(button => {
+                button.addEventListener('click', function () {
+                    if (lockActive) return;
+
+                    const color = this.getAttribute('data-color');
+
                     if (color === lst[num]) {
                         prog += 1;
                         num += 1;
+                    } else {
+                        num = 0;
+                        prog = 0;
+                        if (color === lst[num]) {
+                            prog += 1;
+                            num += 1;
+                        }
                     }
-                }
 
-                if (prog === 4) {
-                    uiLayer.style.display = 'none';
-                    document.body.style.backgroundColor = 'black';
-                    init3DGame();
-                } else {
-                    document.body.style.backgroundImage = 'none';
-                    document.body.style.backgroundColor = color.toLowerCase();
-                }
+                    if (prog === 4) {
+                        // Pattern completed: Show stopwatch
+                        container.style.display = 'none';
+                        stopwatchContainer.style.display = 'block';
+                    } else {
+                        document.body.style.backgroundImage = 'none';
+                        document.body.style.backgroundColor = color.toLowerCase();
+                    }
+                });
             });
-        });
-
-        // 3D FPS Logic (Three.js)
-        let scene, camera, renderer, controls;
-        let bossMesh;
-        let bossHP = 1000;
-        const raycaster = new THREE.Raycaster();
-        const center = new THREE.Vector2(0, 0); // Always center of screen for FPS
-        let moveForward = false, moveBackward = false, moveLeft = false, moveRight = false;
-        let prevTime = performance.now();
-        const velocity = new THREE.Vector3();
-        const direction = new THREE.Vector3();
-
-        function init3DGame() {
-            gameCanvas.style.display = 'block';
-            fpsHUD.style.display = 'block';
-
-            scene = new THREE.Scene();
-            scene.background = new THREE.Color(0x2d3436);
-            scene.fog = new THREE.Fog(0x2d3436, 0, 50);
-
-            camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 1, 1000);
-            camera.position.y = 2; // Player height
-
-            renderer = new THREE.WebGLRenderer({ antialias: true });
-            renderer.setSize(window.innerWidth, window.innerHeight);
-            gameCanvas.appendChild(renderer.domElement);
-
-            controls = new THREE.PointerLockControls(camera, document.body);
-            
-            // Auto-lock pointer when game starts
-            setTimeout(() => { controls.lock(); }, 100);
-            
-            // Lighting
-            const light = new THREE.HemisphereLight(0xeeeeff, 0x777788, 0.75);
-            light.position.set(0.5, 1, 0.75);
-            scene.add(light);
-
-            // Floor
-            const floorGeo = new THREE.PlaneGeometry(100, 100, 20, 20);
-            const floorMat = new THREE.MeshBasicMaterial({ color: 0x555555, wireframe: true });
-            const floor = new THREE.Mesh(floorGeo, floorMat);
-            floor.rotation.x = -Math.PI / 2;
-            scene.add(floor);
-
-            // Create Boss
-            const bossGeo = new THREE.BoxGeometry(3, 3, 3);
-            const bossMat = new THREE.MeshPhongMaterial({ color: 0xff4757 });
-            bossMesh = new THREE.Mesh(bossGeo, bossMat);
-            bossMesh.position.set(0, 1.5, -15);
-            scene.add(bossMesh);
-
-            // Controls Events
-            document.addEventListener('keydown', onKeyDown);
-            document.addEventListener('keyup', onKeyUp);
-            document.addEventListener('mousedown', shoot);
-
-            window.addEventListener('resize', onWindowResize);
-
-            animate();
-        }
-
-        function onKeyDown(event) {
-            switch (event.code) {
-                case 'ArrowUp': case 'KeyW': moveForward = true; break;
-                case 'ArrowLeft': case 'KeyA': moveLeft = true; break;
-                case 'ArrowDown': case 'KeyS': moveBackward = true; break;
-                case 'ArrowRight': case 'KeyD': moveRight = true; break;
-            }
-        }
-
-        function onKeyUp(event) {
-            switch (event.code) {
-                case 'ArrowUp': case 'KeyW': moveForward = false; break;
-                case 'ArrowLeft': case 'KeyA': moveLeft = false; break;
-                case 'ArrowDown': case 'KeyS': moveBackward = false; break;
-                case 'ArrowRight': case 'KeyD': moveRight = false; break;
-            }
-        }
-
-        function shoot() {
-            if (!controls.isLocked) return;
-
-            raycaster.setFromCamera(center, camera);
-            const intersects = raycaster.intersectObject(bossMesh);
-
-            if (intersects.length > 0) {
-                // Hit!
-                bossHP -= 100;
-                bossHealthText.innerText = bossHP;
-                
-                // Visual Flash
-                bossMesh.material.color.setHex(0xffffff);
-                setTimeout(() => bossMesh.material.color.setHex(0xff4757), 100);
-
-                if (bossHP <= 0) {
-                    triggerFinalLock();
-                }
-            }
-        }
-
-        function animate() {
-            if (lockActive) return;
-            requestAnimationFrame(animate);
-
-            const time = performance.now();
-
-            if (controls.isLocked === true) {
-                const delta = (time - prevTime) / 1000;
-
-                velocity.x -= velocity.x * 10.0 * delta;
-                velocity.z -= velocity.z * 10.0 * delta;
-
-                direction.z = Number(moveForward) - Number(moveBackward);
-                direction.x = Number(moveRight) - Number(moveLeft);
-                direction.normalize();
-
-                if (moveForward || moveBackward) velocity.z -= direction.z * 50.0 * delta;
-                if (moveLeft || moveRight) velocity.x -= direction.x * 50.0 * delta;
-
-                controls.moveRight(-velocity.x * delta);
-                controls.moveForward(-velocity.z * delta);
-
-                // Simple Boss AI (Moves back and forth)
-                bossMesh.position.x = Math.sin(time * 0.002) * 10;
-                bossMesh.rotation.y += 0.02;
-                bossMesh.rotation.x += 0.01;
-            }
-
-            prevTime = time;
-            renderer.render(scene, camera);
-        }
-
-        function onWindowResize() {
-            if(!camera) return;
-            camera.aspect = window.innerWidth / window.innerHeight;
-            camera.updateProjectionMatrix();
-            renderer.setSize(window.innerWidth, window.innerHeight);
-        }
-
-        // Final Lock System
-        function triggerFinalLock() {
-            lockActive = true;
-            controls.unlock();
-            gameCanvas.style.display = 'none';
-            fpsHUD.style.display = 'none';
-            
-            lockOverlay.style.display = 'block';
-            document.documentElement.requestFullscreen().catch(() => {});
-            document.body.requestPointerLock().catch(() => {});
-            
-            // Block leaving
-            window.addEventListener('beforeunload', (e) => {
-                e.preventDefault(); e.returnValue = '';
-            });
-        }
+        })();
     </script>
+
 </body>
-</html>
+    </html>
