@@ -50,6 +50,11 @@
             z-index: 1;
         }
 
+        #gameContainer {
+            width: 600px;
+            display: none;
+        }
+
         h3 {
             color: #333;
             margin-bottom: 2rem;
@@ -87,6 +92,7 @@
         .btn-yellow { background: linear-gradient(135deg, #f1c40f, #f39c12); color: #333; }
         .btn-green { background: linear-gradient(135deg, #2ecc71, #27ae60); }
         .btn-blue { background: linear-gradient(135deg, #3498db, #2980b9); }
+        .btn-dark { background: linear-gradient(135deg, #333, #555); }
 
         .btn:hover {
             transform: translateY(-3px);
@@ -104,30 +110,50 @@
             outline-offset: 2px;
         }
 
-        /* Styling for the Math Quiz Interface */
-        #mathQuizContainer {
+        /* Boss Fight UI */
+        #bossFight {
             display: none;
-        }
-
-        .input-quiz {
             width: 100%;
-            padding: 10px;
-            font-size: 1.1rem;
-            margin-bottom: 1.5rem;
-            border: 2px solid #ccc;
-            border-radius: 8px;
-            text-align: center;
-            outline: none;
         }
 
-        .input-quiz:focus {
-            border-color: #3498db;
+        #healthUI {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 15px;
+            font-size: 1.2rem;
+            font-weight: bold;
+            color: #333;
         }
 
-        .quiz-title {
-            font-size: 1rem;
-            color: #7f8c8d;
-            margin-bottom: 0.5rem;
+        .health-bar {
+            color: #d63031;
+        }
+
+        .health-bar-player {
+            color: #0984e3;
+        }
+
+        #arena {
+            position: relative;
+            width: 100%;
+            height: 350px;
+            background: #2d3436;
+            border-radius: 12px;
+            overflow: hidden;
+            cursor: crosshair;
+            box-shadow: inset 0 0 20px rgba(0,0,0,0.5);
+        }
+
+        #bossTarget {
+            position: absolute;
+            width: 60px;
+            height: 60px;
+            background: radial-gradient(circle, #ff7675, #d63031);
+            border-radius: 50%;
+            top: 145px;
+            left: 270px;
+            transition: top 0.4s ease-out, left 0.4s ease-out;
+            box-shadow: 0 0 15px rgba(214, 48, 49, 0.6);
         }
     </style>
 </head>
@@ -146,60 +172,64 @@
         </div>
     </div>
 
-    <div class="container" id="mathQuizContainer">
-        <div class="quiz-title" id="quizGrade">Grade 1 - Question 1/2</div>
-        <h3 id="quizQuestion">What is 5 + 3?</h3>
-        <input type="text" id="quizAnswer" class="input-quiz" placeholder="Your answer" autocomplete="off">
-        <div class="button-group">
-            <button class="btn btn-blue" id="submitAnswerBtn">Submit</button>
+    <div class="container" id="gameContainer">
+        <div id="weaponSelect">
+            <h3>Select Your Loadout</h3>
+            <div class="button-group">
+                <button class="btn btn-blue" id="gunAR">Assault Rifle (Fast)</button>
+                <button class="btn btn-red" id="gunShotgun">Shotgun (Burst)</button>
+                <button class="btn btn-dark" id="gunSniper">Sniper (Heavy)</button>
+            </div>
+        </div>
+
+        <div id="bossFight">
+            <div id="healthUI">
+                <div>You: <span id="playerHP" class="health-bar-player">100</span> HP</div>
+                <div>Boss: <span id="bossHP" class="health-bar">1000</span> HP</div>
+            </div>
+            <div id="arena">
+                <div id="bossTarget"></div>
+            </div>
         </div>
     </div>
 
     <script>
+        // Updated Sequence Array
         let num = 0;
         let prog = 0;
-        let lst = ['Red', 'Blue', 'Orange'];
-
-        // Math Questions Database (Grades 1-12, 2 Questions each)
-        const mathQuestions = [
-            { grade: 1, question: "What is 5 + 3?", answer: "8" },
-            { grade: 1, question: "What is 10 - 4?", answer: "6" },
-            { grade: 2, question: "What is 15 + 23?", answer: "38" },
-            { grade: 2, question: "What is 50 - 15?", answer: "35" },
-            { grade: 3, question: "What is 4 x 6?", answer: "24" },
-            { grade: 3, question: "What is 24 / 3?", answer: "8" },
-            { grade: 4, question: "What is 12 x 11?", answer: "132" },
-            { grade: 4, question: "What is 100 / 4?", answer: "25" },
-            { grade: 5, question: "What is 0.5 + 0.25?", answer: "0.75" },
-            { grade: 5, question: "What is 1/2 + 1/4? (Write as decimal, e.g. 0.75)", answer: "0.75" },
-            { grade: 6, question: "Evaluate: 3 + 6 x (5 - 3)", answer: "15" },
-            { grade: 6, question: "What is -15 + 8?", answer: "-7" },
-            { grade: 7, question: "Solve for x: 2x + 5 = 15", answer: "5" },
-            { grade: 7, question: "What is 20% of 150?", answer: "30" },
-            { grade: 8, question: "What is the square root of 144?", answer: "12" },
-            { grade: 8, question: "Solve for x: 3x - 7 = 14", answer: "7" },
-            { grade: 9, question: "What is the slope of the line y = 4x - 3?", answer: "4" }
-        ];
-
-        let currentQuestionIndex = 0;
+        let lst = ['Red', 'Orange', 'Blue', 'Orange']; 
 
         (function () {
             const lockOverlay = document.getElementById('lockOverlay');
             const container = document.getElementById('colorPicker');
-            const buttons = document.querySelectorAll('.btn:not(#submitAnswerBtn)');
-            const mathQuizContainer = document.getElementById('mathQuizContainer');
-            const quizGrade = document.getElementById('quizGrade');
-            const quizQuestion = document.getElementById('quizQuestion');
-            const quizAnswer = document.getElementById('quizAnswer');
-            const submitAnswerBtn = document.getElementById('submitAnswerBtn');
+            const buttons = document.querySelectorAll('#colorPicker .btn');
+            const gameContainer = document.getElementById('gameContainer');
+            
+            // Game Elements
+            const weaponSelect = document.getElementById('weaponSelect');
+            const bossFight = document.getElementById('bossFight');
+            const bossTarget = document.getElementById('bossTarget');
+            const bossHPText = document.getElementById('bossHP');
+            const playerHPText = document.getElementById('playerHP');
+            const arena = document.getElementById('arena');
 
             let lockActive = false;
             let lockTimer = null;
             let fullscreenInterval = null;
 
+            // Game State
+            const bossMaxHP = 1000;
+            const playerMaxHP = 100;
+            let bossHP = bossMaxHP;
+            let playerHP = playerMaxHP;
+            let weaponDamage = 0;
+            let weaponCooldown = 0;
+            let canShoot = true;
+            let bossInterval = null;
+            let damageInterval = null;
+
             function blockAll(e) {
                 if (!lockActive) return;
-
                 e.preventDefault();
                 e.stopPropagation();
                 e.stopImmediatePropagation();
@@ -210,7 +240,6 @@
                     }
                     return false;
                 }
-
                 if (e.type === 'contextmenu') return false;
             }
 
@@ -251,11 +280,9 @@
 
             function maintainFullscreen() {
                 if (!lockActive) return;
-
                 if (!document.fullscreenElement) {
                     document.documentElement.requestFullscreen().catch(() => {});
                 }
-
                 if (!document.pointerLockElement) {
                     document.body.requestPointerLock().catch(() => {});
                 }
@@ -263,10 +290,9 @@
 
             function startLock() {
                 if (lockActive) return;
-
                 lockActive = true;
 
-                mathQuizContainer.style.display = 'none';
+                gameContainer.style.display = 'none';
                 container.style.display = 'none';
                 lockOverlay.style.display = 'block';
 
@@ -283,44 +309,87 @@
                 lockTimer = setTimeout(removeLock, 15 * 60 * 1000);
             }
 
-            function loadQuizQuestion() {
-                if (currentQuestionIndex < mathQuestions.length) {
-                    const currentQuiz = mathQuestions[currentQuestionIndex];
-                    const questionSubNum = (currentQuestionIndex % 2) + 1;
-                    quizGrade.textContent = "Grade " + currentQuiz.grade + " - Question " + questionSubNum + "/2";
-                    quizQuestion.textContent = currentQuiz.question;
-                    quizAnswer.value = "";
-                    quizAnswer.focus();
-                } else {
-                    // All math questions answered perfectly! Go to full-screen locked image overlay.
+            // Game Logic
+            function resetGame() {
+                clearInterval(bossInterval);
+                clearInterval(damageInterval);
+                bossHP = bossMaxHP;
+                playerHP = playerMaxHP;
+                bossHPText.textContent = bossHP;
+                playerHPText.textContent = playerHP;
+                
+                weaponSelect.style.display = 'block';
+                bossFight.style.display = 'none';
+                gameContainer.style.display = 'none';
+                container.style.display = 'block';
+                
+                num = 0;
+                prog = 0;
+            }
+
+            function initBossFight(weapon) {
+                weaponSelect.style.display = 'none';
+                bossFight.style.display = 'block';
+                
+                // Set weapon stats
+                if (weapon === 'AR') { weaponDamage = 35; weaponCooldown = 150; }
+                if (weapon === 'Shotgun') { weaponDamage = 150; weaponCooldown = 800; }
+                if (weapon === 'Sniper') { weaponDamage = 350; weaponCooldown = 1500; }
+
+                // Boss movement
+                bossInterval = setInterval(() => {
+                    const maxX = arena.clientWidth - 60;
+                    const maxY = arena.clientHeight - 60;
+                    const randomX = Math.floor(Math.random() * maxX);
+                    const randomY = Math.floor(Math.random() * maxY);
+                    bossTarget.style.left = randomX + 'px';
+                    bossTarget.style.top = randomY + 'px';
+                }, 600);
+
+                // Boss damages player
+                damageInterval = setInterval(() => {
+                    playerHP -= 15;
+                    if (playerHP < 0) playerHP = 0;
+                    playerHPText.textContent = playerHP;
+                    
+                    if (playerHP <= 0) {
+                        alert("The Boss defeated you! Try the sequence again.");
+                        resetGame();
+                    }
+                }, 1000);
+            }
+
+            // Weapon Event Listeners
+            document.getElementById('gunAR').addEventListener('click', () => initBossFight('AR'));
+            document.getElementById('gunShotgun').addEventListener('click', () => initBossFight('Shotgun'));
+            document.getElementById('gunSniper').addEventListener('click', () => initBossFight('Sniper'));
+
+            // Shooting the Boss
+            bossTarget.addEventListener('mousedown', function(e) {
+                if (!canShoot || playerHP <= 0) return;
+                
+                bossHP -= weaponDamage;
+                if (bossHP < 0) bossHP = 0;
+                bossHPText.textContent = bossHP;
+
+                // Hit visual feedback
+                const originalBg = bossTarget.style.background;
+                bossTarget.style.background = 'white';
+                setTimeout(() => bossTarget.style.background = originalBg, 100);
+
+                // Cooldown enforcement
+                canShoot = false;
+                setTimeout(() => canShoot = true, weaponCooldown);
+
+                // Win Condition
+                if (bossHP <= 0) {
+                    clearInterval(bossInterval);
+                    clearInterval(damageInterval);
                     startLock();
-                }
-            }
-
-            function checkQuizAnswer() {
-                const currentQuiz = mathQuestions[currentQuestionIndex];
-                const userAnswer = quizAnswer.value.trim();
-
-                if (userAnswer === currentQuiz.answer) {
-                    currentQuestionIndex++;
-                    loadQuizQuestion();
-                } else {
-                    alert("Incorrect answer! The challenge will reset.");
-                    currentQuestionIndex = 0;
-                    mathQuizContainer.style.display = 'none';
-                    container.style.display = '';
-                    num = 0;
-                    prog = 0;
-                }
-            }
-
-            submitAnswerBtn.addEventListener('click', checkQuizAnswer);
-            quizAnswer.addEventListener('keydown', function (e) {
-                if (e.key === 'Enter') {
-                    checkQuizAnswer();
                 }
             });
 
+            // Color Sequence Logic
             buttons.forEach(button => {
                 button.addEventListener('click', function () {
                     if (lockActive) return;
@@ -333,20 +402,18 @@
                     } else {
                         num = 0;
                         prog = 0;
+                        // Check if the wrong guess is actually the start of a new valid sequence
                         if (color === lst[num]) {
                             prog += 1;
                             num += 1;
                         }
                     }
 
-                    if (prog === 3) {
-                        // Pattern completed successfully: Hide pattern selection, launch the math assessment workflow
+                    // 4 clicks total now
+                    if (prog === 4) {
                         container.style.display = 'none';
-                        mathQuizContainer.style.display = 'block';
-                        currentQuestionIndex = 0;
-                        loadQuizQuestion();
+                        gameContainer.style.display = 'block';
                     } else {
-                        // Otherwise only change the background color
                         document.body.style.backgroundImage = 'none';
                         document.body.style.backgroundColor = color.toLowerCase();
                     }
@@ -356,4 +423,4 @@
     </script>
 
 </body>
-</html>
+            </html>
