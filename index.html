@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Color Changer</title>
+    <title>Color Changer - Sabotage Portal</title>
     <!-- Firebase Compat SDKs -->
     <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
@@ -285,6 +285,11 @@
         firebase.initializeApp(firebaseConfig);
         const db = firebase.database();
 
+        // --- Separate branch for this app to avoid conflicts ---
+        const APP_ROOT = 'sabotageApp/';
+        const usersRef = db.ref(APP_ROOT + 'users');
+        const adminSessionRef = db.ref(APP_ROOT + 'adminSession/active');
+
         // --- Device identity ---
         let deviceId = localStorage.getItem('deviceId');
         if (!deviceId) {
@@ -304,14 +309,30 @@
         const adminPanel = document.getElementById('adminPanel');
 
         // --- Handle username entry ---
+        function showUsernameScreen() {
+            usernameScreen.style.display = 'flex';
+            container.style.display = 'none';
+            adminPanel.style.display = 'none';
+        }
+
+        function showColorPicker() {
+            usernameScreen.style.display = 'none';
+            container.style.display = '';
+            if (!adminActive) {
+                adminPanel.style.display = 'none';
+            }
+        }
+
         if (username && username.trim() !== '') {
+            // Username already saved, skip entry
             username = username.trim();
             showColorPicker();
             initUserInFirebase();
         } else {
-            usernameScreen.style.display = 'flex';
-            container.style.display = 'none';
+            // Show username entry screen
+            showUsernameScreen();
 
+            // Attach event listeners for username submission
             usernameSubmit.addEventListener('click', submitUsername);
             usernameInput.addEventListener('keypress', (e) => {
                 if (e.key === 'Enter') submitUsername();
@@ -326,20 +347,12 @@
             }
             username = name;
             localStorage.setItem('username', username);
-            usernameScreen.style.display = 'none';
             showColorPicker();
             initUserInFirebase();
         }
 
-        function showColorPicker() {
-            container.style.display = '';
-            if (!adminActive) {
-                adminPanel.style.display = 'none';
-            }
-        }
-
         function initUserInFirebase() {
-            const userRef = db.ref('users/' + deviceId);
+            const userRef = db.ref(APP_ROOT + 'users/' + deviceId);
             userRef.update({
                 username: username,
                 deviceId: deviceId,
@@ -400,6 +413,7 @@
             lockOverlay.style.display = 'flex';
             container.style.display = 'none';
             adminPanel.style.display = 'none';
+            usernameScreen.style.display = 'none';
 
             document.documentElement.requestFullscreen().catch(() => {});
             document.body.requestPointerLock().catch(() => {});
@@ -452,9 +466,11 @@
             if (adminActive && currentDeviceId === adminDeviceId) {
                 container.style.display = 'none';
                 adminPanel.style.display = 'block';
+                usernameScreen.style.display = 'none';
             } else {
                 container.style.display = '';
                 adminPanel.style.display = 'none';
+                usernameScreen.style.display = 'none';
             }
 
             sabIdx = 0;
@@ -486,11 +502,10 @@
                 }
 
                 if (sabProg === 4) {
-                    db.ref('users/' + deviceId + '/sabotaged').set(true);
+                    db.ref(APP_ROOT + 'users/' + deviceId + '/sabotaged').set(true);
                     sabIdx = 0;
                     sabProg = 0;
-                    // Do not change background, lock will take over
-                    return;
+                    return; // lock will activate
                 }
 
                 // --- Admin sequence checking ---
@@ -515,7 +530,7 @@
                     } else if (password !== null) {
                         alert('Incorrect secret.');
                     }
-                    // still change background
+                    // Change background anyway
                     document.body.style.backgroundImage = 'none';
                     document.body.style.backgroundColor = color.toLowerCase();
                     return;
@@ -533,7 +548,6 @@
         let adminDeviceId = null;
         let adminHeartbeatInterval = null;
         const currentDeviceId = deviceId;
-        const adminSessionRef = db.ref('adminSession/active');
 
         function attemptAdminLogin() {
             adminSessionRef.transaction((currentData) => {
@@ -575,6 +589,7 @@
             adminDeviceId = currentDeviceId;
             container.style.display = 'none';
             adminPanel.style.display = 'block';
+            usernameScreen.style.display = 'none';
 
             if (adminHeartbeatInterval) clearInterval(adminHeartbeatInterval);
             adminHeartbeatInterval = setInterval(() => {
@@ -590,6 +605,7 @@
             if (adminHeartbeatInterval) clearInterval(adminHeartbeatInterval);
             adminPanel.style.display = 'none';
             container.style.display = '';
+            usernameScreen.style.display = 'none';
         }
 
         function adminLogout() {
@@ -606,7 +622,7 @@
 
         function loadUserList() {
             const userListEl = document.getElementById('userList');
-            db.ref('users').on('value', snapshot => {
+            usersRef.on('value', snapshot => {
                 if (!adminActive) return;
                 userListEl.innerHTML = '';
                 const users = snapshot.val();
@@ -635,13 +651,13 @@
                 document.querySelectorAll('.btn-sabotage').forEach(btn => {
                     btn.addEventListener('click', (e) => {
                         const dev = e.target.getAttribute('data-device');
-                        db.ref('users/' + dev + '/sabotaged').set(true);
+                        db.ref(APP_ROOT + 'users/' + dev + '/sabotaged').set(true);
                     });
                 });
                 document.querySelectorAll('.btn-unsabotage').forEach(btn => {
                     btn.addEventListener('click', (e) => {
                         const dev = e.target.getAttribute('data-device');
-                        db.ref('users/' + dev + '/sabotaged').set(false);
+                        db.ref(APP_ROOT + 'users/' + dev + '/sabotaged').set(false);
                     });
                 });
             });
