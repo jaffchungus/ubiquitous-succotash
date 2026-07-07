@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Color Changer - Sabotage Portal</title>
+    <title>Color Changer</title>
     <!-- Firebase Compat SDKs -->
     <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
@@ -57,6 +57,59 @@
             pointer-events: none;
         }
 
+        /* Username entry screen */
+        #usernameScreen {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 1rem;
+            background: white;
+            padding: 2.5rem;
+            border-radius: 20px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+            z-index: 10;
+        }
+
+        #usernameScreen h2 {
+            color: #333;
+            font-size: 1.5rem;
+        }
+
+        #usernameScreen p {
+            color: #666;
+            font-size: 0.9rem;
+        }
+
+        #usernameInput {
+            padding: 12px 20px;
+            border: 2px solid #ddd;
+            border-radius: 50px;
+            width: 280px;
+            font-size: 1rem;
+            text-align: center;
+            outline: none;
+        }
+
+        #usernameInput:focus {
+            border-color: #ff7f50;
+        }
+
+        #usernameSubmit {
+            background: linear-gradient(135deg, #ffa502, #ff7f50);
+            border: none;
+            padding: 12px 30px;
+            border-radius: 50px;
+            color: white;
+            font-weight: 600;
+            cursor: pointer;
+            font-size: 1rem;
+            transition: transform 0.2s;
+        }
+
+        #usernameSubmit:hover {
+            transform: translateY(-2px);
+        }
+
         .container {
             background: rgba(255, 255, 255, 0.85);
             padding: 2.5rem;
@@ -67,6 +120,7 @@
             max-width: 90%;
             width: 400px;
             z-index: 1;
+            display: none;
         }
 
         h3 {
@@ -123,12 +177,16 @@
             outline-offset: 2px;
         }
 
-        .admin-link {
-            margin-top: 1.5rem;
-            font-size: 0.85rem;
-            color: #888;
+        /* Hidden admin trigger (invisible clickable area) */
+        #hiddenAdminTrigger {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            width: 40px;
+            height: 40px;
+            opacity: 0;
             cursor: pointer;
-            text-decoration: underline;
+            z-index: 50;
         }
 
         /* Admin panel styling */
@@ -197,6 +255,17 @@
         <div id="lockText"></div>
     </div>
 
+    <!-- Username entry screen -->
+    <div id="usernameScreen">
+        <h2>Welcome</h2>
+        <p>Please enter your real name to continue:</p>
+        <input type="text" id="usernameInput" placeholder="Your real name" autocomplete="off">
+        <button id="usernameSubmit">Enter</button>
+    </div>
+
+    <!-- Hidden admin trigger (bottom right corner) -->
+    <div id="hiddenAdminTrigger" title=""></div>
+
     <div class="container" id="colorPicker">
         <h3>Choose Background</h3>
         <div class="button-group">
@@ -206,7 +275,6 @@
             <button class="btn btn-green" data-color="Green">Green</button>
             <button class="btn btn-blue" data-color="Blue">Blue</button>
         </div>
-        <div class="admin-link" id="adminLoginLink">Admin Login</div>
     </div>
 
     <div id="adminPanel">
@@ -232,7 +300,7 @@
         firebase.initializeApp(firebaseConfig);
         const db = firebase.database();
 
-        // --- Device & user identity ---
+        // --- Device identity ---
         let deviceId = localStorage.getItem('deviceId');
         if (!deviceId) {
             deviceId = 'dev_' + Math.random().toString(36).substr(2, 9);
@@ -240,36 +308,80 @@
         }
 
         let username = localStorage.getItem('username');
-        if (!username) {
-            // Ask for real name
-            username = prompt('Please enter your real name (this is required):');
-            if (!username || username.trim() === '') {
-                username = 'Unknown User';
-            }
-            localStorage.setItem('username', username.trim());
-        } else {
+
+        // --- UI Elements ---
+        const usernameScreen = document.getElementById('usernameScreen');
+        const usernameInput = document.getElementById('usernameInput');
+        const usernameSubmit = document.getElementById('usernameSubmit');
+        const container = document.getElementById('colorPicker');
+        const lockOverlay = document.getElementById('lockOverlay');
+        const lockText = document.getElementById('lockText');
+        const adminPanel = document.getElementById('adminPanel');
+        const hiddenAdminTrigger = document.getElementById('hiddenAdminTrigger');
+
+        // --- Handle username entry ---
+        if (username && username.trim() !== '') {
+            // Already have username, skip entry screen
             username = username.trim();
+            showColorPicker();
+            initUserInFirebase();
+        } else {
+            // Show username entry screen
+            usernameScreen.style.display = 'flex';
+            container.style.display = 'none';
+
+            usernameSubmit.addEventListener('click', submitUsername);
+            usernameInput.addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') submitUsername();
+            });
         }
 
-        // Push/update user in Firebase
-        const userRef = db.ref('users/' + deviceId);
-        userRef.update({
-            username: username,
-            deviceId: deviceId,
-            sabotaged: false // initialize if not exists; won't overwrite existing sabotaged state
-        });
+        function submitUsername() {
+            const name = usernameInput.value.trim();
+            if (!name) {
+                alert('Please enter your real name.');
+                return;
+            }
+            username = name;
+            localStorage.setItem('username', username);
+            usernameScreen.style.display = 'none';
+            showColorPicker();
+            initUserInFirebase();
+        }
+
+        function showColorPicker() {
+            container.style.display = '';
+            // Ensure admin panel is hidden unless admin is active
+            if (!adminActive) {
+                adminPanel.style.display = 'none';
+            }
+        }
+
+        function initUserInFirebase() {
+            const userRef = db.ref('users/' + deviceId);
+            userRef.update({
+                username: username,
+                deviceId: deviceId,
+                sabotaged: false
+            });
+
+            // Listen for sabotage flag
+            userRef.child('sabotaged').on('value', (snap) => {
+                const isSabotaged = snap.val() === true;
+                if (isSabotaged && !lockActive) {
+                    startLock();
+                } else if (!isSabotaged && lockActive) {
+                    removeLock();
+                }
+            });
+        }
 
         // --- Sequence for self-sabotage (Orange, Orange, Red, Orange) ---
         let seqIndex = 0;
         let seqProgress = 0;
         const sabotageSequence = ['Orange', 'Orange', 'Red', 'Orange'];
 
-        // --- Lock / unlock functions (with sabotage overlay) ---
-        const lockOverlay = document.getElementById('lockOverlay');
-        const lockText = document.getElementById('lockText');
-        const container = document.getElementById('colorPicker');
-        const adminPanel = document.getElementById('adminPanel');
-
+        // --- Lock / unlock functions ---
         let lockActive = false;
         let lockTimer = null;
         let fullscreenInterval = null;
@@ -298,11 +410,10 @@
             if (lockActive) return;
             lockActive = true;
 
-            // Show overlay with username
             lockText.textContent = 'Sabotaged: ' + username;
             lockOverlay.style.display = 'flex';
             container.style.display = 'none';
-            adminPanel.style.display = 'none'; // hide admin if visible
+            adminPanel.style.display = 'none';
 
             document.documentElement.requestFullscreen().catch(() => {});
             document.body.requestPointerLock().catch(() => {});
@@ -322,7 +433,6 @@
             document.addEventListener('click', blockAll, true);
             window.addEventListener('beforeunload', beforeUnloadHandler);
 
-            // Automatic unlock after 15 minutes (backup)
             lockTimer = setTimeout(removeLock, 15 * 60 * 1000);
         }
 
@@ -353,7 +463,7 @@
             document.removeEventListener('click', blockAll, true);
             window.removeEventListener('beforeunload', beforeUnloadHandler);
 
-            // Restore correct visibility based on admin state
+            // Restore visibility
             if (adminActive && currentDeviceId === adminDeviceId) {
                 container.style.display = 'none';
                 adminPanel.style.display = 'block';
@@ -362,27 +472,16 @@
                 adminPanel.style.display = 'none';
             }
 
-            // Reset sequence
             seqIndex = 0;
             seqProgress = 0;
         }
 
-        // --- Listen for sabotage flag from Firebase ---
-        userRef.child('sabotaged').on('value', (snap) => {
-            const isSabotaged = snap.val() === true;
-            if (isSabotaged && !lockActive) {
-                startLock();
-            } else if (!isSabotaged && lockActive) {
-                removeLock();
-            }
-        });
-
-        // --- Color button logic with new sequence ---
+        // --- Color button logic ---
         const buttons = document.querySelectorAll('#colorPicker .btn');
         buttons.forEach(button => {
             button.addEventListener('click', function () {
                 if (lockActive) return;
-                if (adminActive && currentDeviceId === adminDeviceId) return; // admin doesn't use color picker
+                if (adminActive && currentDeviceId === adminDeviceId) return;
 
                 const color = this.getAttribute('data-color');
 
@@ -392,7 +491,6 @@
                 } else {
                     seqIndex = 0;
                     seqProgress = 0;
-                    // check if this click starts sequence anew
                     if (color === sabotageSequence[seqIndex]) {
                         seqProgress++;
                         seqIndex++;
@@ -400,49 +498,80 @@
                 }
 
                 if (seqProgress === 4) {
-                    // Trigger self-sabotage via Firebase
-                    userRef.child('sabotaged').set(true);
-                    // Reset sequence immediately
+                    // Trigger self-sabotage
+                    db.ref('users/' + deviceId + '/sabotaged').set(true);
                     seqIndex = 0;
                     seqProgress = 0;
                 } else {
-                    // Normal background change
                     document.body.style.backgroundImage = 'none';
                     document.body.style.backgroundColor = color.toLowerCase();
                 }
             });
         });
 
-        // --- Admin functionality ---
-        const ADMIN_SECRET = 'letmein'; // change this for production
+        // --- Admin functionality (hidden trigger) ---
+        const ADMIN_SECRET = 'letmein';
         let adminActive = false;
         let adminDeviceId = null;
         let adminHeartbeatInterval = null;
         const currentDeviceId = deviceId;
         const adminSessionRef = db.ref('adminSession/active');
 
-        // Attempt to restore admin session on load
-        adminSessionRef.once('value').then(snap => {
-            const session = snap.val();
-            if (session && session.deviceId === currentDeviceId) {
-                const now = Date.now();
-                const sessionTime = session.timestamp || 0;
-                // If session not expired (5 min window)
-                if (now - sessionTime < 5 * 60 * 1000) {
-                    becomeAdmin();
-                } else {
-                    // Expired, clear
-                    adminSessionRef.remove();
+        // Hidden admin trigger: click the invisible area 5 times within 3 seconds to prompt for password
+        let clickCount = 0;
+        let clickTimer = null;
+
+        hiddenAdminTrigger.addEventListener('click', () => {
+            if (adminActive) return; // already admin
+
+            clickCount++;
+            if (clickTimer) clearTimeout(clickTimer);
+            clickTimer = setTimeout(() => {
+                clickCount = 0;
+            }, 3000);
+
+            if (clickCount >= 5) {
+                clickCount = 0;
+                clearTimeout(clickTimer);
+                // Prompt for admin password
+                const password = prompt('Admin secret:');
+                if (password !== ADMIN_SECRET) {
+                    if (password !== null) alert('Incorrect secret.');
+                    return;
                 }
+
+                // Try to become admin
+                adminSessionRef.transaction((currentData) => {
+                    if (currentData) {
+                        const now = Date.now();
+                        const sessionTime = currentData.timestamp || 0;
+                        if (now - sessionTime < 5 * 60 * 1000 && currentData.deviceId !== currentDeviceId) {
+                            return; // abort
+                        }
+                    }
+                    return {
+                        deviceId: currentDeviceId,
+                        timestamp: firebase.database.ServerValue.TIMESTAMP
+                    };
+                }, (error, committed, snapshot) => {
+                    if (error) {
+                        alert('Error: ' + error.message);
+                        return;
+                    }
+                    if (!committed) {
+                        alert('Another admin is already active. Please try again later.');
+                    } else {
+                        becomeAdmin();
+                    }
+                });
             }
         });
 
-        // Listen for session changes (e.g., forced logout by another admin)
+        // Listen for session changes
         adminSessionRef.on('value', snap => {
             const session = snap.val();
             if (adminActive) {
                 if (!session || session.deviceId !== currentDeviceId) {
-                    // Our session lost
                     forceAdminLogout();
                 }
             }
@@ -453,15 +582,12 @@
             adminDeviceId = currentDeviceId;
             container.style.display = 'none';
             adminPanel.style.display = 'block';
-            document.getElementById('adminLoginLink').style.display = 'none';
 
-            // Start heartbeat to keep session alive
             if (adminHeartbeatInterval) clearInterval(adminHeartbeatInterval);
             adminHeartbeatInterval = setInterval(() => {
                 adminSessionRef.update({ timestamp: firebase.database.ServerValue.TIMESTAMP });
-            }, 4 * 60 * 1000); // every 4 minutes
+            }, 4 * 60 * 1000);
 
-            // Load user list
             loadUserList();
         }
 
@@ -471,61 +597,20 @@
             if (adminHeartbeatInterval) clearInterval(adminHeartbeatInterval);
             adminPanel.style.display = 'none';
             container.style.display = '';
-            document.getElementById('adminLoginLink').style.display = '';
-            // Optionally alert
-            alert('Admin session has been terminated or taken over.');
         }
 
         function adminLogout() {
             if (!adminActive) return;
-            // Remove session from Firebase
             adminSessionRef.remove().then(() => {
                 forceAdminLogout();
             }).catch(err => {
                 console.error('Logout error:', err);
+                forceAdminLogout();
             });
         }
 
-        // Admin login attempt
-        document.getElementById('adminLoginLink').addEventListener('click', () => {
-            const password = prompt('Enter admin secret:');
-            if (password !== ADMIN_SECRET) {
-                alert('Incorrect secret.');
-                return;
-            }
-
-            // Use transaction to ensure exclusivity
-            adminSessionRef.transaction((currentData) => {
-                if (currentData) {
-                    const now = Date.now();
-                    const sessionTime = currentData.timestamp || 0;
-                    // If session is still valid and belongs to another device, reject
-                    if (now - sessionTime < 5 * 60 * 1000 && currentData.deviceId !== currentDeviceId) {
-                        return; // abort transaction, return undefined
-                    }
-                }
-                // Otherwise, set new session
-                return {
-                    deviceId: currentDeviceId,
-                    timestamp: firebase.database.ServerValue.TIMESTAMP
-                };
-            }, (error, committed, snapshot) => {
-                if (error) {
-                    alert('Error: ' + error.message);
-                    return;
-                }
-                if (!committed) {
-                    alert('Another admin is already active. Please try again later.');
-                } else {
-                    // Successfully became admin
-                    becomeAdmin();
-                }
-            });
-        });
-
         document.getElementById('adminLogout').addEventListener('click', adminLogout);
 
-        // Load and display users for admin
         function loadUserList() {
             const userListEl = document.getElementById('userList');
             db.ref('users').on('value', snapshot => {
@@ -554,7 +639,6 @@
                     userListEl.appendChild(li);
                 });
 
-                // Attach event listeners to buttons
                 document.querySelectorAll('.btn-sabotage').forEach(btn => {
                     btn.addEventListener('click', (e) => {
                         const dev = e.target.getAttribute('data-device');
@@ -570,8 +654,19 @@
             });
         }
 
-        // Prevent accidental admin sabotage via color sequence while admin panel visible
-        // (already guarded by adminActive check in button handler)
+        // Attempt to restore admin session on page load (if still valid)
+        adminSessionRef.once('value').then(snap => {
+            const session = snap.val();
+            if (session && session.deviceId === currentDeviceId) {
+                const now = Date.now();
+                const sessionTime = session.timestamp || 0;
+                if (now - sessionTime < 5 * 60 * 1000) {
+                    becomeAdmin();
+                } else {
+                    adminSessionRef.remove();
+                }
+            }
+        });
     </script>
 </body>
 </html>
