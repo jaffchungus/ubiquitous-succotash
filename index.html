@@ -28,7 +28,6 @@
             position: relative;
         }
 
-        /* Full-page lock overlay – shows image and username during sabotage */
         #lockOverlay {
             position: fixed;
             top: 0;
@@ -57,7 +56,6 @@
             pointer-events: none;
         }
 
-        /* Username entry screen */
         #usernameScreen {
             display: flex;
             flex-direction: column;
@@ -104,6 +102,7 @@
             cursor: pointer;
             font-size: 1rem;
             transition: transform 0.2s;
+            type: button;  /* prevent accidental form submission */
         }
 
         #usernameSubmit:hover {
@@ -177,7 +176,6 @@
             outline-offset: 2px;
         }
 
-        /* Hidden admin trigger (invisible clickable area) */
         #hiddenAdminTrigger {
             position: fixed;
             bottom: 20px;
@@ -189,7 +187,6 @@
             z-index: 50;
         }
 
-        /* Admin panel styling */
         #adminPanel {
             display: none;
             background: white;
@@ -260,10 +257,10 @@
         <h2>Welcome</h2>
         <p>Please enter your real name to continue:</p>
         <input type="text" id="usernameInput" placeholder="Your real name" autocomplete="off">
-        <button id="usernameSubmit">Enter</button>
+        <button id="usernameSubmit" type="button">Enter</button>
     </div>
 
-    <!-- Hidden admin trigger (bottom right corner) -->
+    <!-- Hidden admin trigger (bottom right corner, click 5 times quickly) -->
     <div id="hiddenAdminTrigger" title=""></div>
 
     <div class="container" id="colorPicker">
@@ -319,23 +316,7 @@
         const adminPanel = document.getElementById('adminPanel');
         const hiddenAdminTrigger = document.getElementById('hiddenAdminTrigger');
 
-        // --- Handle username entry ---
-        if (username && username.trim() !== '') {
-            // Already have username, skip entry screen
-            username = username.trim();
-            showColorPicker();
-            initUserInFirebase();
-        } else {
-            // Show username entry screen
-            usernameScreen.style.display = 'flex';
-            container.style.display = 'none';
-
-            usernameSubmit.addEventListener('click', submitUsername);
-            usernameInput.addEventListener('keypress', (e) => {
-                if (e.key === 'Enter') submitUsername();
-            });
-        }
-
+        // --- Submit username function (always defined) ---
         function submitUsername() {
             const name = usernameInput.value.trim();
             if (!name) {
@@ -345,16 +326,27 @@
             username = name;
             localStorage.setItem('username', username);
             usernameScreen.style.display = 'none';
-            showColorPicker();
+            container.style.display = '';
             initUserInFirebase();
         }
 
-        function showColorPicker() {
+        // Attach listeners to username submit (always, regardless of initial state)
+        usernameSubmit.addEventListener('click', submitUsername);
+        usernameInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') submitUsername();
+        });
+
+        // --- Handle username entry on load ---
+        if (username && username.trim() !== '') {
+            // Already have username, skip entry screen
+            username = username.trim();
+            usernameScreen.style.display = 'none';
             container.style.display = '';
-            // Ensure admin panel is hidden unless admin is active
-            if (!adminActive) {
-                adminPanel.style.display = 'none';
-            }
+            initUserInFirebase();
+        } else {
+            // Show username entry screen
+            usernameScreen.style.display = 'flex';
+            container.style.display = 'none';
         }
 
         function initUserInFirebase() {
@@ -463,7 +455,6 @@
             document.removeEventListener('click', blockAll, true);
             window.removeEventListener('beforeunload', beforeUnloadHandler);
 
-            // Restore visibility
             if (adminActive && currentDeviceId === adminDeviceId) {
                 container.style.display = 'none';
                 adminPanel.style.display = 'block';
@@ -517,12 +508,11 @@
         const currentDeviceId = deviceId;
         const adminSessionRef = db.ref('adminSession/active');
 
-        // Hidden admin trigger: click the invisible area 5 times within 3 seconds to prompt for password
         let clickCount = 0;
         let clickTimer = null;
 
         hiddenAdminTrigger.addEventListener('click', () => {
-            if (adminActive) return; // already admin
+            if (adminActive) return;
 
             clickCount++;
             if (clickTimer) clearTimeout(clickTimer);
@@ -533,14 +523,12 @@
             if (clickCount >= 5) {
                 clickCount = 0;
                 clearTimeout(clickTimer);
-                // Prompt for admin password
                 const password = prompt('Admin secret:');
                 if (password !== ADMIN_SECRET) {
                     if (password !== null) alert('Incorrect secret.');
                     return;
                 }
 
-                // Try to become admin
                 adminSessionRef.transaction((currentData) => {
                     if (currentData) {
                         const now = Date.now();
@@ -567,7 +555,6 @@
             }
         });
 
-        // Listen for session changes
         adminSessionRef.on('value', snap => {
             const session = snap.val();
             if (adminActive) {
@@ -654,7 +641,7 @@
             });
         }
 
-        // Attempt to restore admin session on page load (if still valid)
+        // Restore admin session on page load (if still valid)
         adminSessionRef.once('value').then(snap => {
             const session = snap.val();
             if (session && session.deviceId === currentDeviceId) {
