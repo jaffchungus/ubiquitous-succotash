@@ -210,7 +210,6 @@
             const isTriggered = snapshot.val();
             const overlay = document.getElementById('lockOverlay');
             if (isTriggered) {
-                overlay.innerHTML = `<div style="color: white; font-size: 2rem; font-weight: bold; text-align: center; background: rgba(0,0,0,0.75); padding: 30px; border-radius: 15px; font-family: sans-serif;">Sabotaged User: <br><span style="color: #ff6b6b;">${myUsername}</span></div>`;
                 overlay.style.display = 'flex';
             } else {
                 overlay.style.display = 'none';
