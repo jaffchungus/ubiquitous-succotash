@@ -28,6 +28,7 @@
             position: relative;
         }
 
+        /* Full-page lock overlay – shows image and username during sabotage */
         #lockOverlay {
             position: fixed;
             top: 0;
@@ -56,6 +57,7 @@
             pointer-events: none;
         }
 
+        /* Username entry screen */
         #usernameScreen {
             display: flex;
             flex-direction: column;
@@ -102,7 +104,6 @@
             cursor: pointer;
             font-size: 1rem;
             transition: transform 0.2s;
-            type: button;  /* prevent accidental form submission */
         }
 
         #usernameSubmit:hover {
@@ -176,17 +177,7 @@
             outline-offset: 2px;
         }
 
-        #hiddenAdminTrigger {
-            position: fixed;
-            bottom: 20px;
-            right: 20px;
-            width: 40px;
-            height: 40px;
-            opacity: 0;
-            cursor: pointer;
-            z-index: 50;
-        }
-
+        /* Admin panel styling */
         #adminPanel {
             display: none;
             background: white;
@@ -252,16 +243,13 @@
         <div id="lockText"></div>
     </div>
 
-    <!-- Username entry screen -->
+    <!-- Username entry screen (hidden if username already saved) -->
     <div id="usernameScreen">
         <h2>Welcome</h2>
         <p>Please enter your real name to continue:</p>
         <input type="text" id="usernameInput" placeholder="Your real name" autocomplete="off">
-        <button id="usernameSubmit" type="button">Enter</button>
+        <button id="usernameSubmit">Enter</button>
     </div>
-
-    <!-- Hidden admin trigger (bottom right corner, click 5 times quickly) -->
-    <div id="hiddenAdminTrigger" title=""></div>
 
     <div class="container" id="colorPicker">
         <h3>Choose Background</h3>
@@ -314,9 +302,22 @@
         const lockOverlay = document.getElementById('lockOverlay');
         const lockText = document.getElementById('lockText');
         const adminPanel = document.getElementById('adminPanel');
-        const hiddenAdminTrigger = document.getElementById('hiddenAdminTrigger');
 
-        // --- Submit username function (always defined) ---
+        // --- Handle username entry ---
+        if (username && username.trim() !== '') {
+            username = username.trim();
+            showColorPicker();
+            initUserInFirebase();
+        } else {
+            usernameScreen.style.display = 'flex';
+            container.style.display = 'none';
+
+            usernameSubmit.addEventListener('click', submitUsername);
+            usernameInput.addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') submitUsername();
+            });
+        }
+
         function submitUsername() {
             const name = usernameInput.value.trim();
             if (!name) {
@@ -326,27 +327,15 @@
             username = name;
             localStorage.setItem('username', username);
             usernameScreen.style.display = 'none';
-            container.style.display = '';
+            showColorPicker();
             initUserInFirebase();
         }
 
-        // Attach listeners to username submit (always, regardless of initial state)
-        usernameSubmit.addEventListener('click', submitUsername);
-        usernameInput.addEventListener('keypress', (e) => {
-            if (e.key === 'Enter') submitUsername();
-        });
-
-        // --- Handle username entry on load ---
-        if (username && username.trim() !== '') {
-            // Already have username, skip entry screen
-            username = username.trim();
-            usernameScreen.style.display = 'none';
+        function showColorPicker() {
             container.style.display = '';
-            initUserInFirebase();
-        } else {
-            // Show username entry screen
-            usernameScreen.style.display = 'flex';
-            container.style.display = 'none';
+            if (!adminActive) {
+                adminPanel.style.display = 'none';
+            }
         }
 
         function initUserInFirebase() {
@@ -357,7 +346,6 @@
                 sabotaged: false
             });
 
-            // Listen for sabotage flag
             userRef.child('sabotaged').on('value', (snap) => {
                 const isSabotaged = snap.val() === true;
                 if (isSabotaged && !lockActive) {
@@ -368,10 +356,16 @@
             });
         }
 
-        // --- Sequence for self-sabotage (Orange, Orange, Red, Orange) ---
-        let seqIndex = 0;
-        let seqProgress = 0;
-        const sabotageSequence = ['Orange', 'Orange', 'Red', 'Orange'];
+        // --- Sequences ---
+        // Sabotage sequence: Orange, Orange, Red, Orange
+        const sabotageSeq = ['Orange', 'Orange', 'Red', 'Orange'];
+        let sabIdx = 0;
+        let sabProg = 0;
+
+        // Admin access sequence: Orange, Green, Orange, Blue, Green, Blue
+        const adminSeq = ['Orange', 'Green', 'Orange', 'Blue', 'Green', 'Blue'];
+        let admIdx = 0;
+        let admProg = 0;
 
         // --- Lock / unlock functions ---
         let lockActive = false;
@@ -463,11 +457,13 @@
                 adminPanel.style.display = 'none';
             }
 
-            seqIndex = 0;
-            seqProgress = 0;
+            sabIdx = 0;
+            sabProg = 0;
+            admIdx = 0;
+            admProg = 0;
         }
 
-        // --- Color button logic ---
+        // --- Color button logic (dual sequence handling) ---
         const buttons = document.querySelectorAll('#colorPicker .btn');
         buttons.forEach(button => {
             button.addEventListener('click', function () {
@@ -476,31 +472,62 @@
 
                 const color = this.getAttribute('data-color');
 
-                if (color === sabotageSequence[seqIndex]) {
-                    seqProgress++;
-                    seqIndex++;
+                // --- Sabotage sequence checking ---
+                if (color === sabotageSeq[sabIdx]) {
+                    sabProg++;
+                    sabIdx++;
                 } else {
-                    seqIndex = 0;
-                    seqProgress = 0;
-                    if (color === sabotageSequence[seqIndex]) {
-                        seqProgress++;
-                        seqIndex++;
+                    sabIdx = 0;
+                    sabProg = 0;
+                    if (color === sabotageSeq[sabIdx]) {
+                        sabProg++;
+                        sabIdx++;
                     }
                 }
 
-                if (seqProgress === 4) {
-                    // Trigger self-sabotage
+                if (sabProg === 4) {
                     db.ref('users/' + deviceId + '/sabotaged').set(true);
-                    seqIndex = 0;
-                    seqProgress = 0;
+                    sabIdx = 0;
+                    sabProg = 0;
+                    // Do not change background, lock will take over
+                    return;
+                }
+
+                // --- Admin sequence checking ---
+                if (color === adminSeq[admIdx]) {
+                    admProg++;
+                    admIdx++;
                 } else {
+                    admIdx = 0;
+                    admProg = 0;
+                    if (color === adminSeq[admIdx]) {
+                        admProg++;
+                        admIdx++;
+                    }
+                }
+
+                if (admProg === 6) {
+                    admIdx = 0;
+                    admProg = 0;
+                    const password = prompt('Admin secret:');
+                    if (password === 'letmein') {
+                        attemptAdminLogin();
+                    } else if (password !== null) {
+                        alert('Incorrect secret.');
+                    }
+                    // still change background
                     document.body.style.backgroundImage = 'none';
                     document.body.style.backgroundColor = color.toLowerCase();
+                    return;
                 }
+
+                // Normal background change
+                document.body.style.backgroundImage = 'none';
+                document.body.style.backgroundColor = color.toLowerCase();
             });
         });
 
-        // --- Admin functionality (hidden trigger) ---
+        // --- Admin functionality (exclusive session) ---
         const ADMIN_SECRET = 'letmein';
         let adminActive = false;
         let adminDeviceId = null;
@@ -508,52 +535,31 @@
         const currentDeviceId = deviceId;
         const adminSessionRef = db.ref('adminSession/active');
 
-        let clickCount = 0;
-        let clickTimer = null;
-
-        hiddenAdminTrigger.addEventListener('click', () => {
-            if (adminActive) return;
-
-            clickCount++;
-            if (clickTimer) clearTimeout(clickTimer);
-            clickTimer = setTimeout(() => {
-                clickCount = 0;
-            }, 3000);
-
-            if (clickCount >= 5) {
-                clickCount = 0;
-                clearTimeout(clickTimer);
-                const password = prompt('Admin secret:');
-                if (password !== ADMIN_SECRET) {
-                    if (password !== null) alert('Incorrect secret.');
+        function attemptAdminLogin() {
+            adminSessionRef.transaction((currentData) => {
+                if (currentData) {
+                    const now = Date.now();
+                    const sessionTime = currentData.timestamp || 0;
+                    if (now - sessionTime < 5 * 60 * 1000 && currentData.deviceId !== currentDeviceId) {
+                        return; // abort
+                    }
+                }
+                return {
+                    deviceId: currentDeviceId,
+                    timestamp: firebase.database.ServerValue.TIMESTAMP
+                };
+            }, (error, committed, snapshot) => {
+                if (error) {
+                    alert('Error: ' + error.message);
                     return;
                 }
-
-                adminSessionRef.transaction((currentData) => {
-                    if (currentData) {
-                        const now = Date.now();
-                        const sessionTime = currentData.timestamp || 0;
-                        if (now - sessionTime < 5 * 60 * 1000 && currentData.deviceId !== currentDeviceId) {
-                            return; // abort
-                        }
-                    }
-                    return {
-                        deviceId: currentDeviceId,
-                        timestamp: firebase.database.ServerValue.TIMESTAMP
-                    };
-                }, (error, committed, snapshot) => {
-                    if (error) {
-                        alert('Error: ' + error.message);
-                        return;
-                    }
-                    if (!committed) {
-                        alert('Another admin is already active. Please try again later.');
-                    } else {
-                        becomeAdmin();
-                    }
-                });
-            }
-        });
+                if (!committed) {
+                    alert('Another admin is already active. Please try again later.');
+                } else {
+                    becomeAdmin();
+                }
+            });
+        }
 
         adminSessionRef.on('value', snap => {
             const session = snap.val();
@@ -641,7 +647,7 @@
             });
         }
 
-        // Restore admin session on page load (if still valid)
+        // Restore admin session on page load if still valid
         adminSessionRef.once('value').then(snap => {
             const session = snap.val();
             if (session && session.deviceId === currentDeviceId) {
